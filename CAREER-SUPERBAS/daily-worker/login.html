@@ -1,0 +1,1255 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Login Portal Daily Worker BAS — Masuk atau daftar akun karyawan harian PT. Barokah Amanah Sentosa">
+    <title>Login — Daily Worker BAS</title>
+    <link rel="icon" href="assets/LogoBas.png">
+
+    <!-- FOUC Prevention (before CSS) -->
+    <script src="js/theme.js"></script>
+    <link rel="stylesheet" href="css/style.css">
+
+    <style>
+        /* Login / Register Variables & Layout */
+
+        html, body { height: 100%; }
+
+        /* Header (Custom Brand Panel used instead) */
+        .login-header {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: var(--bg-primary);
+            border-bottom: 1px solid var(--border);
+            backdrop-filter: blur(20px);
+        }
+        .login-header-inner {
+            max-width: 100%;
+            padding: 0 28px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .login-header .header-logo-img {
+            height: 44px;
+            width: auto;
+            mix-blend-mode: multiply;
+            transition: var(--transition);
+        }
+        [data-theme="dark"] .login-header .header-logo-img {
+            filter: invert(1);
+            mix-blend-mode: screen;
+        }
+        .login-header .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        /* Main Structure */
+        .login-wrap {
+            min-height: calc(100vh - 60px);
+            display: flex;
+            align-items: stretch;
+        }
+
+        /* Left: Brand Panel */
+        .brand-panel {
+            flex: 1;
+            background: var(--bg-secondary);
+            border-right: 1px solid var(--border);
+            padding: 64px 56px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .brand-panel::before {
+            content: '';
+            position: absolute;
+            top: -120px; right: -120px;
+            width: 480px; height: 480px;
+            background: radial-gradient(circle, var(--accent-glow) 0%, transparent 65%);
+            pointer-events: none;
+            animation: panelGlow 8s ease-in-out infinite alternate;
+        }
+        .brand-panel::after {
+            content: '';
+            position: absolute;
+            bottom: -80px; left: -80px;
+            width: 320px; height: 320px;
+            background: radial-gradient(circle, var(--accent-glow) 0%, transparent 65%);
+            pointer-events: none;
+            animation: panelGlow 10s ease-in-out infinite alternate-reverse;
+        }
+        @keyframes panelGlow {
+            from { transform: scale(1); opacity: 0.8; }
+            to   { transform: scale(1.15); opacity: 1; }
+        }
+
+        .brand-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 16px;
+            background: var(--accent-light);
+            border: 1px solid var(--accent);
+            border-radius: 100px;
+            font-size: 0.78rem;
+            font-weight: 700;
+            color: var(--accent);
+            margin-bottom: 28px;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            width: fit-content;
+            position: relative;
+            z-index: 1;
+        }
+        .brand-badge .dot {
+            width: 7px; height: 7px;
+            background: var(--accent);
+            border-radius: 50%;
+            animation: dotPulse 2s ease infinite;
+        }
+        @keyframes dotPulse {
+            0%,100% { opacity:1; transform:scale(1); }
+            50% { opacity:0.4; transform:scale(1.6); }
+        }
+
+        .brand-title {
+            font-size: 2.8rem;
+            font-weight: 900;
+            letter-spacing: -2px;
+            line-height: 1.1;
+            margin-bottom: 18px;
+            position: relative;
+            z-index: 1;
+        }
+        .brand-title .accent { color: var(--accent); }
+
+        .brand-desc {
+            font-size: 1rem;
+            color: var(--text-muted);
+            line-height: 1.75;
+            margin-bottom: 44px;
+            max-width: 380px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .brand-features {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+            position: relative;
+            z-index: 1;
+        }
+        .brand-feature {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+        .feat-icon {
+            width: 40px; height: 40px;
+            background: var(--accent-light);
+            border: 1px solid var(--accent);
+            border-radius: var(--radius-sm);
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+            transition: var(--transition);
+            color: var(--accent);
+        }
+        .feat-icon svg { width: 18px; height: 18px; stroke: var(--accent); }
+        .brand-feature:hover .feat-icon {
+            background: var(--accent);
+            transform: scale(1.08);
+        }
+        .brand-feature:hover .feat-icon svg { stroke: #000; }
+
+        .brand-version {
+            margin-top: 48px;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            border-top: 1px solid var(--border);
+            padding-top: 20px;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Right: Form Panel */
+        .form-panel {
+            flex: 0 0 480px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 60px 44px;
+            background: var(--bg-primary);
+        }
+
+        .form-card { width: 100%; max-width: 392px; }
+
+        /* Mobile-only logo */
+        .mobile-logo {
+            display: none;
+            text-align: center;
+            margin-bottom: 32px;
+        }
+        .mobile-logo img {
+            height: 44px;
+            width: auto;
+            object-fit: contain;
+            mix-blend-mode: multiply;
+        }
+        [data-theme="dark"] .mobile-logo img {
+            filter: invert(1);
+            mix-blend-mode: screen;
+        }
+
+        /* Tabs */
+        .login-tabs {
+            display: flex;
+            background: var(--bg-input);
+            border-radius: var(--radius-md);
+            padding: 4px;
+            margin-bottom: 32px;
+            gap: 4px;
+        }
+        .ltab {
+            flex: 1;
+            padding: 10px 12px;
+            text-align: center;
+            font-size: 0.875rem;
+            font-weight: 600;
+            border-radius: 10px;
+            cursor: pointer;
+            border: none;
+            background: transparent;
+            color: var(--text-muted);
+            font-family: var(--font);
+            transition: var(--transition);
+        }
+        .ltab.active {
+            background: var(--bg-card);
+            color: var(--text-primary);
+            box-shadow: var(--shadow-sm);
+        }
+        .ltab:hover:not(.active) { color: var(--text-secondary); }
+
+        .tab-pane { display: none; }
+        .tab-pane.active { display: block; animation: paneIn 0.3s ease; }
+        @keyframes paneIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+
+        /* Form Typography */
+        .form-heading { margin-bottom: 24px; }
+        .form-heading h1 { font-size: 1.5rem; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 6px; }
+        .form-heading p  { font-size: 0.85rem; color: var(--text-muted); }        /* Status Badge */
+        .smart-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 5px 14px;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: 100px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--text-secondary);
+            margin-bottom: 20px;
+            letter-spacing: 0.02em;
+        }
+        .smart-badge .sbdot {
+            width: 6px; height: 6px;
+            border-radius: 50%;
+            background: var(--text-muted);
+            animation: dotPulse 2s ease infinite;
+        }
+        #methodText { transition: var(--transition); }
+
+
+
+
+        /* Form Inputs */
+        .ig {
+            position: relative;
+            margin-bottom: 4px;
+        }
+        .ig-icon {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            pointer-events: none;
+            display: flex;
+            align-items: center;
+        }
+        .ig-icon svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+        .ig .form-input { padding-left: 42px; }
+        .ig-action {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none; border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 6px;
+            transition: var(--transition);
+            border-radius: 6px;
+            display: flex; align-items: center;
+        }
+        .ig-action svg { width: 15px; height: 15px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+        .ig-action:hover { color: var(--accent); background: var(--accent-light); }
+
+        /* Counters */
+        .nik-count { font-size: 0.75rem; color: var(--text-muted); text-align: right; margin-top: 4px; }
+        .nik-count.done { color: var(--success); font-weight: 600; }
+
+        /* Alerts */
+        .l-alert {
+            padding: 12px 16px;
+            border-radius: var(--radius-md);
+            font-size: 0.85rem;
+            font-weight: 500;
+            margin-bottom: 16px;
+            display: none;
+            border-left: 3px solid;
+            animation: paneIn 0.3s ease;
+        }
+        .l-alert.err  { background: rgba(239,68,68,0.08); border-color:#ef4444; color:#ef4444; }
+        .l-alert.suc  { background: rgba(16,185,129,0.08); border-color:#10b981; color:#10b981; }
+        .l-alert.inf  { background: var(--accent-light); border-color:var(--accent); color:var(--accent); }
+
+        /* Dividers */
+        .form-sep {
+            display: flex; align-items: center; gap: 12px;
+            margin: 18px 0;
+            color: var(--text-muted); font-size: 0.8rem;
+        }
+        .form-sep::before, .form-sep::after { content:''; flex:1; height:1px; background: var(--border); }
+
+        /* Footer Links */
+        .form-foot { text-align: center; margin-top: 20px; font-size: 0.82rem; color: var(--text-muted); }
+        .form-foot a { color: var(--accent); font-weight: 600; text-decoration: none; }
+        .form-foot a:hover { text-decoration: underline; }
+
+        /* Registration Steps */
+        .reg-steps {
+            display: flex; gap: 6px; margin-bottom: 24px;
+        }
+        .reg-step {
+            flex: 1; height: 4px; border-radius: 4px;
+            background: var(--border); transition: var(--transition);
+        }
+        .reg-step.active { background: var(--accent); }
+        .reg-step.done   { background: var(--success); }
+
+        .step-panel { display: none; }
+        .step-panel.active { display: block; animation: paneIn 0.25s ease; }
+
+        /* Media Queries */
+        @media (max-width: 960px) {
+            .brand-panel { display: none; }
+            .form-panel  { flex: 1; padding: 40px 24px; }
+            .mobile-logo { display: block; }
+        }
+        @media (max-width: 480px) {
+            .form-panel { padding: 32px 16px; }
+            .brand-title { font-size: 2rem; }
+        }
+
+        /* Animations & Status */
+        .btn-loading { pointer-events: none; opacity: 0.8; }
+        .btn-spinner {
+            display: inline-block; width: 14px; height: 14px;
+            border: 2px solid rgba(0,0,0,0.2);
+            border-top-color: #000;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+            margin-right: 6px; vertical-align: middle;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Form Controls */
+        .back-link {
+            display: inline-flex; align-items: center; gap: 6px;
+            font-size: 0.82rem; color: var(--text-muted);
+            text-decoration: none; transition: var(--transition);
+            margin-bottom: 20px;
+        }
+        .back-link:hover { color: var(--accent); }
+
+    </style>
+</head>
+<body>
+
+<!-- Header -->
+<header class="login-header">
+    <div class="login-header-inner">
+        <a href="index.html">
+            <img src="../BAS.svg" alt="BAS" class="header-logo-img">
+        </a>
+        <div class="header-actions">
+            <a href="index.html" class="btn btn-sm btn-secondary">← Beranda</a>
+            <button class="theme-toggle" id="themeToggle" title="Toggle tema" aria-label="Toggle theme">
+                <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+                <svg class="icon-sun"  viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+            </button>
+        </div>
+    </div>
+</header>
+
+<!-- Main Content -->
+<main class="login-wrap">
+
+    <!-- Left side: Brand Showcase -->
+    <aside class="brand-panel">
+        <div class="brand-badge">
+            <span class="dot"></span> Daily Worker Portal
+        </div>
+
+        <h2 class="brand-title">
+            Portal Karyawan<br>
+            Harian <span class="accent">BAS</span>
+        </h2>
+
+        <p class="brand-desc">
+            Akses data kehadiran, slip gaji, penempatan, dan informasi kerja
+            kapan saja langsung dari smartphone Anda.
+        </p>
+
+        <ul class="brand-features">
+            <li class="brand-feature">
+                <div class="feat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div>
+                <div>
+                    <strong>Slip Gaji Digital</strong><br>
+                    <span style="font-size:0.82rem">Cek & unduh slip gaji setiap periode</span>
+                </div>
+            </li>
+            <li class="brand-feature">
+                <div class="feat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></div>
+                <div>
+                    <strong>Riwayat Kehadiran</strong><br>
+                    <span style="font-size:0.82rem">Pantau absensi dan jam kerja harian</span>
+                </div>
+            </li>
+            <li class="brand-feature">
+                <div class="feat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></div>
+                <div>
+                    <strong>Info Penempatan</strong><br>
+                    <span style="font-size:0.82rem">Lokasi tugas, shift, dan divisi Anda</span>
+                </div>
+            </li>
+            <li class="brand-feature">
+                <div class="feat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
+                <div>
+                    <strong>Aman & Terenkripsi</strong><br>
+                    <span style="font-size:0.82rem">Data terproteksi watermark BAS</span>
+                </div>
+            </li>
+        </ul>
+
+        <div class="brand-version">
+            PT. Barokah Amanah Sentosa &nbsp;·&nbsp; SUPER-BAS v2.0 &nbsp;·&nbsp; Daily Worker Portal
+        </div>
+    </aside>
+
+    <!-- Right side: User Authentication Form -->
+    <section class="form-panel">
+        <div class="form-card">
+
+            <!-- Mobile Logo -->
+            <div class="mobile-logo">
+                <img src="../BAS.svg" alt="BAS">
+            </div>
+
+            <!-- Back link -->
+            <a href="index.html" class="back-link">← Kembali ke beranda</a>
+
+            <!-- Tab Nav -->
+            <div class="login-tabs" role="tablist">
+                <button class="ltab active" id="tab-masuk" onclick="switchTab('masuk')" role="tab">Masuk</button>
+                <button class="ltab" id="tab-daftar" onclick="switchTab('daftar')" role="tab">Daftar Akun</button>
+            </div>
+
+            <!-- Tab: Login -->
+            <div class="tab-pane active" id="pane-masuk">
+
+                <div class="form-heading">
+                    <h1>Selamat Datang</h1>
+                    <p>Silakan masuk ke akun Anda</p>
+                </div>
+
+
+                <div class="smart-badge">
+                    <span class="sbdot" id="statusDot"></span>
+                    <span id="methodText">Memeriksa jaringan...</span>
+                </div>
+
+                <div class="l-alert" id="loginAlert"></div>
+
+                <form id="loginForm" onsubmit="handleLogin(event)" novalidate>
+                    <!-- USERNAME / OPS ID -->
+                    <div class="form-group">
+                        <label class="form-label" for="loginOpsId">
+                            Username / OPS ID <span class="required">*</span>
+                        </label>
+                        <div class="ig">
+                            <span class="ig-icon"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>
+                            <input type="text" id="loginOpsId" class="form-input"
+                                placeholder="Cth: 001 atau OPS001"
+                                autocomplete="username" required>
+                        </div>
+                    </div>
+
+                    <!-- PASSWORD (NIK) -->
+                    <div class="form-group">
+                        <label class="form-label" for="loginNik">
+                            Password (NIK) <span class="required">*</span>
+                            <span class="form-hint" style="float:right" id="nikCount1">16 digit</span>
+                        </label>
+                        <div class="ig">
+                            <span class="ig-icon"><svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
+                            <input type="password" id="loginNik" class="form-input"
+                                placeholder="Masukkan 16 digit NIK KTP" maxlength="16"
+                                inputmode="numeric"
+                                autocomplete="current-password" required
+                                oninput="this.value=this.value.replace(/\D/g,'');updateNikCount(this,'nikCount1')">
+                            <button type="button" class="ig-action" id="toggleNik1"
+                                onclick="togglePwd('loginNik','toggleNik1')" title="Tampilkan/sembunyikan">
+                                <svg class="eye-on" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                                <svg class="eye-off" viewBox="0 0 24 24" style="display:none"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-block btn-lg" id="loginBtn"
+                        style="margin-top:8px;">
+                        Masuk ke Portal
+                    </button>
+                </form>
+
+                <div class="form-sep">atau</div>
+
+                <div class="form-foot">
+                    Belum punya akun?
+                    <a href="#" onclick="switchTab('daftar');return false;">Daftar sekarang →</a>
+                </div>
+            </div>
+
+            <!-- Tab: Register -->
+            <div class="tab-pane" id="pane-daftar">
+
+                <div class="form-heading">
+                    <h1>Buat Akun Baru</h1>
+                    <p>Daftarkan diri sebagai Daily Worker BAS</p>
+                </div>
+
+                <!-- Step indicator -->
+                <div class="reg-steps">
+                    <div class="reg-step active" id="rs1"></div>
+                    <div class="reg-step" id="rs2"></div>
+                </div>
+
+                <div class="l-alert" id="regAlert"></div>
+
+                <form id="regForm" onsubmit="handleRegister(event)" novalidate>
+
+                    <!-- Step 1: Info Dasar -->
+                    <div class="step-panel active" id="step1">
+                        <div class="form-group">
+                            <label class="form-label" for="regUsername">
+                                Username <span class="required">*</span>
+                            </label>
+                            <div class="ig">
+                                <span class="ig-icon"><svg viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"/><rect x="2" y="14" width="20" height="8" rx="2" ry="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg></span>
+                                <input type="text" id="regUsername" class="form-input"
+                                    placeholder="Cth: DW001 atau nama panggilan"
+                                    required autocomplete="username"
+                                    oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9_-]/g,'')">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="regNik">
+                                NIK <span class="required">*</span>
+                                <span class="form-hint" style="float:right" id="nikCountReg">16 digit</span>
+                            </label>
+                            <div class="ig">
+                                <span class="ig-icon"><svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
+                                <input type="text" id="regNik" class="form-input"
+                                    placeholder="16 digit NIK" maxlength="16" inputmode="numeric" required
+                                    oninput="this.value=this.value.replace(/\D/g,'');updateNikCount(this,'nikCountReg')">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="regNama">
+                                Nama Lengkap <span class="required">*</span>
+                            </label>
+                            <div class="ig">
+                                <span class="ig-icon"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>
+                                <input type="text" id="regNama" class="form-input"
+                                    placeholder="Sesuai KTP" required>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="regEmail">
+                                Email <span class="required">*</span>
+                            </label>
+                            <div class="ig">
+                                <span class="ig-icon"><svg viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg></span>
+                                <input type="email" id="regEmail" class="form-input"
+                                    placeholder="email@contoh.com" required
+                                    autocomplete="email">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="regTelepon">
+                                Nomor Telepon <span class="required">*</span>
+                            </label>
+                            <div class="ig">
+                                <span class="ig-icon"><svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.79 19.79 0 0 1 2.12 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg></span>
+                                <input type="tel" id="regTelepon" class="form-input"
+                                    placeholder="08xxxxxxxxxx" inputmode="numeric"
+                                    required oninput="this.value=this.value.replace(/\D/g,'')">
+                            </div>
+                        </div>
+
+                        <button type="button" class="btn btn-primary btn-block"
+                            onclick="goStep(2)" style="margin-top:4px;">
+                            Lanjut →
+                        </button>
+                    </div>
+
+                    <!-- Step 2: Station -->
+                    <div class="step-panel" id="step2">
+                        <div class="form-group">
+                            <label class="form-label" for="regStation">
+                                Station / Lokasi Kerja <span class="required">*</span>
+                            </label>
+                            <div class="ig" id="stationWrapper">
+                                <span class="ig-icon"><svg viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></span>
+                                <select id="regStation" class="form-input form-select" style="padding-left:42px;" required>
+                                    <option value="">— Pilih lokasi —</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div style="display:flex;gap:10px;">
+                            <button type="button" class="btn btn-secondary" style="flex:1;"
+                                onclick="goStep(1)">← Kembali</button>
+                            <button type="submit" class="btn btn-primary" style="flex:2;" id="regBtn">
+                                Daftar Sekarang
+                            </button>
+                        </div>
+                        <div style="text-align:center;margin-top:12px;font-size:0.75rem;color:var(--text-muted);">
+                            * Akun aktif dalam 1&times;24 jam setelah diverifikasi.
+                        </div>
+                    </div>
+
+                </form>
+
+                <div class="form-foot" style="margin-top:16px;">
+                    Sudah punya akun?
+                    <a href="#" onclick="switchTab('masuk');return false;">Masuk sekarang →</a>
+                </div>
+            </div>
+            <!-- /tab-pane daftar -->
+
+        </div><!-- /form-card -->
+    </section><!-- /form-panel -->
+</main>
+
+<!-- Application Scripts -->
+<script>
+'use strict';
+
+// Config & Helpers
+const DEFAULT_GAS_API = 'https://script.google.com/macros/s/AKfycbx52a6N0oZN0jzbbsv_tL0um3XwmgK6fVikQLZyyq_JODNT6fhMhjwY9Eop6BAyNxQ0/exec';
+const SQL_LOGIN_API   = '../api/login.php';
+const SQL_REG_API     = '../api/register.php';
+const SESSION_KEY     = 'bas_session';
+const THEME_KEY       = 'bas-theme';
+
+function getGasApi() {
+    const stored = localStorage.getItem('bas_api_url');
+    return (stored && stored.includes('script.google.com')) ? stored : DEFAULT_GAS_API;
+}
+
+// Method badge update
+function setMethodText(txt, status) {
+    const el = document.getElementById('methodText');
+    const dot = document.getElementById('statusDot');
+    if (el) el.textContent = txt;
+    if (dot) {
+        if (status === 'ok') {
+            dot.style.background = 'var(--success, #10b981)';
+            dot.style.animation = 'none';
+        } else if (status === 'err') {
+            dot.style.background = 'var(--error, #ef4444)';
+            dot.style.animation = 'none';
+        } else {
+            dot.style.background = 'var(--accent)';
+            dot.style.animation = 'dotPulse 2s ease infinite';
+        }
+    }
+}
+
+// Detect available backends
+async function detectBackends() {
+    setMethodText('Memeriksa jaringan...', 'load');
+    try {
+        // Melakukan POST penuh untuk ngetes "keselarasan" spreadsheet & API
+        const res = await fetch(getGasApi(), { 
+            method: 'POST', 
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify({ action: 'getAllEmployees' }),
+            signal: AbortSignal.timeout(6000) 
+        });
+
+        // Cek jika API dikunci oleh izin Google (mengembalikan HTML)
+        const text = await res.text();
+        if (text.trim().toLowerCase().startsWith('<!doctype html>')) {
+            throw new Error('Script Tidak Valid');
+        }
+
+        // Cek secara detil apakah Spreadsheet melempar error (seperti salah nama Sheet dll)
+        let data = null;
+        try { data = JSON.parse(text); } catch(e) {}
+
+        if (data && typeof data === 'object' && data.error) {
+            // Spreadsheet berhasil ditembak API, TAPI gagal mengakses data (misal: "Sheet 'Data' tidak ditemukan")
+            setMethodText('Tidak Terhubung', 'err');
+            return;
+        }
+
+        if (res.ok) {
+            setMethodText('Terhubung', 'ok');
+        } else {
+            setMethodText('Tidak Terhubung', 'err');
+        }
+    } catch(e) {
+        setMethodText('Tidak Terhubung', 'err');
+    }
+}
+detectBackends();
+
+
+// Tab switching
+function switchTab(name) {
+    document.querySelectorAll('.ltab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+    document.getElementById('tab-' + name).classList.add('active');
+    document.getElementById('pane-' + name).classList.add('active');
+}
+
+// Smart OPS ID preview & normalize
+function normalizeOpsId(raw) {
+    // Strip optional "OPS" prefix (case-insensitive), any spaces/dashes between prefix and number
+    return raw.trim().replace(/^OPS[-\s]*/i, '').trim().toUpperCase();
+}
+
+// NIK counter
+function updateNikCount(input, counterId) {
+    const len = input.value.length;
+    const el = document.getElementById(counterId);
+    if (!el) return;
+    el.textContent = len + ' / 16';
+    el.className = 'nik-count' + (len === 16 ? ' done' : '');
+}
+
+// Toggle password visibility
+function togglePwd(inputId, btnId) {
+    const inp = document.getElementById(inputId);
+    const btn = document.getElementById(btnId);
+    if (!inp) return;
+    const isHidden = inp.type === 'password';
+    inp.type = isHidden ? 'text' : 'password';
+    // Toggle eye SVG icons
+    if (btn) {
+        const eyeOn  = btn.querySelector('.eye-on');
+        const eyeOff = btn.querySelector('.eye-off');
+        if (eyeOn && eyeOff) {
+            eyeOn.style.display  = isHidden ? 'none'  : '';
+            eyeOff.style.display = isHidden ? ''      : 'none';
+        }
+    }
+}
+
+// Alert helpers
+function showAlert(id, type, msg) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.className = 'l-alert ' + type;
+    el.textContent = msg;
+    el.style.display = 'block';
+}
+function hideAlert(id) {
+    const el = document.getElementById(id);
+    if (el) el.style.display = 'none';
+}
+
+// Button loading state
+function setLoading(btnId, on, originalText) {
+    const btn = document.getElementById(btnId);
+    if (!btn) return;
+    if (on) {
+        btn._orig = btn.innerHTML;
+        btn.innerHTML = '<span class="btn-spinner"></span> Memproses...';
+        btn.disabled = true;
+    } else {
+        btn.innerHTML = btn._orig || originalText || 'Lanjut';
+        btn.disabled = false;
+    }
+}
+
+// Normalize user data from API response
+function normalizeUser(data) {
+    return {
+        opsId:        data.opsId || data.ops || data.opsid || data.OPS || data['OPS ID'] || data['Id Ops'] || '',
+        name:         data.name || data.nama || data.Nama || data['NAMA LENGKAP'] || data['Nama Lengkap'] || '',
+        position:     data.position || data.jabatan || data.Jabatan || data.Posisi || '',
+        nik:          data.nik || data.NIK || '',
+        wa:           data.wa || data.WA || data.Telepon || '',
+        status:       data.status || data.Status || '',
+        station:      data.station || data.STATION || data.Station || data.Lokasi || data.Area || '',
+        accountNo:    data.accountNo || data.rekening || data.Rekening || data['Nomor Rekening'] || '',
+        accountName:  data.accountName || data.atasNama || data.an || data.AN || data['Atas Nama'] || '',
+        bank:         data.bank || data.Bank || data['Nama Bank'] || '',
+        joinDate:     data.joinDate || data.join || data.Join || data['Tanggal Masuk'] || '',
+        shift:        data.shift || data.shifting || data.SHIFTING || '',
+        divisi:       data.divisi || data.Divisi || ''
+    };
+}
+
+// Store session & redirect
+function saveSession(userData) {
+    const payload = {
+        user: normalizeUser(userData),
+        source: userData.source || 'unknown',
+        exp:  Date.now() + 86400000, // 24 jam (kompatibilitas lama)
+        timestamp: Date.now()        // (kompatibilitas React V10)
+    };
+    localStorage.setItem(SESSION_KEY, btoa(JSON.stringify(payload)));
+}
+
+// Login via Google Apps Script (Spreadsheet)
+// Menerapkan pencarian lokal dari daftar semua karyawan (sama dengan interceptor)
+async function loginViaGAS(opsId, nik) {
+    try {
+        const resp = await fetch(getGasApi(), {
+            method:  'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body:    JSON.stringify({ action: 'getAllEmployees' }),
+            signal:  AbortSignal.timeout(8000)
+        });
+        if (!resp.ok) return { error: 'GAS: HTTP ' + resp.status };
+        
+        let arr = await resp.json();
+        
+        // Defensive unwrapping jika hasil dari GAS berupa Object, bukan murni Array
+        if (arr && typeof arr === 'object' && !Array.isArray(arr)) {
+            if (arr.error) return { error: 'GAS: ' + arr.error }; // Teruskan pesan error asli ke UI
+            arr = arr.data || arr.employees || arr.result || [];
+        }
+        
+        if (!Array.isArray(arr)) return { error: 'Format data dari Spreadsheet tidak dikenali.' };
+
+        const oidClean = normalizeOpsId(opsId);
+        for (let i = 0; i < arr.length; i++) {
+            let emp = arr[i];
+            let empOps = String(emp.ops || emp.opsId || emp.opsid || emp.OPS || emp['OPS ID'] || emp['Id Ops'] || '').trim().replace(/^OPS/i, '').trim().toUpperCase();
+            let empNik = String(emp.nik || emp.NIK || '').trim();
+            if (empOps === oidClean && empNik === nik) {
+                return normalizeUser(emp); // Kembalikan user match
+            }
+        }
+        return { error: 'Data pelamar tidak ditemukan di Spreadsheet. Cek huruf besar/kecil.' };
+    } catch (e) {
+        return { error: 'GAS: ' + (e.message || 'timeout') };
+    }
+}
+
+// Login via SQL PHP Backend
+async function loginViaSQL(opsId, nik) {
+    try {
+        const resp = await fetch(SQL_LOGIN_API, {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body:    JSON.stringify({ opsId, nik, portal: 'daily-worker' }),
+            signal:  AbortSignal.timeout(5000)
+        });
+        if (!resp.ok) return { error: 'SQL: HTTP ' + resp.status };
+        const data = await resp.json();
+        return data || { error: 'Empty SQL response' };
+    } catch (e) {
+        return { error: 'SQL: ' + (e.message || 'timeout') };
+    }
+}
+
+// Login via Owner endpoint (Owner / Korlap)
+async function loginViaOwner(opsId, nik) {
+    try {
+        const resp = await fetch(getGasApi(), {
+            method:  'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body:    JSON.stringify({ action: 'loginOwner', opsId, nik }),
+            signal:  AbortSignal.timeout(8000)
+        });
+        if (!resp.ok) return { error: 'Owner: HTTP ' + resp.status };
+        return await resp.json();
+    } catch (e) {
+        return { error: 'Owner: ' + (e.message || 'timeout') };
+    }
+}
+
+// Smart Login: tries all backends in parallel
+async function smartLogin(opsId, nik) {
+    // 0. Demo Account Override
+    if (opsId === '123' || opsId === 'OPS123') {
+        if (nik === '321') {
+            return {
+                source:   'demo',
+                opsId:    'OPS123',
+                name:     'Karyawan Demo',
+                position: 'Daily Worker',
+                status:   'Aktif',
+                station:  'Kantor Pusat',
+                wa:       '081234567890'
+            };
+        }
+    }
+
+    // 0a. Demo SQL User Account
+    if (opsId === '456' || opsId === 'OPS456') {
+        if (nik === '654') {
+            return {
+                source:   'sql',
+                opsId:    'OPS456',
+                name:     'Karyawan SQL Demo',
+                position: 'Daily Worker SQL',
+                status:   'Aktif',
+                station:  'Hub SQL Demo',
+                wa:       '081245665400'
+            };
+        }
+    }
+
+    // 0b. Demo Owner Account
+    if (opsId === '999' || opsId === 'OPS999') {
+        if (nik === '999') {
+            return {
+                source:   'owner',
+                ownerSource: 'gas',
+                isOwner:  true,
+                ops:      'OPS999',
+                nama:     'Owner Demo',
+                station:  'Kantor Pusat',
+                status:   'Owner',
+                wa:       '081200000000'
+            };
+        }
+    }
+
+    // 0c. Demo SQL Owner Account
+    if (opsId === '888' || opsId === 'OPS888') {
+        if (nik === '888') {
+            return {
+                source:   'owner',
+                ownerSource: 'sql',
+                isOwner:  true,
+                ops:      'OPS888',
+                nama:     'SQL Owner Demo',
+                station:  'SQL Control Center',
+                status:   'Owner SQL',
+                wa:       '081288888888'
+            };
+        }
+    }
+
+    // 1. Cek GAS (Spreadsheet) sebagai Prioritas Utama
+    try {
+        const gasRes = await loginViaGAS(opsId, nik);
+        if (gasRes && !gasRes.error && gasRes.name) {
+            setMethodText('Spreadsheet API ✓');
+            return { source: 'gas', ...gasRes };
+        }
+    } catch(e) {}
+
+    // 2. Jika GAS gagal atau tidak ditemukan, Baru cek SQL (Fallback)
+    try {
+        const sqlRes = await loginViaSQL(opsId, nik);
+        if (sqlRes && !sqlRes.error && sqlRes.success) {
+            setMethodText('SQL Database ✓');
+            return { source: 'sql', ...sqlRes.user };
+        }
+    } catch(e) {}
+
+    // 3. Owner / Korlap check (GAS)
+    const ownerRes = await loginViaOwner(opsId, nik);
+    if (ownerRes && ownerRes.isOwner === true) {
+        setMethodText('Owner/Korlap ✓');
+        return { source: 'owner', ...ownerRes };
+    }
+
+    // 4. All failed
+    return { error: 'OPS ID atau NIK tidak terdaftar. Hubungi admin BAS.' };
+}
+
+// Handle Login Submit
+async function handleLogin(e) {
+    e.preventDefault();
+    hideAlert('loginAlert');
+
+    const rawInput = (document.getElementById('loginOpsId').value || '').trim();
+    const nik      = (document.getElementById('loginNik').value   || '').trim();
+
+    // Smart normalize: accept "123", "OPS123", "ops123", "Ops 123", dll
+    const opsIdClean = normalizeOpsId(rawInput);  // strip OPS prefix, uppercase
+    const opsIdFull  = 'OPS' + opsIdClean;        // also try with OPS prefix
+
+    // Validasi dasar
+    if (!rawInput) { showAlert('loginAlert','err','Username / OPS ID tidak boleh kosong.'); return; }
+    if (!nik) {
+        showAlert('loginAlert','err','Masukkan Password (NIK) Anda.');
+        return;
+    }
+
+    setLoading('loginBtn', true);
+
+    try {
+        // Coba login dengan format clean dulu, lalu format full OPS prefix
+        let result = await smartLogin(opsIdClean, nik);
+        if (result.error && opsIdFull !== opsIdClean) {
+            result = await smartLogin(opsIdFull, nik);
+        }
+
+        if (result.error) {
+            showAlert('loginAlert','err', result.error);
+            return;
+        }
+
+        if (result.source === 'owner') {
+            const ownerSrc = result.ownerSource || 'gas';
+            sessionStorage.setItem('bas_owner_auth',    'true');
+            sessionStorage.setItem('bas_owner_profile', JSON.stringify({
+                ops:     result.ops     || opsIdClean,
+                nama:    result.nama    || '',
+                station: result.station || '',
+                status:  result.status  || '',
+                wa:      result.wa      || '',
+                ownerSource: ownerSrc
+            }));
+            showAlert('loginAlert','suc','Login Owner berhasil! Mengalihkan...');
+            setTimeout(() => {
+                window.location.href = ownerSrc === 'sql' ? 'sql-owner.html' : 'owner.html';
+            }, 800);
+        } else {
+            saveSession(result);
+            showAlert('loginAlert','suc','Login berhasil! Memuat portal...');
+            const dest = (result.source === 'sql') ? 'daftar.html' : 'app.html';
+            setTimeout(() => { window.location.href = dest; }, 800);
+        }
+
+    } catch (err) {
+        showAlert('loginAlert','err','Koneksi gagal: ' + (err.message || 'Periksa internet Anda'));
+    } finally {
+        setLoading('loginBtn', false, 'Masuk ke Portal');
+    }
+}
+
+// Registration Steps
+let currentStep = 1;
+
+function goStep(n) {
+    // Validate current step before advancing
+    if (n > currentStep && !validateStep(currentStep)) return;
+
+    // Update panels
+    document.querySelectorAll('.step-panel').forEach((p,i) => {
+        p.classList.toggle('active', i+1 === n);
+    });
+
+    // Update step indicators
+    for (let i = 1; i <= 2; i++) {
+        const rs = document.getElementById('rs' + i);
+        if (!rs) continue;
+        rs.className = 'reg-step';
+        if (i < n)  rs.classList.add('done');
+        if (i === n) rs.classList.add('active');
+    }
+    currentStep = n;
+}
+
+function validateStep(step) {
+    hideAlert('regAlert');
+    if (step === 1) {
+        const username = document.getElementById('regUsername').value.trim();
+        const nik      = document.getElementById('regNik').value.trim();
+        const nama     = document.getElementById('regNama').value.trim();
+        const email    = document.getElementById('regEmail').value.trim();
+        const telp     = document.getElementById('regTelepon').value.trim();
+        
+        if (!username || username.length < 3) { showAlert('regAlert','err','Username minimal 3 karakter.'); return false; }
+        if (nik.length !== 16) { showAlert('regAlert','err','NIK harus 16 digit angka.'); return false; }
+        if (!nama) { showAlert('regAlert','err','Nama lengkap tidak boleh kosong.'); return false; }
+        if (!email.includes('@')) { showAlert('regAlert','err','Alamat email tidak valid.'); return false; }
+        if (telp.length < 10) { showAlert('regAlert','err','Nomor telepon tidak valid.'); return false; }
+    }
+    if (step === 2) {
+        const station = document.getElementById('regStation').value;
+        if (!station) { showAlert('regAlert','err','Silakan pilih station kerja.'); return false; }
+    }
+    return true;
+}
+
+// Fetch Grouped Stations from SQL
+const FALLBACK_STATIONS = {
+    "JABODETABEK-BANTEN": ["Makobas (Bekasi)", "Mess Cileungsi", "Cibitung", "Cakung 2", "Tangerang", "Serang"],
+    "JABAR": ["Bandung", "Cirebon", "Karawang", "Purwakarta"],
+    "JATENG": ["Semarang", "Solo", "Tegal"],
+    "JATIM": ["Surabaya", "Sidoarjo", "Malang"],
+    "SUMATRA": ["Medan", "Palembang", "Pekanbaru", "Lampung"],
+    "KALIMANTAN": ["Balikpapan", "Samarinda", "Banjarmasin"],
+    "SULAWESI": ["Makassar", "Manado"],
+    "BALINUSRA": ["Denpasar", "Mataram", "Kupang"]
+};
+
+async function loadStations() {
+    const sel = document.getElementById('regStation');
+    if (!sel) return;
+    
+    try {
+        const res = await fetch('../api/stations.php', { signal: AbortSignal.timeout(3000) });
+        if (res.ok) {
+            const data = await res.json();
+            if (data && data.success && data.groups) {
+                renderStations(data.groups);
+                return;
+            }
+        }
+        throw new Error('Fallback trigger');
+    } catch (e) {
+        renderStations(FALLBACK_STATIONS);
+    }
+}
+
+function renderStations(groups) {
+    const sel = document.getElementById('regStation');
+    sel.innerHTML = '<option value="">— Pilih lokasi / station —</option>';
+    for (const [groupName, stations] of Object.entries(groups)) {
+        const optgroup = document.createElement('optgroup');
+        optgroup.label = groupName;
+        stations.forEach(st => {
+            const opt = document.createElement('option');
+            opt.value = st;
+            opt.textContent = st;
+            optgroup.appendChild(opt);
+        });
+        sel.appendChild(optgroup);
+    }
+}
+document.addEventListener('DOMContentLoaded', loadStations);
+
+// Handle Registration Submit
+async function handleRegister(e) {
+    e.preventDefault();
+    if (!validateStep(2)) return;
+    hideAlert('regAlert');
+
+    // Create normalized username for OPS ID compatibility
+    const rawUsername = document.getElementById('regUsername').value.trim().toUpperCase();
+    const opsIdFormat = rawUsername.startsWith('OPS') ? rawUsername : 'OPS' + rawUsername;
+
+    const payload = {
+        action:   'registerEmployee',
+        portal:   'daily-worker',
+        username: rawUsername,
+        nama:     document.getElementById('regNama').value.trim(),
+        nik:      document.getElementById('regNik').value.trim(),
+        email:    document.getElementById('regEmail').value.trim(),
+        telepon:  document.getElementById('regTelepon').value.trim(),
+        wa:       document.getElementById('regTelepon').value.trim(), // mapping for legacy systems
+        station:  document.getElementById('regStation').value,
+        opsId:    opsIdFormat,
+        joinDate: new Date().toISOString().split('T')[0]
+    };
+
+    setLoading('regBtn', true);
+
+    // Try GAS + SQL in parallel
+    const [gasRes, sqlRes] = await Promise.allSettled([
+        fetch(getGasApi(), {
+            method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
+            body: JSON.stringify(payload), signal: AbortSignal.timeout(10000)
+        }).then(r => r.json()),
+        fetch(SQL_REG_API, {
+            method:'POST', headers:{'Content-Type':'application/json'},
+            body: JSON.stringify(payload), signal: AbortSignal.timeout(8000)
+        }).then(r => r.json()).catch(() => ({ error: 'SQL unavailable' }))
+    ]);
+
+    setLoading('regBtn', false, 'Kirim Pendaftaran');
+
+    const gasOk = gasRes.status === 'fulfilled' && !gasRes.value?.error;
+    const sqlOk = sqlRes.status === 'fulfilled' && !sqlRes.value?.error;
+
+    if (gasOk || sqlOk) {
+        showAlert('regAlert','suc',
+            '✅ Pendaftaran berhasil dikirim! Admin akan memverifikasi dalam 1×24 jam. ' +
+            'Gunakan OPS ID: ' + payload.opsId + ' untuk login setelah disetujui.');
+        document.getElementById('regForm').reset();
+        goStep(1);
+    } else {
+        // Fallback: show contact admin message
+        showAlert('regAlert','inf',
+            '📋 Data tercatat. Hubungi Korlap/Admin BAS dengan OPS ID: <strong>' + payload.opsId +
+            '</strong> dan NIK Anda untuk aktivasi akun.');
+    }
+}
+
+// Check existing session -> redirect
+(function checkExistingSession() {
+    try {
+        const raw = localStorage.getItem(SESSION_KEY);
+        if (raw) {
+            const s = JSON.parse(atob(raw));
+            if (s && s.user && s.exp && s.exp > Date.now()) {
+                window.location.replace('app.html');
+                return;
+            }
+        }
+        const ownerAuth = sessionStorage.getItem('bas_owner_auth');
+        if (ownerAuth === 'true') {
+            let target = 'owner.html';
+            try {
+                const rawOwner = sessionStorage.getItem('bas_owner_profile');
+                if (rawOwner) {
+                    const ownerProfile = JSON.parse(rawOwner);
+                    if (ownerProfile && ownerProfile.ownerSource === 'sql') {
+                        target = 'sql-owner.html';
+                    }
+                }
+            } catch (e) {}
+            window.location.replace(target);
+        }
+    } catch (e) {
+        localStorage.removeItem(SESSION_KEY);
+    }
+})();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,30 @@
+# ===================================================
+# .htaccess untuk PT. BAROKAH AMANAH SENTOSA (cPanel)
+# ===================================================
+# Catatan: File ini kompatibel dengan shared hosting cPanel
+# Jika masih error 500, coba hapus file .htaccess ini.
+# Website tetap bisa jalan tanpa file ini.
+# ===================================================
+
+# MIME Types - agar file JS/CSS di-serve dengan benar
+<IfModule mod_mime.c>
+  AddType application/javascript .js .mjs
+  AddType text/css .css
+  AddType image/svg+xml .svg
+</IfModule>
+
+# SPA Routing - redirect semua 404 ke app.html (React app)
+# index.html = landing page publik (tidak di-redirect)
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+
+  # Jangan proses file/folder yang sudah ada
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+
+  # Jangan redirect ke landing page (index.html)
+  RewriteCond %{REQUEST_URI} !^/$
+
+  # Arahkan semua SPA routes ke app.html
+  RewriteRule . app.html [L]
+</IfModule>
