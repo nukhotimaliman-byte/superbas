@@ -1890,6 +1890,12 @@ async function openCandidate(id) {
                 </svg>
                 Kirim Notifikasi
             </button>` : ''}
+            <button class="btn btn-block" style="margin-top:8px;background:linear-gradient(135deg,#2563EB,#1D4ED8);color:#fff;border:none;display:flex;align-items:center;justify-content:center;gap:6px;" onclick="openChatForCandidate(${c.id}, '${escapeHtml(c.name).replace(/'/g, "\\'")}')">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
+                </svg>
+                Chat
+            </button>
 
             <div style="font-weight:700;font-size:0.95rem;margin-top:20px;">Riwayat</div>
             <div id="auditTrail" class="mt-1"><div class="spinner-sm"></div></div>
@@ -3741,3 +3747,314 @@ async function deleteOption(id, label) {
 
 // Load dropdown options on init
 loadDropdownOptions();
+
+/* ═══════════════════════════════════════════
+   ADMIN CHAT
+   ═══════════════════════════════════════════ */
+
+let adminChatCandidateId = null;
+let adminChatConversations = [];
+
+// ── Panel Open/Close ────────────────────
+function openAdminChat(candidateId) {
+    document.getElementById('adminChatPanel').classList.add('open');
+    document.getElementById('adminChatOverlay').classList.add('open');
+
+    if (candidateId) {
+        openAdminChatThread(candidateId);
+    } else {
+        loadAdminConversations();
+    }
+}
+
+function closeAdminChat() {
+    document.getElementById('adminChatPanel').classList.remove('open');
+    document.getElementById('adminChatOverlay').classList.remove('open');
+    ChatEngine.stopPoll();
+}
+
+// ── Load Conversations ──────────────────
+async function loadAdminConversations(search) {
+    document.getElementById('adminChatListView').style.display = '';
+    document.getElementById('adminChatThreadView').style.display = 'none';
+    ChatEngine.stopPoll();
+
+    try {
+        let url = '/driver/api/chat.php?action=conversations';
+        if (search) url += '&search=' + encodeURIComponent(search);
+        const res = await fetch(url, { credentials: 'include' });
+        const data = await res.json();
+        adminChatConversations = data.conversations || [];
+        renderAdminChatList(adminChatConversations);
+    } catch(e) {
+        document.getElementById('adminChatList').innerHTML =
+            '<div style="text-align:center;padding:30px;opacity:0.5;">Gagal memuat</div>';
+    }
+}
+
+function renderAdminChatList(convos) {
+    const list = document.getElementById('adminChatList');
+    if (!convos.length) {
+        list.innerHTML = '<div style="text-align:center;padding:40px 20px;opacity:0.5;"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg><div style="font-weight:700;margin-top:8px;">Belum ada percakapan</div><div style="font-size:0.78rem;margin-top:4px;">Kirim pesan ke kandidat dari tabel data</div></div>';
+        return;
+    }
+
+    list.innerHTML = convos.map(c => {
+        const initials = (c.candidate_name || '?').split(' ').map(w => w[0]).join('').substring(0,2).toUpperCase();
+        const lastMsg = c.last_msg_type === 'image' ? '📷 Foto' :
+                       c.last_msg_type === 'file' ? '📎 File' :
+                       c.last_msg_type === 'location' ? '📍 Lokasi' :
+                       (c.last_message || '').substring(0, 40);
+        const prefix = c.last_sender_type === 'admin' ? 'Anda: ' : '';
+        const unread = c.unread_count > 0 ? `<div class="admin-chat-unread">${c.unread_count}</div>` : '';
+        const time = ChatEngine.formatTime(c.last_msg_time);
+
+        return `<div class="admin-chat-item" onclick="openAdminChatThread(${c.candidate_id}, '${ChatEngine.escHtml(c.candidate_name)}')">
+            <div class="admin-chat-avatar">${initials}</div>
+            <div class="admin-chat-info">
+                <div class="admin-chat-name">${ChatEngine.escHtml(c.candidate_name)}</div>
+                <div class="admin-chat-preview">${prefix}${ChatEngine.escHtml(lastMsg)}</div>
+            </div>
+            <div class="admin-chat-meta">
+                <div class="admin-chat-time">${time}</div>
+                ${unread}
+            </div>
+        </div>`;
+    }).join('');
+}
+
+function searchAdminChats(val) {
+    clearTimeout(searchAdminChats._t);
+    searchAdminChats._t = setTimeout(() => loadAdminConversations(val), 300);
+}
+
+// ── Open Chat Thread ────────────────────
+async function openAdminChatThread(candidateId, name) {
+    adminChatCandidateId = candidateId;
+    document.getElementById('adminChatListView').style.display = 'none';
+    document.getElementById('adminChatThreadView').style.display = 'flex';
+    document.getElementById('adminChatName').textContent = name || 'Kandidat #' + candidateId;
+    document.getElementById('adminChatStatus').textContent = 'Memuat...';
+    document.getElementById('adminChatMessages').innerHTML = '';
+
+    ChatEngine.init({
+        candidateId: candidateId,
+        role: 'admin',
+        container: document.getElementById('adminChatThreadView'),
+        onNewMessages: () => {
+            ChatEngine.markRead(candidateId);
+        }
+    });
+
+    try {
+        const data = await ChatEngine.loadHistory(candidateId);
+        if (data.messages && data.messages.length > 0) {
+            ChatEngine.renderMessages(data.messages);
+            ChatEngine.setLastMsgId(data.messages[data.messages.length - 1].id);
+        }
+        document.getElementById('adminChatStatus').textContent = 'Online';
+        ChatEngine.startPoll();
+        ChatEngine.markRead(candidateId);
+    } catch(e) {
+        document.getElementById('adminChatStatus').textContent = 'Error';
+    }
+}
+
+function adminChatBack() {
+    ChatEngine.stopPoll();
+    adminChatCandidateId = null;
+    document.getElementById('adminTemplatesPanel').classList.remove('open');
+    loadAdminConversations();
+}
+
+// ── Send Message ────────────────────────
+async function adminChatSend() {
+    const input = document.getElementById('adminChatInput');
+    const text = input.value.trim();
+    if (!text || !adminChatCandidateId) return;
+
+    input.value = '';
+    adminChatAutoResize(input);
+    document.getElementById('adminTemplatesPanel').classList.remove('open');
+
+    try {
+        await ChatEngine.sendText(adminChatCandidateId, text);
+    } catch(e) {
+        showToast('Gagal mengirim', 'error');
+    }
+}
+
+function adminChatKeyDown(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        adminChatSend();
+    }
+}
+
+function adminChatAutoResize(el) {
+    el.style.height = 'auto';
+    el.style.height = Math.min(el.scrollHeight, 100) + 'px';
+}
+
+// ── File/Image ──────────────────────────
+function adminPickImage() { document.getElementById('adminChatImageInput').click(); }
+function adminPickFile() { document.getElementById('adminChatFileInput').click(); }
+
+async function adminHandleFile(input) {
+    const file = input.files[0];
+    if (!file || !adminChatCandidateId) return;
+    input.value = '';
+
+    if (file.size > 10 * 1024 * 1024) {
+        showToast('File terlalu besar (max 10MB)', 'error');
+        return;
+    }
+
+    try {
+        await ChatEngine.sendFile(adminChatCandidateId, file);
+    } catch(e) {
+        showToast('Gagal mengirim file', 'error');
+    }
+}
+
+// ── Location ────────────────────────────
+async function adminSendLocation() {
+    if (!adminChatCandidateId) return;
+    try {
+        await ChatEngine.sendLocation(adminChatCandidateId);
+    } catch(e) {
+        showToast('Gagal lokasi: ' + e, 'error');
+    }
+}
+
+// ── Templates ───────────────────────────
+async function toggleAdminTemplates() {
+    const panel = document.getElementById('adminTemplatesPanel');
+    panel.classList.toggle('open');
+
+    if (panel.classList.contains('open')) {
+        try {
+            const res = await fetch('/driver/api/chat.php?action=templates', { credentials: 'include' });
+            const data = await res.json();
+            const templates = data.templates || [];
+            const list = document.getElementById('adminTemplatesList');
+            list.innerHTML = templates.map(t =>
+                `<div class="chat-template-item" onclick="useTemplate('${ChatEngine.escHtml(t.message).replace(/'/g,"\\'")}')">
+                    <div class="chat-template-title">${ChatEngine.escHtml(t.title)}</div>
+                    <div class="chat-template-preview">${ChatEngine.escHtml(t.message)}</div>
+                </div>`
+            ).join('');
+        } catch(e) {}
+    }
+}
+
+function useTemplate(msg) {
+    document.getElementById('adminChatInput').value = msg;
+    document.getElementById('adminTemplatesPanel').classList.remove('open');
+    document.getElementById('adminChatInput').focus();
+}
+
+// ── Template Manager ────────────────────
+function openTemplateManager() {
+    document.getElementById('templateManagerModal').style.display = 'flex';
+    loadTemplateManager();
+}
+
+function closeTemplateManager() {
+    document.getElementById('templateManagerModal').style.display = 'none';
+}
+
+async function loadTemplateManager() {
+    try {
+        const res = await fetch('/driver/api/chat.php?action=templates', { credentials: 'include' });
+        const data = await res.json();
+        const templates = data.templates || [];
+        const list = document.getElementById('templateManagerList');
+        list.innerHTML = templates.map(t =>
+            `<div style="display:flex;align-items:center;gap:8px;padding:10px;border:1px solid var(--border);border-radius:8px;margin-bottom:6px;">
+                <div style="flex:1;min-width:0;">
+                    <div style="font-weight:700;font-size:0.82rem;">${ChatEngine.escHtml(t.title)}</div>
+                    <div style="font-size:0.72rem;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${ChatEngine.escHtml(t.message)}</div>
+                </div>
+                <button onclick="deleteTemplate(${t.id})" style="background:none;border:none;color:var(--error);cursor:pointer;font-size:0.75rem;white-space:nowrap;">Hapus</button>
+            </div>`
+        ).join('') || '<div style="text-align:center;padding:20px;opacity:0.5;font-size:0.85rem;">Belum ada template</div>';
+    } catch(e) {}
+}
+
+async function saveNewTemplate() {
+    const title = document.getElementById('newTemplateTitle').value.trim();
+    const message = document.getElementById('newTemplateMessage').value.trim();
+    if (!title || !message) return showToast('Judul dan isi wajib diisi', 'error');
+
+    try {
+        await fetch('/driver/api/chat.php?action=save_template', {
+            method: 'POST', credentials: 'include',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ title, message })
+        });
+        document.getElementById('newTemplateTitle').value = '';
+        document.getElementById('newTemplateMessage').value = '';
+        loadTemplateManager();
+        showToast('Template disimpan');
+    } catch(e) {
+        showToast('Gagal menyimpan', 'error');
+    }
+}
+
+async function deleteTemplate(id) {
+    try {
+        await fetch('/driver/api/chat.php?action=delete_template', {
+            method: 'POST', credentials: 'include',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ id })
+        });
+        loadTemplateManager();
+    } catch(e) {}
+}
+
+// ── Blast Chat from bulk action ─────────
+function getSelectedCandidateIds() {
+    return Array.from(document.querySelectorAll('.cand-checkbox:checked')).map(cb => parseInt(cb.value));
+}
+
+function blastChatMessage() {
+    const selected = getSelectedCandidateIds();
+    if (!selected.length) return showToast('Pilih kandidat dulu', 'error');
+
+    const msg = prompt('Ketik pesan untuk ' + selected.length + ' kandidat:');
+    if (!msg) return;
+
+    fetch('/driver/api/chat.php?action=blast', {
+        method: 'POST', credentials: 'include',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ candidate_ids: selected, message: msg })
+    }).then(r => r.json()).then(data => {
+        if (data.ok) showToast(`Pesan terkirim ke ${data.sent} kandidat`);
+        else showToast(data.error || 'Gagal', 'error');
+    }).catch(() => showToast('Gagal mengirim', 'error'));
+}
+
+// ── Admin Chat Badge ────────────────────
+async function updateAdminChatBadge() {
+    try {
+        const count = await ChatEngine.getUnreadCount();
+        const badge = document.getElementById('adminChatBadge');
+        if (count > 0) {
+            badge.textContent = count;
+            badge.style.display = '';
+        } else {
+            badge.style.display = 'none';
+        }
+    } catch(e) {}
+}
+
+// Update badge every 10 seconds
+setInterval(updateAdminChatBadge, 10000);
+setTimeout(updateAdminChatBadge, 2000);
+
+// ── Open chat from candidate detail ─────
+function openChatForCandidate(candidateId, name) {
+    openAdminChat();
+    setTimeout(() => openAdminChatThread(candidateId, name), 300);
+}
