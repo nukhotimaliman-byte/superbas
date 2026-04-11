@@ -2614,9 +2614,20 @@ function payRefreshData(){
 // ═══════════════════════════════════════════════════════════════
 function rPayroll(){
   const el=document.getElementById('tab-payroll');
+  if(!el) return;
   const now=new Date();
   if(!payCalMonth&&payCalMonth!==0){payCalMonth=now.getMonth();payCalYear=now.getFullYear();}
   const ap=payFilteredRecords();
+  // Empty state: no payroll data at all
+  if(allPay().length===0){
+    el.innerHTML=`<div class="flex flex-col items-center justify-center py-20 gap-4 fade-up">
+      <div class="w-20 h-20 rounded-full bg-white/5 flex items-center justify-center"><svg class="w-10 h-10 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></div>
+      <h2 class="text-lg font-black text-white">Belum Ada Data Payroll</h2>
+      <p class="text-sm text-slate-500 text-center max-w-md">Data slip gaji belum tersedia di spreadsheet. Pastikan sheet <strong class="text-accent-cyan">SlipGaji</strong> sudah terisi dengan data karyawan.</p>
+      <button onclick="reloadData()" class="px-5 py-2.5 rounded-xl bg-accent-pink/15 text-accent-pink border border-accent-pink/30 hover:bg-accent-pink hover:text-white text-xs font-bold transition-all">↻ Refresh Data</button>
+    </div>`;
+    return;
+  }
   const salaries=ap.map(p=>p.totalDibayarkan||0).filter(s=>s>0);
   const ss=salaries.length>1?ML.stats(salaries):{mean:0,median:0,std:0,n:0,iqr:0,skewness:0,kurtosis:0,q1:0,q3:0};
   const attCounts=employees.map(e=>(attMap[e.opsId]||[]).length);
@@ -3962,7 +3973,7 @@ async function init(){
   
   // Restore tab from URL hash or default to overview
   const hashTab=(location.hash||'').replace('#','');
-  const validTabs=['overview','employees','attendance','payroll','ds','idcard','settings'];
+  const validTabs=['overview','employees','attendance','payroll','idcard','photomonitor','settings'];
   go(validTabs.includes(hashTab)?hashTab:'overview');
   window.addEventListener('popstate',()=>{const h=(location.hash||'').replace('#','');if(validTabs.includes(h))go(h);});
 }

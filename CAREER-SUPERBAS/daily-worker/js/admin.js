@@ -179,7 +179,7 @@ function renderTable(dataList = candidates) {
 
         return `
         <tr class="trow border-b border-white/5 hover:bg-white/5 transition-colors group">
-            <td class="${tdClass} sticky left-0 z-0 bg-[#0f172a] group-hover:bg-[#1a2333] transition-colors"><input type="checkbox" class="row-checkbox" value="${c.id}"></td>
+            <td class="${tdClass} sticky left-0 z-0 dark:bg-[#0f172a] dark:group-hover:bg-[#1a2333] bg-white group-hover:bg-slate-50 transition-colors"><input type="checkbox" class="row-checkbox" value="${c.id}"></td>
             <td class="${tdClass} font-mono text-accent-orange font-bold cursor-pointer group/ops" ondblclick="editOpsId(this, ${c.id}, '${esc(c.given_id || '')}')" title="Double-klik untuk edit OPS ID">
                 <span class="inline-flex items-center gap-1">${c.given_id ? esc(c.given_id) : '<span class="text-slate-600 italic font-normal">— belum diisi</span>'}<svg class="w-2.5 h-2.5 text-slate-600 opacity-0 group-hover/ops:opacity-100 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg></span>
             </td>
@@ -199,8 +199,8 @@ function renderTable(dataList = candidates) {
                 <span class="px-2 py-0.5 rounded-full border ${sc.border} ${sc.bg} ${sc.text} text-[10px] font-bold tracking-wide">${esc(c.status)}</span>
             </td>
             <td class="${tdClass}">${ktpLink} <span class="text-slate-600 mx-1">/</span> ${sigText}</td>
-            <td class="${tdClass} sticky right-0 z-0 bg-[#0f172a] group-hover:bg-[#1a2333] border-l border-white/5 text-center transition-colors">
-                <select onchange="updateStatus(${c.id}, this.value)" class="bg-black/30 text-slate-300 border border-white/10 rounded px-2 py-1 text-[10px] outline-none cursor-pointer focus:border-accent-cyan">
+            <td class="${tdClass} sticky right-0 z-0 dark:bg-[#0f172a] dark:group-hover:bg-[#1a2333] bg-white group-hover:bg-slate-50 border-l border-white/5 text-center transition-colors">
+                <select onchange="updateStatus(${c.id}, this.value)" class="dark:bg-black/30 bg-slate-100 dark:text-slate-300 text-slate-700 border dark:border-white/10 border-slate-300 rounded px-2 py-1 text-[10px] outline-none cursor-pointer focus:border-accent-cyan">
                     <option value="" disabled selected>— Aksi —</option>
                     <option value="Belum Pemberkasan">Belum Pemberkasan</option>
                     <option value="Sudah Pemberkasan">Sudah Pemberkasan</option>
@@ -315,7 +315,7 @@ function renderPayrollTable(dataList = payrolls) {
         const idHtml = p.id ? esc(p.id) : `<span class="italic">null</span>`;
         return `
         <tr class="hover:bg-white/5 transition-colors group cursor-pointer border-b border-white/5">
-            <td class="${tdClass} sticky left-0 z-0 bg-[#0f172a] group-hover:bg-[#1a2333] transition-colors"><input type="checkbox" class="row-checkbox rounded border-white/20 bg-black/20 text-accent-cyan cursor-pointer" value="${p.id}"></td>
+            <td class="${tdClass} sticky left-0 z-0 dark:bg-[#0f172a] dark:group-hover:bg-[#1a2333] bg-white group-hover:bg-slate-50 transition-colors"><input type="checkbox" class="row-checkbox rounded border-white/20 bg-black/20 text-accent-cyan cursor-pointer" value="${p.id}"></td>
             <td class="${tdClass}"><span class="px-2 py-0.5 rounded-full border border-teal-500/30 bg-teal-500/15 text-teal-400 text-[10px] font-bold tracking-wide">${esc(p.period)}</span></td>
             <td class="${tdClass} font-mono text-accent-cyan">${fmtData(p.nik)}</td>
             <td class="${tdClass} font-bold cursor-help" title="Klik untuk Salin Nama">${fmtData(p.nama)}</td>
@@ -324,7 +324,7 @@ function renderPayrollTable(dataList = payrolls) {
             <td class="${tdClass} text-right font-mono text-red-400">- Rp ${formatRupiah(p.potongan)}</td>
             <td class="${tdClass} text-right font-mono font-bold text-accent-green bg-accent-green/5 border-l border-white/5">Rp ${formatRupiah(p.thp)}</td>
             <td class="${tdClass} text-center"><span class="text-[10px] text-slate-500">${esc(p.created_at || '').substring(0,10)}</span></td>
-            <td class="${tdClass} sticky right-0 z-0 bg-[#0f172a] group-hover:bg-[#1a2333] border-l border-white/5 text-center transition-colors">
+            <td class="${tdClass} sticky right-0 z-0 dark:bg-[#0f172a] dark:group-hover:bg-[#1a2333] bg-white group-hover:bg-slate-50 border-l border-white/5 text-center transition-colors">
                 <button class="px-2 py-1 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded text-[10px] font-bold transition">Hapus</button>
             </td>
         </tr>`;

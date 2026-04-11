@@ -1,0 +1,33 @@
+# ZIP archives
+*.zip
+
+# PDF files
+*.pdf
+
+# System files
+.DS_Store
+Thumbs.db
+*.tmp
+
+# Serena config
+.serena/
+
+# Debug/temp files
+dump.txt
+tmp_test.js
+idcard_*.txt
+idcard-react.txt
+
+# Old favicon SVGs
+favicon-bas.svg
+
+# PNG extractions
+bas_extracted_*
+s_letter_crop*
+favicon_preview*
+
+# Node modules (if any)
+node_modules/
+
+# Environment files
+.env

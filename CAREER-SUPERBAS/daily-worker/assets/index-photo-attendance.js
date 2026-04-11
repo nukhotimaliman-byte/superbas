@@ -30,9 +30,9 @@
   let panelVisible = false;
   let gpsData = { lat: null, lng: null, accuracy: null, alamat: null };
   let isUploading = false;
-  const PHOTO_DIMENSION = 960;
-  const PHOTO_TARGET_BYTES = 350 * 1024;
-  const PHOTO_MAX_BYTES = 520 * 1024;
+  const PHOTO_DIMENSION = 800;
+  const PHOTO_TARGET_BYTES = 200 * 1024;
+  const PHOTO_MAX_BYTES = 400 * 1024;
 
   // ═══════════════════════════════════════════
   //  GET USER SESSION
@@ -377,12 +377,13 @@
   }
 
   function canvasToOptimizedJpeg(canvas) {
-    let quality = 0.82;
+    let quality = 0.75;
     let best = canvas.toDataURL('image/jpeg', quality);
     let bytes = estimateDataUrlBytes(best);
 
-    while (bytes > PHOTO_TARGET_BYTES && quality > 0.68) {
-      quality = Math.max(0.68, quality - 0.04);
+    // Progressive quality stepping — aim for ~200KB
+    while (bytes > PHOTO_TARGET_BYTES && quality > 0.55) {
+      quality = Math.max(0.55, quality - 0.05);
       const candidate = canvas.toDataURL('image/jpeg', quality);
       const candidateBytes = estimateDataUrlBytes(candidate);
       best = candidate;
@@ -390,11 +391,13 @@
       if (candidateBytes <= PHOTO_TARGET_BYTES) break;
     }
 
+    // Hard cap: if still too large, force minimum quality
     if (bytes > PHOTO_MAX_BYTES) {
-      quality = Math.max(0.64, quality - 0.04);
+      quality = Math.max(0.50, quality - 0.05);
       best = canvas.toDataURL('image/jpeg', quality);
     }
 
+    console.log('[BAS] Photo compressed:', Math.round(bytes/1024) + 'KB, quality=' + quality.toFixed(2));
     return best;
   }
 

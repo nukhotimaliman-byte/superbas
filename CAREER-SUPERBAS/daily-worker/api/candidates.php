@@ -14,12 +14,6 @@ function getDWDB() {
     ]);
 }
 
-function jsonResponse($data, $statusCode = 200) {
-    http_response_code($statusCode);
-    header('Content-Type: application/json');
-    echo json_encode($data);
-    exit;
-}
 
 $method = $_SERVER['REQUEST_METHOD'];
 
@@ -114,7 +108,7 @@ if ($method === 'POST') {
         $candidate = $stmt->fetch();
 
         // Get user info
-        $stmt2 = $db->prepare('SELECT name, username FROM users WHERE id = ?');
+        $stmt2 = $db->prepare('SELECT name, username FROM users_dw WHERE id = ?');
         $stmt2->execute([$user_id]);
         $user = $stmt2->fetch();
 

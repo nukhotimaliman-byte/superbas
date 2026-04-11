@@ -177,6 +177,18 @@
     /* Dark mode: show moon */
     .theme-toggle .icon-sun  { display: none; }
     .theme-toggle .icon-moon { display: flex; }
+    /* Light mode: show sun, hide moon */
+    html.light .theme-toggle .icon-sun  { display: flex; }
+    html.light .theme-toggle .icon-moon { display: none; }
+    html.light .theme-toggle {
+      border-color: rgba(0,0,0,0.1);
+      color: #64748b;
+    }
+    html.light .theme-toggle:hover {
+      color: #f59e0b;
+      border-color: #f59e0b;
+      background: rgba(245,158,11,0.08);
+    }
 
     /* ═══════════════════════════════════════════════════════════
        LIGHT MODE
@@ -387,3 +399,50 @@
       background: linear-gradient(90deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.04) 50%, rgba(0,0,0,0) 100%);
       background-size: 200% 100%;
     }
+
+    /* ── SQL Owner: table sticky column light mode overrides ── */
+    /* Force all table cells to use light backgrounds (overrides Tailwind bg-[#0f172a]) */
+    html.light .dash-table-full th,
+    html.light .dash-table-full td,
+    html.light table th,
+    html.light table td {
+      background-color: #f7f8fc !important;
+    }
+    html.light .dash-table-full thead th,
+    html.light table thead th {
+      background-color: #eef0f6 !important;
+    }
+    html.light .dash-table-full thead tr,
+    html.light table thead tr {
+      background-color: rgba(248,248,252,0.95) !important;
+    }
+    html.light .dash-table-full tbody tr,
+    html.light table tbody tr {
+      background-color: #f7f8fc !important;
+    }
+    html.light .dash-table-full tbody tr:hover,
+    html.light table tbody tr:hover {
+      background-color: #eef0f6 !important;
+    }
+    html.light .bg-black\/20 {
+      background-color: rgba(0,0,0,0.03) !important;
+    }
+    html.light .bg-black\/30 {
+      background-color: rgba(0,0,0,0.04) !important;
+    }
+    html.light select option {
+      background: #fff;
+      color: #1e293b;
+    }
+    html.light select.search-input,
+    html.light select[class*="bg-black"] {
+      background-color: rgba(0,0,0,0.03) !important;
+      border-color: rgba(0,0,0,0.1) !important;
+      color: #1e293b !important;
+    }
+    html.light textarea {
+      background-color: rgba(0,0,0,0.02) !important;
+      border-color: rgba(0,0,0,0.1) !important;
+      color: #1e293b !important;
+    }
+    html.light textarea::placeholder { color: #94a3b8 !important; }

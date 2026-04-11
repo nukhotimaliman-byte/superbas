@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Owner Dashboard — SQL Daily Worker</title>
-    <link rel="icon" href="assets/LogoBas.png">
+    <title>Super-BAS — Owner SQL Dashboard</title>
+    <link rel="icon" type="image/png" href="favicon-bas.png">
     
     <!-- Theme Preload -->
     <script>
@@ -41,7 +41,7 @@
     </script>
 
     <!-- Reuse owner-theme.css for unified look -->
-    <link rel="stylesheet" href="./assets/owner-theme.css?v=20260409">
+    <link rel="stylesheet" href="./assets/owner-theme.css?v=20260409c">
     <style>
         .hidden { display: none !important; }
         .view-section:not(.hidden) { animation: fadeUp 0.35s ease forwards; }
@@ -56,7 +56,7 @@
         <div class="p-5 border-b border-white/5">
             <div class="flex flex-col items-center gap-2">
                 <div class="w-28 h-auto flex items-center justify-center">
-                    <img src="assets/LogoBas.png" alt="BAS Logo" class="w-full h-auto object-contain">
+                    <a href="/"><img src="assets/LogoBas.png" alt="BAS Logo" class="w-full h-auto object-contain"></a>
                 </div>
             </div>
             <div class="mt-3 flex justify-center">
@@ -116,7 +116,7 @@
     <!-- ═══ MOBILE HEADER ═══ -->
     <header class="lg:hidden glass sticky top-0 z-40 border-b border-white/5 px-4 py-3 flex items-center justify-between safe-top">
         <div class="flex items-center gap-3">
-        <img src="assets/LogoBas.png" alt="BAS Logo" class="h-6 w-auto object-contain">
+        <a href="/"><img src="assets/LogoBas.png" alt="BAS Logo" class="h-6 w-auto object-contain"></a>
         <div>
                 <h2 class="font-extrabold text-sm text-white leading-none">SQL Owner</h2>
                 <p class="text-[8px] text-accent-cyan font-bold uppercase tracking-[0.2em] mt-0.5">Daily Worker</p>
@@ -246,7 +246,7 @@
                 <table class="w-full text-left dash-table-full whitespace-nowrap">
                     <thead>
                         <tr class="border-b border-white/5 bg-black/20">
-                            <th class="px-3 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider sticky left-0 z-10 bg-[#0f172a]"><input type="checkbox" id="selectAllCand" onchange="toggleSelectAll(this)"></th>
+                            <th class="px-3 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider sticky left-0 z-10 dark:bg-[#0f172a] bg-white"><input type="checkbox" id="selectAllCand" onchange="toggleSelectAll(this)"></th>
                             <th class="px-3 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider">ID OPS</th>
                             <th class="px-3 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Tgl Akun</th>
                             <th class="px-3 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Nama Lengkap</th>
@@ -260,7 +260,7 @@
                             <th class="px-3 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Norek</th>
                             <th class="px-3 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Status</th>
                             <th class="px-3 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider">KTP/TTD</th>
-                            <th class="px-3 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider sticky right-0 z-10 bg-[#0f172a] border-l border-white/5 text-center">Aksi</th>
+                            <th class="px-3 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider sticky right-0 z-10 dark:bg-[#0f172a] bg-white border-l border-white/5 text-center">Aksi</th>
                         </tr>
                     </thead>
                     <tbody id="kandidatTbody" class="divide-y divide-white/5 text-[11px]">
@@ -366,7 +366,7 @@
                 <table class="w-full text-left dash-table-full whitespace-nowrap">
                     <thead>
                         <tr class="border-b border-white/5 bg-black/20">
-                            <th class="px-3 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider sticky left-0 z-10 bg-[#0f172a]"><input type="checkbox" id="selectAllPayroll"></th>
+                            <th class="px-3 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider sticky left-0 z-10 dark:bg-[#0f172a] bg-white"><input type="checkbox" id="selectAllPayroll"></th>
                             <th class="px-3 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Periode</th>
                             <th class="px-3 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider">NIK Pegawai</th>
                             <th class="px-3 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Nama Lengkap</th>
@@ -375,7 +375,7 @@
                             <th class="px-3 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider text-right">Potongan</th>
                             <th class="px-3 py-2 text-[10px] font-bold text-accent-cyan uppercase tracking-wider text-right">Take Home Pay</th>
                             <th class="px-3 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider text-center">Tgl Upload</th>
-                            <th class="px-3 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider sticky right-0 z-10 bg-[#0f172a] border-l border-white/5 text-center">Aksi</th>
+                            <th class="px-3 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider sticky right-0 z-10 dark:bg-[#0f172a] bg-white border-l border-white/5 text-center">Aksi</th>
                         </tr>
                     </thead>
                     <tbody id="payrollTbody" class="divide-y divide-white/5 text-[11px]">
@@ -545,6 +545,6 @@
     </div>
 </div>
 
-<script src="js/admin.js?v=20260409M"></script>
+<script src="js/admin.js?v=20260409b"></script>
 </body>
 </html>

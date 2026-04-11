@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="favicon-bas.png">`n    <title>Kurir — Segera Hadir | Super-BAS Karir</title>
+    <meta name="description" content="Portal rekrutmen Kurir BAS sedang dalam persiapan. Segera hadir!">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,100..900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../style.css">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            min-height: 100dvh;
+            display: flex;
+            flex-direction: column;
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+        }
+
+        .maintenance-wrap {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 40px 24px 80px;
+            gap: 0;
+        }
+
+        .maintenance-anim {
+            position: relative;
+            width: 140px;
+            height: 140px;
+            margin-bottom: 32px;
+        }
+
+        .maintenance-anim .ring {
+            position: absolute;
+            inset: 0;
+            border-radius: 50%;
+            border: 3px solid transparent;
+            animation: spin 3s linear infinite;
+        }
+
+        .maintenance-anim .ring-1 {
+            border-top-color: var(--accent);
+            border-right-color: var(--accent);
+            animation-duration: 2.4s;
+        }
+
+        .maintenance-anim .ring-2 {
+            inset: 12px;
+            border-bottom-color: #6366f1;
+            border-left-color: #6366f1;
+            animation-duration: 1.8s;
+            animation-direction: reverse;
+        }
+
+        .maintenance-anim .icon-center {
+            position: absolute;
+            inset: 24px;
+            background: var(--bg-card);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.2rem;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.08); }
+        }
+
+        .maintenance-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(245, 158, 11, 0.12);
+            color: #f59e0b;
+            border: 1px solid rgba(245, 158, 11, 0.3);
+            padding: 5px 14px;
+            border-radius: 100px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            margin-bottom: 20px;
+        }
+
+        .maintenance-badge::before {
+            content: '';
+            width: 7px;
+            height: 7px;
+            background: #f59e0b;
+            border-radius: 50%;
+            animation: blink 1.2s ease-in-out infinite;
+        }
+
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+        .maintenance-title {
+            font-size: clamp(1.6rem, 5vw, 2.4rem);
+            font-weight: 800;
+            letter-spacing: -0.03em;
+            line-height: 1.2;
+            margin-bottom: 14px;
+        }
+
+        .maintenance-title span {
+            background: linear-gradient(135deg, var(--accent), #6366f1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .maintenance-sub {
+            color: var(--text-2);
+            font-size: 1rem;
+            line-height: 1.6;
+            max-width: 400px;
+            margin-bottom: 36px;
+        }
+
+        .maintenance-features {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 40px;
+            max-width: 400px;
+        }
+
+        .feature-chip {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 100px;
+            padding: 6px 14px;
+            font-size: 0.78rem;
+            font-weight: 500;
+            color: var(--text-2);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .back-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 14px 28px;
+            background: var(--accent);
+            color: var(--btn-text);
+            border: none;
+            border-radius: 12px;
+            font-size: 0.9rem;
+            font-weight: 700;
+            font-family: inherit;
+            cursor: pointer;
+            text-decoration: none;
+            transition: transform 0.2s, box-shadow 0.2s, filter 0.2s;
+            box-shadow: 0 4px 20px var(--accent-dim);
+        }
+
+        .back-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px var(--accent-dim);
+            filter: brightness(1.12);
+        }
+
+        .back-btn svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+
+        .maintenance-note {
+            margin-top: 20px;
+            font-size: 0.75rem;
+            color: var(--text-3);
+        }
+    </style>
+</head>
+<body>
+
+    <header class="header" id="header">
+        <div class="container header__inner">
+            <a href="../" class="header__logo" id="logo">
+                <img src="../BAS.svg" alt="BAS" class="header__logo-img">
+            </a>
+            <button class="theme-toggle" id="theme-toggle" aria-label="Toggle theme">
+                <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+                <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+            </button>
+        </div>
+    </header>
+
+    <main class="maintenance-wrap">
+
+        <div class="maintenance-anim">
+            <div class="ring ring-1"></div>
+            <div class="ring ring-2"></div>
+            <div class="icon-center">🏍️</div>
+        </div>
+
+        <div class="maintenance-badge">Sedang Dalam Persiapan</div>
+
+        <h1 class="maintenance-title">Portal Kurir<br><span>Segera Hadir!</span></h1>
+        <p class="maintenance-sub">
+            Kami sedang menyiapkan sistem rekrutmen terbaik untuk posisi Kurir (Rider Motor &amp; Driver Mobil). Pantau terus halaman ini!
+        </p>
+
+        <div class="maintenance-features">
+            <div class="feature-chip">🏍️ Rider Motor (SIM C)</div>
+            <div class="feature-chip">🚗 Driver Mobil (SIM A)</div>
+            <div class="feature-chip">📍 Jabodetabek</div>
+            <div class="feature-chip">💰 Daftar Gratis</div>
+            <div class="feature-chip">📱 Proses Digital</div>
+        </div>
+
+        <a href="../" class="back-btn">
+            <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+            Kembali ke Beranda
+        </a>
+        <p class="maintenance-note">Portal driver truk sudah tersedia sekarang →
+            <a href="../driver/" style="color:var(--accent);text-decoration:none;font-weight:600;">Daftar sebagai Driver</a>
+        </p>
+
+    </main>
+
+    <footer class="footer" id="footer">
+        <div class="container footer__inner">
+            <a href="../privacy-policy.html" class="footer__link">Kebijakan Privasi</a>
+            <p class="footer__copy">&copy; 2025 PT Barokah Amanah Sentosa</p>
+        </div>
+    </footer>
+
+    <script src="../script.js"></script>
+</body>
+</html>

@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Login Portal Daily Worker BAS — Masuk atau daftar akun karyawan harian PT. Barokah Amanah Sentosa">
-    <title>Login — Daily Worker BAS</title>
-    <link rel="icon" href="assets/LogoBas.png">
+    <title>Login — Super-BAS Daily Worker</title>
+    <link rel="icon" type="image/png" href="favicon-bas.png">
 
     <!-- FOUC Prevention (before CSS) -->
     <script src="js/theme.js"></script>
@@ -642,7 +642,15 @@
                             <div class="ig" id="stationWrapper">
                                 <span class="ig-icon"><svg viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></span>
                                 <select id="regStation" class="form-input form-select" style="padding-left:42px;" required>
-                                    <option value="">— Pilih lokasi —</option>
+                                    <option value="">— Pilih Area / Lokasi —</option>
+                                    <option value="JABODETABEK - BANTEN">JABODETABEK - BANTEN</option>
+                                    <option value="JAWA BARAT">JAWA BARAT</option>
+                                    <option value="JAWA TIMUR">JAWA TIMUR</option>
+                                    <option value="JAWA TENGAH">JAWA TENGAH</option>
+                                    <option value="SUMATRA">SUMATRA</option>
+                                    <option value="KALIMANTAN">KALIMANTAN</option>
+                                    <option value="SULAWESI">SULAWESI</option>
+                                    <option value="BALI NUSRA">BALI NUSRA</option>
                                 </select>
                             </div>
                         </div>
@@ -678,8 +686,8 @@
 
 // Config & Helpers
 const DEFAULT_GAS_API = 'https://script.google.com/macros/s/AKfycbx52a6N0oZN0jzbbsv_tL0um3XwmgK6fVikQLZyyq_JODNT6fhMhjwY9Eop6BAyNxQ0/exec';
-const SQL_LOGIN_API   = '../api/login.php';
-const SQL_REG_API     = '../api/register.php';
+const SQL_LOGIN_API   = './api/login.php';
+const SQL_REG_API     = './api/register.php';
 const SESSION_KEY     = 'bas_session';
 const THEME_KEY       = 'bas-theme';
 
@@ -1059,7 +1067,7 @@ async function handleLogin(e) {
         } else {
             saveSession(result);
             showAlert('loginAlert','suc','Login berhasil! Memuat portal...');
-            const dest = (result.source === 'sql') ? 'daftar.html' : 'app.html';
+            const dest = (result.source === 'sql') ? 'sql-user.html' : 'app.html';
             setTimeout(() => { window.location.href = dest; }, 800);
         }
 
@@ -1161,7 +1169,8 @@ function renderStations(groups) {
         sel.appendChild(optgroup);
     }
 }
-document.addEventListener('DOMContentLoaded', loadStations);
+// Static areas defined directly in HTML select
+// (loadStations dihilangkan karena menggunakan area statik)
 
 // Handle Registration Submit
 async function handleRegister(e) {
@@ -1203,34 +1212,44 @@ async function handleRegister(e) {
 
     setLoading('regBtn', false, 'Kirim Pendaftaran');
 
+    const sqlOk = sqlRes.status === 'fulfilled' && !sqlRes.value?.error && sqlRes.value?.user;
     const gasOk = gasRes.status === 'fulfilled' && !gasRes.value?.error;
-    const sqlOk = sqlRes.status === 'fulfilled' && !sqlRes.value?.error;
 
-    if (gasOk || sqlOk) {
-        showAlert('regAlert','suc',
-            '✅ Pendaftaran berhasil dikirim! Admin akan memverifikasi dalam 1×24 jam. ' +
-            'Gunakan OPS ID: ' + payload.opsId + ' untuk login setelah disetujui.');
-        document.getElementById('regForm').reset();
-        goStep(1);
+    if (sqlOk) {
+        // Auto-login for SQL user — session sudah di-set oleh register.php
+        const result = { source: 'sql', ...sqlRes.value.user };
+        saveSession(result);
+        
+        showAlert('regAlert','suc','✅ Pendaftaran berhasil! Mengalihkan ke dashboard...');
+        setTimeout(() => { window.location.href = 'sql-user.html'; }, 800);
+    } else if (gasOk) {
+        // GAS berhasil — simpan sesi dan redirect
+        const gasResult = gasRes.value;
+        gasResult.source = 'gas';
+        if (gasResult.user) saveSession(gasResult);
+        showAlert('regAlert','suc','✅ Pendaftaran berhasil! Mengalihkan ke dashboard...');
+        setTimeout(() => { window.location.href = gasResult.user ? 'app.html' : 'sql-user.html'; }, 800);
     } else {
-        // Fallback: show contact admin message
-        showAlert('regAlert','inf',
-            '📋 Data tercatat. Hubungi Korlap/Admin BAS dengan OPS ID: <strong>' + payload.opsId +
-            '</strong> dan NIK Anda untuk aktivasi akun.');
+        // Both failed
+        let errMsg = sqlRes.value?.error || gasRes.value?.error || 'Gagal tersambung ke server.';
+        showAlert('regAlert','err','Pendaftaran gagal: ' + errMsg);
     }
 }
 
-// Check existing session -> redirect
-(function checkExistingSession() {
+// Check existing session -> redirect (supports both GAS localStorage and SQL PHP sessions)
+(async function checkExistingSession() {
     try {
+        // 1. Check GAS localStorage session
         const raw = localStorage.getItem(SESSION_KEY);
         if (raw) {
             const s = JSON.parse(atob(raw));
             if (s && s.user && s.exp && s.exp > Date.now()) {
-                window.location.replace('app.html');
+                // GAS user -> app.html, SQL user -> sql-user.html
+                window.location.replace(s.source === 'sql' ? 'sql-user.html' : 'app.html');
                 return;
             }
         }
+        // 2. Check owner session
         const ownerAuth = sessionStorage.getItem('bas_owner_auth');
         if (ownerAuth === 'true') {
             let target = 'owner.html';
@@ -1244,6 +1263,16 @@ async function handleRegister(e) {
                 }
             } catch (e) {}
             window.location.replace(target);
+            return;
+        }
+        // 3. Check SQL PHP session (for users who registered via SQL)
+        const res = await fetch('./api/user-auth.php?action=check', { credentials: 'same-origin' }).catch(() => null);
+        if (res && res.ok) {
+            const data = await res.json().catch(() => null);
+            if (data && data.authenticated && data.user) {
+                window.location.replace('sql-user.html');
+                return;
+            }
         }
     } catch (e) {
         localStorage.removeItem(SESSION_KEY);

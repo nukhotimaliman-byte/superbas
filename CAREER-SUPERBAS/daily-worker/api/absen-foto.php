@@ -20,29 +20,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit;
 }
 
-// ── DB Connection ──
-function getDB() {
-    static $pdo = null;
-    if (!$pdo) {
-        $pdo = new PDO(
-            'mysql:host=' . DB_HOST . ';dbname=' . DB_NAME . ';charset=utf8mb4',
-            DB_USER, DB_PASS,
-            [
-                PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC
-            ]
-        );
-
+// ── DB Connection (uses getDB() from config.php) ──
+// Auto-migrate schema on first use
+$_schemaChecked = false;
+function getPhotoDB() {
+    global $_schemaChecked;
+    $pdo = getDB(); // from config.php
+    if (!$_schemaChecked) {
         ensurePhotoAttendanceSchema($pdo);
+        $_schemaChecked = true;
     }
     return $pdo;
 }
 
-function jsonResponse($data, $code = 200) {
-    http_response_code($code);
-    echo json_encode($data, JSON_UNESCAPED_UNICODE);
-    exit;
-}
 
 function jsonError($msg, $code = 400) {
     jsonResponse(['error' => $msg], $code);
@@ -120,7 +110,6 @@ function optimizePhotoToJpeg($imageData, $filepath) {
         $newHeight = max(1, (int) round($height * $ratio));
         $resized = imagecreatetruecolor($newWidth, $newHeight);
         imagecopyresampled($resized, $img, 0, 0, 0, 0, $newWidth, $newHeight, $width, $height);
-        imagedestroy($img);
         $dest = $resized;
         $width = $newWidth;
         $height = $newHeight;
@@ -150,12 +139,10 @@ function optimizePhotoToJpeg($imageData, $filepath) {
     }
 
     if ($bestBinary === null) {
-        imagedestroy($dest);
         return false;
     }
 
     $written = file_put_contents($filepath, $bestBinary);
-    imagedestroy($dest);
 
     if ($written === false) {
         return false;
@@ -240,7 +227,7 @@ function handlePhotoUpload($data, $tipe) {
     }
     
     // Check duplicate: same user, same type, within last 5 minutes
-    $db = getDB();
+    $db = getPhotoDB();
     $dup = $db->prepare("
         SELECT id FROM absensi_foto 
         WHERE ops_id = ? AND tipe = ? AND created_at > DATE_SUB(NOW(), INTERVAL 5 MINUTE)
@@ -299,7 +286,7 @@ function handleMyLogs() {
     
     $date = $_GET['date'] ?? date('Y-m-d');
     
-    $db = getDB();
+    $db = getPhotoDB();
     $stmt = $db->prepare("
         SELECT id, ops_id, nama, tipe, foto_path, latitude, longitude, alamat, station, created_at, status
         FROM absensi_foto
@@ -326,7 +313,7 @@ function handleAllLogs() {
     $limit = clampInt($_GET['limit'] ?? PHOTO_LIST_DEFAULT_LIMIT, 1, PHOTO_LIST_MAX_LIMIT);
     $offset = ($page - 1) * $limit;
     
-    $db = getDB();
+    $db = getPhotoDB();
     $where = "DATE(created_at) = ?";
     $params = [$date];
     
@@ -436,7 +423,7 @@ function handleUpdateStatus($data) {
     if (!in_array($status, ['PENDING', 'DITERIMA', 'DITOLAK'])) jsonError('Invalid status');
     if (!$ids) jsonError('ID tidak valid');
     
-    $db = getDB();
+    $db = getPhotoDB();
     $inKey = str_repeat('?,', count($ids) - 1) . '?';
     $params = array_merge([$status], $ids);
     
@@ -450,7 +437,7 @@ function handleDelete($data) {
     if (empty($data['ids'])) jsonError('Missing ids');
     $ids = sanitizeIdList($data['ids']);
     if (!$ids) jsonError('ID tidak valid');
-    $db = getDB();
+    $db = getPhotoDB();
     $inKey = str_repeat('?,', count($ids) - 1) . '?';
     
     // Get file paths to delete
@@ -477,7 +464,7 @@ function handleDownloadZip() {
     $ids = sanitizeIdList(explode(',', $idsRaw));
     if (empty($ids)) die('No ids');
     
-    $db = getDB();
+    $db = getPhotoDB();
     $inKey = str_repeat('?,', count($ids) - 1) . '?';
     $stmt = $db->prepare("SELECT ops_id, nama, tipe, foto_path, created_at FROM absensi_foto WHERE id IN ($inKey)");
     $stmt->execute($ids);

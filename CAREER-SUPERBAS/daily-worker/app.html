@@ -1,6 +1,6 @@
 <!--
   ═══════════════════════════════════════════════════════════════
-   PT. BAROKAH AMANAH SENTOSA — Employee App (index.html)
+   Super-BAS — Daily Worker — Employee App (index.html)
    Super-BAS v2.0
   ═══════════════════════════════════════════════════════════════
 
@@ -28,8 +28,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.cdnfonts.com; font-src https://fonts.gstatic.com https://fonts.cdnfonts.com; connect-src 'self' https://script.google.com https://script.googleusercontent.com https://nominatim.openstreetmap.org https://api.bigdatacloud.net; img-src 'self' data: blob: https://drive.google.com https://*.googleusercontent.com;">
     <meta name="google" content="notranslate" />
-    <title>PT. BAROKAH AMANAH SENTOSA</title>
-    <link rel="icon" href="assets/LogoBas.png" />
+    <title>Super-BAS — Daily Worker</title>
+    <link rel="icon" type="image/png" href="favicon-bas.png" />
 
     <!-- Prevent flash: apply saved theme + Auth guard before render -->
     <script>
@@ -56,9 +56,9 @@
             localStorage.removeItem('bas_session');
             window.location.replace('login.html');
           }
-          // SQL users should go to daftar.html, not app.html
+          // SQL users should go to sql-user.html, not app.html
           if (parsed.source === 'sql') {
-            window.location.replace('daftar.html');
+            window.location.replace('sql-user.html');
             return;
           }
         } catch(e) {
@@ -197,7 +197,7 @@
       </div>
       <div class="settings-footer">
         <div class="settings-footer-text">
-          PT. BAROKAH AMANAH SENTOSA<br>
+          Super-BAS — Daily Worker<br>
           <span style="font-size:10px;">v2.0</span>
         </div>
       </div>

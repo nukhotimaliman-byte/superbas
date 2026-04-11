@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <link rel="icon" type="image/png" href="favicon-bas.png">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Super-BAS — Karir & Rekrutmen | 100% Gratis</title>
+    <meta name="description" content="Bergabung bersama BAS. Lowongan Supir Truck, Kurir, dan Daily Worker. Pendaftaran 100% GRATIS tanpa pungutan biaya.">
+    <meta name="keywords" content="lowongan kerja, driver logistik, kurir, daily worker, BAS, rekrutmen gratis">
+    <meta name="robots" content="index, follow">
+    <!-- FOUC Prevention: apply theme before paint -->
+    <script>(function(){try{var t=localStorage.getItem('bas-theme')||'dark';document.documentElement.setAttribute('data-theme',t);}catch(e){}})();</script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,100..900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- Header -->
+    <header class="header" id="header">
+        <div class="container header__inner">
+            <a href="/" class="header__logo" id="logo">
+                <img src="BAS.svg" alt="BAS" class="header__logo-img">
+            </a>
+            <button class="theme-toggle" id="theme-toggle" title="Toggle Dark/Light Mode" aria-label="Toggle theme">
+                <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+                <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+            </button>
+        </div>
+    </header>
+
+    <!-- Hero -->
+    <section class="hero" id="hero-banner">
+        <div class="container hero__inner">
+            <span class="hero__tag">Rekrutmen Terbuka</span>
+            <h1 class="hero__title" id="hero-title">
+                100% Gratis<br>
+                <span class="hero__highlight">Tanpa Pungutan Biaya</span>
+            </h1>
+            <p class="hero__desc">Bergabunglah bersama jaringan logistik terbesar. Pilih posisi dan daftar sekarang.</p>
+            <a href="#lowongan" class="hero__cta" id="hero-cta">
+                Lihat Posisi
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg>
+            </a>
+        </div>
+    </section>
+
+    <!-- Jobs -->
+    <section class="jobs" id="lowongan">
+        <div class="container">
+            <div class="jobs__grid">
+
+                <!-- Card 1 -->
+                <article class="card" id="card-driver">
+                    <div class="card__head">
+                        <div class="card__icon">
+                            <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="2" y="14" width="28" height="18" rx="2"/>
+                                <path d="M30 20h8l6 7v5H30V20z"/>
+                                <circle cx="12" cy="34" r="4"/><circle cx="38" cy="34" r="4"/>
+                            </svg>
+                        </div>
+                        <h2 class="card__title">Supir Truck</h2>
+                        <p class="card__sub">Armada CDD, WB & Big Mama</p>
+                    </div>
+                    <ul class="card__list">
+                        <li>SIM B1 / B2 Umum</li>
+                        <li>Pengalaman unit CDD / WB / Big Mama</li>
+                        <li>Sehat jasmani & rohani</li>
+                    </ul>
+                    <a href="driver/" class="card__btn" id="btn-daftar-driver">Daftar Sekarang</a>
+                </article>
+
+                <!-- Card 2 -->
+                <article class="card card--featured" id="card-kurir">
+                    <span class="card__badge">Populer</span>
+                    <div class="card__head">
+                        <div class="card__icon">
+                            <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="36" r="4"/><circle cx="38" cy="36" r="4"/>
+                                <path d="M12 36l6-12h8l4 8h8"/>
+                                <path d="M26 24l-3-8h5"/>
+                                <rect x="32" y="12" width="10" height="9" rx="1.5"/>
+                            </svg>
+                        </div>
+                        <h2 class="card__title">Kurir</h2>
+                        <p class="card__sub">Rider (Motor) & Driver (Mobil)</p>
+                    </div>
+                    <ul class="card__list">
+                        <li>SIM A / SIM C aktif</li>
+                        <li>Smartphone minimal RAM 3GB</li>
+                        <li>Mengenal area pengantaran</li>
+                    </ul>
+                    <a href="kurir/" class="card__btn" id="btn-daftar-kurir">Daftar Sekarang</a>
+                </article>
+
+                <!-- Card 3 -->
+                <article class="card" id="card-daily">
+                    <div class="card__head">
+                        <div class="card__icon">
+                            <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="18" cy="14" r="5"/><path d="M8 36v-4a10 10 0 0120 0v4"/>
+                                <circle cx="36" cy="18" r="4"/><path d="M30 38v-3a7 7 0 0112 0v3"/>
+                            </svg>
+                        </div>
+                        <h2 class="card__title">Daily Worker</h2>
+                        <p class="card__sub">Tenaga Harian Lepas</p>
+                    </div>
+                    <ul class="card__list">
+                        <li>Laki-laki, usia produktif</li>
+                        <li>Penempatan nasional</li>
+                        <li>Siap kerja shifting</li>
+                    </ul>
+                    <a href="daily-worker/login.html" class="card__btn" id="btn-daftar-daily">Daftar Sekarang</a>
+                </article>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- Values -->
+    <section class="values" id="care-values">
+        <div class="container">
+            <h2 class="values__heading">C.A.R.E</h2>
+            <div class="values__grid">
+                <div class="val" id="value-commitment">
+                    <svg class="val__icon" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16 2l4 6h6l-2 6 4 5-6 2-2 6-4-3-4 3-2-6-6-2 4-5-2-6h6z"/></svg>
+                    <h3 class="val__title">Commitment</h3>
+                    <p class="val__desc">Dedikasi penuh terhadap setiap mitra dan pelamar</p>
+                </div>
+                <div class="val" id="value-adaptive">
+                    <svg class="val__icon" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 16A10 10 0 0126 16"/><path d="M26 16A10 10 0 016 16"/><path d="M22 6l4 4-4 4"/><path d="M10 18l-4 4 4 4"/></svg>
+                    <h3 class="val__title">Adaptive</h3>
+                    <p class="val__desc">Fleksibel menghadapi dinamika industri logistik</p>
+                </div>
+                <div class="val" id="value-reliability">
+                    <svg class="val__icon" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16 2L4 8v8c0 8 5.5 14 12 16 6.5-2 12-8 12-16V8L16 2z"/><path d="M11 16l3 3 7-7"/></svg>
+                    <h3 class="val__title">Reliability</h3>
+                    <p class="val__desc">Terpercaya dalam setiap proses dan layanan</p>
+                </div>
+                <div class="val" id="value-expertise">
+                    <svg class="val__icon" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="16" cy="11" r="6"/><path d="M12 16l-2 10 6-3 6 3-2-10"/></svg>
+                    <h3 class="val__title">Expertise</h3>
+                    <p class="val__desc">Keahlian profesional dalam manajemen tenaga kerja</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+
+
+    <!-- Footer -->
+    <footer class="footer" id="footer">
+        <div class="container footer__inner">
+            <div class="footer__socials">
+                <a href="#" class="footer__social" id="social-facebook" title="Facebook" target="_blank" rel="noopener">
+                    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.04C6.5 2.04 2 6.53 2 12.06c0 5 3.66 9.15 8.44 9.9v-7H7.9v-2.9h2.54V9.85c0-2.51 1.49-3.89 3.78-3.89 1.09 0 2.24.2 2.24.2v2.46h-1.26c-1.24 0-1.63.77-1.63 1.56v1.88h2.78l-.45 2.9h-2.33v7A10 10 0 0022 12.06c0-5.53-4.5-10.02-10-10.02z"/></svg>
+                </a>
+                <a href="#" class="footer__social" id="social-instagram" title="Instagram" target="_blank" rel="noopener">
+                    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M7.8 2h8.4C19.4 2 22 4.6 22 7.8v8.4a5.8 5.8 0 01-5.8 5.8H7.8C4.6 22 2 19.4 2 16.2V7.8A5.8 5.8 0 017.8 2zm-.2 2A3.6 3.6 0 004 7.6v8.8C4 18.39 5.61 20 7.6 20h8.8a3.6 3.6 0 003.6-3.6V7.6C20 5.61 18.39 4 16.4 4H7.6zm9.65 1.5a1.25 1.25 0 110 2.5 1.25 1.25 0 010-2.5zM12 7a5 5 0 110 10 5 5 0 010-10zm0 2a3 3 0 100 6 3 3 0 000-6z"/></svg>
+                </a>
+                <a href="#" class="footer__social" id="social-x" title="X" target="_blank" rel="noopener">
+                    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                </a>
+                <a href="#" class="footer__social" id="social-tiktok" title="TikTok" target="_blank" rel="noopener">
+                    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M16.6 5.82s.51.5 0 0A4.278 4.278 0 0115.54 3h-3.09v12.4a2.592 2.592 0 01-2.59 2.5c-1.42 0-2.6-1.16-2.6-2.6 0-1.72 1.66-3.01 3.37-2.48V9.66c-3.45-.46-6.47 2.22-6.47 5.64 0 3.33 2.76 5.7 5.69 5.7 3.14 0 5.69-2.55 5.69-5.7V9.01a7.35 7.35 0 004.3 1.38V7.3s-1.88.09-3.24-1.48z"/></svg>
+                </a>
+            </div>
+            <div class="footer__divider"></div>
+            <a href="privacy-policy.html" class="footer__link" id="link-privacy">Kebijakan Privasi</a>
+            <p class="footer__copy">&copy; 2025 PT Barokah Amanah Sentosa</p>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
