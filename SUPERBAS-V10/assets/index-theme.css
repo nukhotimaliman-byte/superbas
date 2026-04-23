@@ -1,0 +1,3322 @@
+      /* ===== BASE STYLES ===== */
+      *, *::before, *::after {
+        font-family: 'Open Sans', sans-serif !important;
+      }
+      body {
+        font-family: 'Open Sans', sans-serif !important;
+        background-color: #10002b;
+        -webkit-tap-highlight-color: transparent;
+        overflow-x: hidden;
+        margin: 0;
+        padding: 0;
+        overscroll-behavior-y: none;
+      }
+      
+      * {
+        -webkit-overflow-scrolling: touch;
+      }
+      /* Theme transition — scoped to meaningful elements only */
+      body, #root, #root > div, header, nav, main,
+      .settings-panel, .settings-item, #theme-toggle-btn,
+      .bg-\[\#240046\]\/30, .bg-white\/5, .bg-white\/10 {
+        transition: background-color 0.35s ease, color 0.35s ease, border-color 0.35s ease, box-shadow 0.35s ease;
+      }
+
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+      /* ===== PRELOADER / LOADING SCREEN ===== */
+      #bas-preloader {
+        position: fixed; inset: 0; z-index: 999999;
+        display: flex; flex-direction: column;
+        align-items: center; justify-content: center;
+        background: #0a0015;
+        overflow: hidden;
+        transition: opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1), transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      #bas-preloader.hide {
+        opacity: 0; transform: scale(1.1); pointer-events: none;
+      }
+      html.light-mode #bas-preloader {
+        background: linear-gradient(135deg, #f0f4ff 0%, #f5f3ff 50%, #f5f3ff 100%);
+      }
+
+      /* === Animated background mesh === */
+      .pl-bg-mesh {
+        position: absolute; inset: 0; overflow: hidden; pointer-events: none;
+      }
+      .pl-bg-mesh::before, .pl-bg-mesh::after {
+        content: ''; position: absolute; border-radius: 50%;
+        filter: blur(80px); opacity: 0.4;
+        animation: pl-mesh-float 8s ease-in-out infinite;
+      }
+      .pl-bg-mesh::before {
+        width: 400px; height: 400px;
+        background: radial-gradient(circle, #7c3aed 0%, transparent 70%);
+        top: -100px; left: -100px;
+      }
+      .pl-bg-mesh::after {
+        width: 350px; height: 350px;
+        background: radial-gradient(circle, #4cc9f0 0%, transparent 70%);
+        bottom: -80px; right: -80px;
+        animation-delay: -4s; animation-direction: reverse;
+      }
+      html.light-mode .pl-bg-mesh::before {
+        background: radial-gradient(circle, rgba(99,102,241,0.25) 0%, transparent 70%);
+        opacity: 0.6;
+      }
+      html.light-mode .pl-bg-mesh::after {
+        background: radial-gradient(circle, rgba(139,92,246,0.2) 0%, transparent 70%);
+        opacity: 0.6;
+      }
+
+      /* === Grid pattern overlay === */
+      .pl-grid {
+        position: absolute; inset: 0; pointer-events: none;
+        background-image:
+          linear-gradient(rgba(124,58,237,0.06) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(124,58,237,0.06) 1px, transparent 1px);
+        background-size: 40px 40px;
+        animation: pl-grid-scroll 20s linear infinite;
+      }
+      html.light-mode .pl-grid {
+        background-image:
+          linear-gradient(rgba(99,102,241,0.06) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(99,102,241,0.06) 1px, transparent 1px);
+      }
+
+      /* === Center piece: Hexagon container === */
+      .pl-hex-wrap {
+        position: relative;
+        width: 180px; height: 180px;
+        display: flex; align-items: center; justify-content: center;
+        margin-bottom: 32px;
+      }
+
+      /* Rotating hexagon outlines */
+      .pl-hex {
+        position: absolute; inset: 0;
+      }
+      .pl-hex svg {
+        width: 100%; height: 100%;
+        animation: pl-hex-rotate 6s linear infinite;
+      }
+      .pl-hex svg polygon {
+        fill: none;
+        stroke: url(#pl-grad1);
+        stroke-width: 1.5;
+        stroke-dasharray: 360;
+        stroke-dashoffset: 720;
+        animation: pl-hex-draw 3s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+      }
+      .pl-hex-inner svg {
+        animation: pl-hex-rotate 4s linear infinite reverse;
+      }
+      .pl-hex-inner svg polygon {
+        stroke: url(#pl-grad2);
+        stroke-width: 1;
+        animation-delay: -1.5s;
+      }
+
+      /* Orbiting satellites */
+      .pl-orbit {
+        position: absolute; inset: -24px;
+        animation: pl-hex-rotate 3s linear infinite;
+      }
+      .pl-satellite {
+        position: absolute; top: -4px; left: 50%;
+        width: 8px; height: 8px; border-radius: 50%;
+        background: #4cc9f0;
+        box-shadow: 0 0 16px #4cc9f0, 0 0 32px rgba(76,201,240,0.5), 0 0 48px rgba(76,201,240,0.2);
+        transform: translateX(-50%);
+      }
+      .pl-satellite::after {
+        content: ''; position: absolute;
+        top: 50%; left: 50%; transform: translate(-50%, -50%);
+        width: 20px; height: 20px; border-radius: 50%;
+        background: radial-gradient(circle, rgba(76,201,240,0.3), transparent);
+        animation: pl-sat-pulse 1s ease-in-out infinite;
+      }
+      .pl-orbit:nth-child(5) {
+        inset: -36px;
+        animation-duration: 5s; animation-direction: reverse;
+      }
+      .pl-orbit:nth-child(5) .pl-satellite {
+        width: 5px; height: 5px;
+        background: #f72585;
+        box-shadow: 0 0 12px #f72585, 0 0 24px rgba(247,37,133,0.4);
+      }
+      html.light-mode .pl-satellite {
+        background: #6366f1;
+        box-shadow: 0 0 16px rgba(99,102,241,0.6), 0 0 32px rgba(99,102,241,0.3);
+      }
+      html.light-mode .pl-orbit:nth-child(5) .pl-satellite {
+        background: #a855f7;
+        box-shadow: 0 0 12px rgba(168,85,247,0.5), 0 0 24px rgba(168,85,247,0.2);
+      }
+
+      /* Center core with glassmorphism */
+      .pl-core {
+        position: relative; z-index: 2;
+        width: 120px; height: 48px; border-radius: 24px;
+        background: rgba(16,0,43,0.85);
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(124,58,237,0.3);
+        display: flex; align-items: center; justify-content: center;
+        box-shadow: 0 0 40px rgba(124,58,237,0.2), 0 0 80px rgba(76,201,240,0.1),
+                    inset 0 0 30px rgba(124,58,237,0.15);
+        animation: pl-core-breathe 3s ease-in-out infinite;
+      }
+      html.light-mode .pl-core {
+        background: rgba(255,255,255,0.9);
+        border: 1px solid rgba(99,102,241,0.2);
+        box-shadow: 0 4px 24px rgba(99,102,241,0.12), 0 0 60px rgba(139,92,246,0.06),
+                    inset 0 0 20px rgba(99,102,241,0.04);
+      }
+
+      /* BAS glitch text */
+      .pl-title {
+        font-family: 'Open Sans', sans-serif !important;
+        font-size: 15px; font-weight: 900;
+        letter-spacing: 2.5px;
+        color: #fff;
+        position: relative;
+        text-shadow: 0 0 20px rgba(124,58,237,0.5);
+        white-space: nowrap;
+      }
+      .pl-title::before, .pl-title::after {
+        content: 'SUPER-BAS'; position: absolute; top: 0; left: 0;
+        width: 100%; height: 100%;
+      }
+      .pl-title::before {
+        color: #4cc9f0; z-index: -1;
+        animation: pl-glitch-1 3s infinite;
+      }
+      .pl-title::after {
+        color: #f72585; z-index: -2;
+        animation: pl-glitch-2 3s infinite;
+      }
+      html.light-mode .pl-title {
+        color: #312e81;
+        text-shadow: none;
+      }
+      html.light-mode .pl-title::before { color: #6366f1; }
+      html.light-mode .pl-title::after { color: #a855f7; }
+
+      /* Company name with reveal */
+      .pl-company {
+        font-family: 'Open Sans', sans-serif !important;
+        font-size: 9px; font-weight: 700;
+        letter-spacing: 5px; text-transform: uppercase;
+        color: rgba(255,255,255,0.3);
+        margin-bottom: 32px;
+        position: relative; overflow: hidden;
+      }
+      .pl-company::after {
+        content: ''; position: absolute;
+        top: 0; left: -100%; width: 100%; height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(76,201,240,0.15), transparent);
+        animation: pl-shimmer 2.5s ease-in-out infinite;
+      }
+      html.light-mode .pl-company {
+        color: rgba(71,85,105,0.45);
+      }
+      html.light-mode .pl-company::after {
+        background: linear-gradient(90deg, transparent, rgba(99,102,241,0.1), transparent);
+      }
+
+      /* Progress bar */
+      .pl-progress-wrap {
+        width: 180px; height: 2.5px;
+        background: rgba(255,255,255,0.06);
+        border-radius: 4px; overflow: hidden;
+        position: relative;
+      }
+      html.light-mode .pl-progress-wrap {
+        background: rgba(99,102,241,0.08);
+      }
+      .pl-progress-bar {
+        height: 100%; width: 0%;
+        border-radius: 4px;
+        background: linear-gradient(90deg, #4cc9f0, #7c3aed, #f72585);
+        background-size: 200% 100%;
+        animation: pl-progress-fill 2.5s cubic-bezier(0.4, 0, 0.2, 1) forwards,
+                   pl-progress-glow 1.5s ease-in-out infinite;
+        box-shadow: 0 0 12px rgba(124,58,237,0.4);
+      }
+      html.light-mode .pl-progress-bar {
+        background: linear-gradient(90deg, #6366f1, #8b5cf6, #a855f7);
+        background-size: 200% 100%;
+        box-shadow: 0 0 12px rgba(99,102,241,0.3);
+      }
+
+      /* Status text */
+      .pl-status {
+        font-family: 'Open Sans', sans-serif !important;
+        font-size: 9px; font-weight: 600;
+        letter-spacing: 2px; text-transform: uppercase;
+        color: rgba(255,255,255,0.2);
+        margin-top: 12px;
+        animation: pl-status-blink 1.5s ease-in-out infinite;
+      }
+      html.light-mode .pl-status {
+        color: rgba(71,85,105,0.3);
+      }
+
+      /* Floating code particles */
+      .pl-code-particle {
+        position: absolute; pointer-events: none;
+        font-family: monospace; font-size: 10px;
+        color: rgba(76,201,240,0.12);
+        animation: pl-code-fall linear infinite;
+        white-space: nowrap;
+      }
+      html.light-mode .pl-code-particle {
+        color: rgba(99,102,241,0.08);
+      }
+
+      /* === Keyframes === */
+      @keyframes pl-mesh-float {
+        0%, 100% { transform: translate(0, 0) scale(1); }
+        33% { transform: translate(60px, -40px) scale(1.15); }
+        66% { transform: translate(-40px, 30px) scale(0.9); }
+      }
+      @keyframes pl-grid-scroll {
+        0% { transform: translate(0, 0); }
+        100% { transform: translate(40px, 40px); }
+      }
+      @keyframes pl-hex-rotate {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+      @keyframes pl-hex-draw {
+        0% { stroke-dashoffset: 720; opacity: 0.3; }
+        50% { stroke-dashoffset: 360; opacity: 1; }
+        100% { stroke-dashoffset: 0; opacity: 0.3; }
+      }
+      @keyframes pl-core-breathe {
+        0%, 100% { transform: scale(1); box-shadow: 0 0 40px rgba(124,58,237,0.2), 0 0 80px rgba(76,201,240,0.1), inset 0 0 30px rgba(124,58,237,0.15); }
+        50% { transform: scale(1.05); box-shadow: 0 0 60px rgba(124,58,237,0.35), 0 0 100px rgba(76,201,240,0.15), inset 0 0 40px rgba(124,58,237,0.2); }
+      }
+      @keyframes pl-sat-pulse {
+        0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+        50% { transform: translate(-50%, -50%) scale(1.8); opacity: 0; }
+      }
+      @keyframes pl-glitch-1 {
+        0%, 90%, 100% { clip-path: inset(0 0 0 0); transform: translate(0); }
+        92% { clip-path: inset(20% 0 60% 0); transform: translate(-3px, 1px); }
+        94% { clip-path: inset(50% 0 20% 0); transform: translate(3px, -1px); }
+        96% { clip-path: inset(10% 0 70% 0); transform: translate(-2px, 2px); }
+      }
+      @keyframes pl-glitch-2 {
+        0%, 88%, 100% { clip-path: inset(0 0 0 0); transform: translate(0); }
+        90% { clip-path: inset(60% 0 10% 0); transform: translate(2px, -1px); }
+        93% { clip-path: inset(30% 0 40% 0); transform: translate(-2px, 1px); }
+        95% { clip-path: inset(70% 0 5% 0); transform: translate(1px, -2px); }
+      }
+      @keyframes pl-shimmer {
+        0% { left: -100%; }
+        100% { left: 200%; }
+      }
+      @keyframes pl-progress-fill {
+        0% { width: 0%; }
+        20% { width: 25%; }
+        50% { width: 55%; }
+        80% { width: 80%; }
+        100% { width: 95%; }
+      }
+      @keyframes pl-progress-glow {
+        0%, 100% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+      }
+      @keyframes pl-status-blink {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.4; }
+      }
+      @keyframes pl-code-fall {
+        0% { transform: translateY(-20px); opacity: 0; }
+        10% { opacity: 1; }
+        90% { opacity: 1; }
+        100% { transform: translateY(100vh); opacity: 0; }
+      }
+
+      @keyframes blob-float {
+        0%, 100% { transform: translate(0, 0) scale(1); }
+        33% { transform: translate(30px, -50px) scale(1.1); }
+        66% { transform: translate(-20px, 20px) scale(0.9); }
+      }
+      @keyframes scanline {
+        0% { transform: translateY(-100%); }
+        100% { transform: translateY(100%); }
+      }
+      .animate-blob { animation: blob-float 20s infinite alternate cubic-bezier(0.45, 0, 0.55, 1); }
+      .animate-blob-reverse { animation: blob-float 25s infinite alternate-reverse cubic-bezier(0.45, 0, 0.55, 1); }
+      .scanline-effect {
+        position: absolute; inset: 0;
+        background: linear-gradient(to bottom, transparent, rgba(76, 201, 240, 0.05), transparent);
+        height: 10%; width: 100%; pointer-events: none;
+        animation: scanline 8s linear infinite; z-index: 5;
+      }
+
+      /* ===== MISSING ANIMATION KEYFRAMES ===== */
+      @keyframes fade-in-up {
+        from { opacity: 0; transform: translateY(24px); }
+        to   { opacity: 1; transform: translateY(0); }
+      }
+      @keyframes fade-in-down {
+        from { opacity: 0; transform: translateY(-24px); }
+        to   { opacity: 1; transform: translateY(0); }
+      }
+      @keyframes fade-in {
+        from { opacity: 0; }
+        to   { opacity: 1; }
+      }
+      @keyframes slide-in-right {
+        from { opacity: 0; transform: translateX(24px); }
+        to   { opacity: 1; transform: translateX(0); }
+      }
+      @keyframes slide-in-bottom {
+        from { opacity: 0; transform: translateY(20px); }
+        to   { opacity: 1; transform: translateY(0); }
+      }
+      @keyframes slide-in-up {
+        from { opacity: 0; transform: translateY(16px); }
+        to   { opacity: 1; transform: translateY(0); }
+      }
+      @keyframes fade-in-left {
+        from { opacity: 0; transform: translateX(-24px); }
+        to   { opacity: 1; transform: translateX(0); }
+      }
+      .animate-fade-in-up    { animation: fade-in-up 0.6s cubic-bezier(0.16,1,0.3,1) both; }
+      .animate-fade-in-down  { animation: fade-in-down 0.6s cubic-bezier(0.16,1,0.3,1) both; }
+      .animate-fade-in       { animation: fade-in 0.5s ease both; }
+      .animate-slide-in-right{ animation: slide-in-right 0.5s cubic-bezier(0.16,1,0.3,1) both; }
+      .animate-slide-in-bottom{ animation: slide-in-bottom 0.5s cubic-bezier(0.16,1,0.3,1) both; }
+      .animate-slide-in-up   { animation: slide-in-up 0.5s cubic-bezier(0.16,1,0.3,1) both; }
+      .animate-fade-in-left  { animation: fade-in-left 0.5s cubic-bezier(0.16,1,0.3,1) both; }
+
+      /* ===== TRANSITION SMOOTH UTILITY ===== */
+      .transition-smooth {
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+
+      /* ===== RESPONSIVE LOGIN PADDING ===== */
+      @media (max-width: 380px) {
+        .min-h-screen.flex.items-center.justify-center.p-6 {
+          padding: 1rem !important;
+        }
+        .max-w-sm.rounded-\[3rem\] {
+          padding: 1.5rem 1.25rem 1.5rem !important;
+        }
+      }
+
+      /* ===== CUSTOM SCROLLBAR (dark mode) ===== */
+      ::-webkit-scrollbar {
+        width: 4px;
+        height: 4px;
+      }
+      ::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: rgba(124,58,237,0.25);
+        border-radius: 99px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: rgba(124,58,237,0.45);
+      }
+      html.light-mode ::-webkit-scrollbar-thumb {
+        background: rgba(99,102,241,0.18);
+      }
+      html.light-mode ::-webkit-scrollbar-thumb:hover {
+        background: rgba(99,102,241,0.35);
+      }
+
+      /* ===== THEME TOGGLE — iOS PILL SWITCH ===== */
+      #theme-toggle-btn {
+        position: fixed;
+        top: 24px;
+        right: 24px;
+        z-index: 99999;
+        width: 68px;
+        height: 36px;
+        border-radius: 999px;
+        border: none;
+        cursor: pointer;
+        padding: 3px;
+        transition: background 0.4s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s ease;
+        background: rgba(255,255,255,0.12);
+        box-shadow: inset 0 1px 4px rgba(0,0,0,0.25), 0 2px 12px rgba(0,0,0,0.2);
+        display: flex;
+        align-items: center;
+        -webkit-tap-highlight-color: transparent;
+        outline: none;
+      }
+      #theme-toggle-btn:hover {
+        box-shadow: inset 0 1px 4px rgba(0,0,0,0.25), 0 4px 20px rgba(0,0,0,0.3);
+        transform: none;
+      }
+      #theme-toggle-btn:active { transform: scale(0.96); }
+      /* Thumb (circle) */
+      #theme-toggle-btn .toggle-thumb {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #6366f1, #4f46e5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), background 0.4s ease;
+        box-shadow: 0 2px 8px rgba(79,70,229,0.4);
+        position: relative;
+        transform: translateX(0);
+      }
+      #theme-toggle-btn .toggle-thumb .icon-sun,
+      #theme-toggle-btn .toggle-thumb .icon-moon {
+        position: absolute;
+        font-size: 16px;
+        transition: all 0.35s ease;
+        line-height: 1;
+      }
+      /* Dark mode (default): thumb LEFT, show sun */
+      #theme-toggle-btn .toggle-thumb .icon-sun { opacity: 1; transform: rotate(0deg) scale(1); }
+      #theme-toggle-btn .toggle-thumb .icon-moon { opacity: 0; transform: rotate(-90deg) scale(0); }
+      /* Light mode: thumb RIGHT, show moon */
+      html.light-mode #theme-toggle-btn .toggle-thumb {
+        transform: translateX(32px);
+        background: linear-gradient(135deg, #6366f1, #818cf8);
+        box-shadow: 0 2px 8px rgba(99,102,241,0.5);
+      }
+      html.light-mode #theme-toggle-btn .toggle-thumb .icon-sun { opacity: 0; transform: rotate(90deg) scale(0); }
+      html.light-mode #theme-toggle-btn .toggle-thumb .icon-moon { opacity: 1; transform: rotate(0deg) scale(1); }
+      /* Remove old tooltip */
+      #theme-toggle-btn::after { display: none !important; }
+
+      /* Hide login NIK tip text */
+      .max-w-sm p.text-\[9px\].text-slate-400 { display: none !important; }
+
+      /* ========================================
+         LIGHT MODE — COMPLETE OVERHAUL v3
+         ======================================== */
+
+      /* --- Toggle Button (light) --- */
+      html.light-mode #theme-toggle-btn {
+        background: rgba(99,102,241,0.15);
+        box-shadow: inset 0 1px 3px rgba(99,102,241,0.15), 0 2px 12px rgba(99,102,241,0.08);
+      }
+      html.light-mode #theme-toggle-btn:hover {
+        box-shadow: inset 0 1px 3px rgba(99,102,241,0.15), 0 4px 20px rgba(99,102,241,0.12);
+      }
+
+      /* --- Body & html root --- */
+      html.light-mode,
+      html.light-mode body {
+        background: #f7f8fc !important;
+        color: #1e293b !important;
+      }
+
+      /* =============================================
+         NUCLEAR OPTION: Force ALL divs in #root
+         to have proper light backgrounds & text
+         ============================================= */
+      
+      /* ALL dark purple backgrounds → white/light */
+      html.light-mode .bg-\[\#10002b\],
+      html.light-mode .bg-\[\#1a0b2e\],
+      html.light-mode .bg-\[\#240046\],
+      html.light-mode .bg-\[\#3c096c\],
+      html.light-mode .bg-black {
+        background-color: #f7f8fc !important;
+      }
+
+      /* Semi-transparent whites → SOLID white */
+      html.light-mode .bg-white\/5,
+      html.light-mode .bg-white\/10,
+      html.light-mode .bg-white\/15,
+      html.light-mode .bg-white\/20 {
+        background-color: #ffffff !important;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.02) !important;
+      }
+
+      /* Semi-transparent blacks → soft gray */
+      html.light-mode .bg-black\/20,
+      html.light-mode .bg-black\/30,
+      html.light-mode .bg-black\/40,
+      html.light-mode .bg-black\/50 {
+        background-color: #f1f5f9 !important;
+      }
+
+      /* Accent bg colors — keep vibrant */
+      html.light-mode .bg-\[\#7209b7\],
+      html.light-mode .bg-\[\#7b2cbf\]  { background-color: #8b5cf6 !important; }
+      html.light-mode .bg-\[\#4cc9f0\]  { background-color: #4cc9f0 !important; }
+      html.light-mode .bg-\[\#f72585\]  { background-color: #6366f1 !important; }
+      html.light-mode .bg-\[\#4361ee\]  { background-color: #6366f1 !important; }
+      html.light-mode .bg-\[\#b5179e\]  { background-color: #a855f7 !important; }
+      html.light-mode .bg-\[\#ef233c\]  { background-color: #ef4444 !important; }
+      html.light-mode .bg-\[\#d90429\]  { background-color: #dc2626 !important; }
+      html.light-mode .bg-\[\#ff9e00\]  { background-color: #f59e0b !important; }
+      html.light-mode .bg-\[\#00f5d4\],
+      html.light-mode .bg-\[\#00F5D4\]  { background-color: #10b981 !important; }
+      html.light-mode .bg-\[\#25D366\]  { background-color: #22c55e !important; }
+      html.light-mode .bg-white          { background-color: #ffffff !important; }
+      html.light-mode .bg-slate-500     { background-color: #94a3b8 !important; }
+      html.light-mode .bg-red-500       { background-color: #ef4444 !important; }
+      html.light-mode .bg-indigo-500    { background-color: #6366f1 !important; }
+
+      /* HOVER bg overrides */
+      html.light-mode .hover\:bg-white\/5:hover,
+      html.light-mode .hover\:bg-white\/10:hover {
+        background-color: #f1f5f9 !important;
+      }
+      html.light-mode .hover\:bg-black\/40:hover {
+        background-color: #e2e8f0 !important;
+      }
+      html.light-mode .hover\:bg-\[\#4cc9f0\]:hover { background-color: #4361ee !important; }
+      html.light-mode .hover\:bg-\[\#f72585\]:hover { background-color: #4361ee !important; }
+      html.light-mode .hover\:bg-\[\#4361ee\]:hover { background-color: #4361ee !important; }
+      html.light-mode .hover\:bg-\[\#b5179e\]:hover { background-color: #4338ca !important; }
+      html.light-mode .hover\:bg-\[\#d90429\]:hover { background-color: #b91c1c !important; }
+      html.light-mode .hover\:bg-\[\#00f5d4\]:hover { background-color: #059669 !important; }
+      html.light-mode .hover\:bg-\[\#25D366\]:hover { background-color: #16a34a !important; }
+      html.light-mode .hover\:bg-\[\#4361ee\]\/20:hover,
+      html.light-mode .hover\:bg-\[\#4361ee\]\/30:hover { background-color: rgba(99,102,241,0.12) !important; }
+      html.light-mode .hover\:bg-\[\#7209b7\]\/20:hover { background-color: rgba(139,92,246,0.12) !important; }
+      html.light-mode .hover\:bg-\[\#f72585\]\/10:hover,
+      html.light-mode .hover\:bg-\[\#f72585\]\/20:hover { background-color: rgba(99,102,241,0.1) !important; }
+      html.light-mode .hover\:bg-\[\#ef233c\]\/30:hover { background-color: rgba(239,68,68,0.1) !important; }
+      html.light-mode .hover\:bg-indigo-500\/40:hover { background-color: rgba(99,102,241,0.15) !important; }
+      html.light-mode .hover\:bg-\[\#4cc9f0\]\/20:hover { background-color: rgba(14,165,233,0.1) !important; }
+
+      /* ----- TEXT COLORS ----- */
+      html.light-mode .text-white     { color: #1e293b !important; }
+      html.light-mode .text-white\/70 { color: #475569 !important; }
+      html.light-mode .text-white\/50 { color: #64748b !important; }
+      html.light-mode .text-white\/30 { color: #94a3b8 !important; }
+      html.light-mode .text-black     { color: #0f172a !important; }
+      html.light-mode .text-slate-200 { color: #334155 !important; }
+      html.light-mode .text-slate-300 { color: #475569 !important; }
+      html.light-mode .text-slate-400 { color: #64748b !important; }
+      html.light-mode .text-slate-500 { color: #475569 !important; }
+      html.light-mode .text-slate-600 { color: #334155 !important; }
+      html.light-mode .text-slate-700 { color: #1e293b !important; }
+      html.light-mode .text-\[\#4cc9f0\]  { color: #6366f1 !important; }
+      html.light-mode .text-\[\#00f5d4\],
+      html.light-mode .text-\[\#00F5D4\]  { color: #059669 !important; }
+      html.light-mode .text-\[\#c77dff\]  { color: #7c3aed !important; }
+      html.light-mode .text-\[\#f72585\]  { color: #6366f1 !important; }
+      html.light-mode .text-\[\#ff9e00\]  { color: #d97706 !important; }
+      html.light-mode .text-\[\#ef233c\]  { color: #dc2626 !important; }
+      html.light-mode .text-\[\#4361ee\]  { color: #6366f1 !important; }
+      html.light-mode .text-\[\#10002b\]  { color: #1e1b4b !important; }
+      html.light-mode .text-\[\#25D366\]  { color: #16a34a !important; }
+      html.light-mode .text-red-300,
+      html.light-mode .text-red-400,
+      html.light-mode .text-red-500    { color: #dc2626 !important; }
+      html.light-mode .text-red-600    { color: #b91c1c !important; }
+      html.light-mode .text-indigo-300 { color: #6366f1 !important; }
+      html.light-mode .text-indigo-400 { color: #6366f1 !important; }
+      html.light-mode .text-orange-400 { color: #ea580c !important; }
+      html.light-mode .text-blue-600   { color: #6366f1 !important; }
+      html.light-mode .text-blue-700   { color: #4338ca !important; }
+      html.light-mode .text-blue-800   { color: #4338ca !important; }
+
+      /* Hover text */
+      /* hover:text-white only stays white on colored bg buttons (bg-[#f72585], bg-[#4361ee], etc.) */
+      html.light-mode .hover\:text-white:hover { color: #1e293b !important; }
+      html.light-mode [class*="bg-[#f72585"] .hover\:text-white:hover,
+      html.light-mode [class*="bg-[#4361ee"] .hover\:text-white:hover,
+      html.light-mode [class*="bg-[#ef233c"] .hover\:text-white:hover,
+      html.light-mode [class*="bg-[#d90429"] .hover\:text-white:hover,
+      html.light-mode [class*="bg-[#25D366"] .hover\:text-white:hover {
+        color: #ffffff !important;
+      }
+      /* group-hover:text-white → keep dark in light mode */
+      html.light-mode .group:hover .group-hover\:text-white { color: #1e293b !important; }
+      /* But keep white inside gradient colored cards */
+      html.light-mode .bg-gradient-to-r.from-\[\#240046\] .group:hover .group-hover\:text-white,
+      html.light-mode .bg-gradient-to-br.from-\[\#240046\] .group:hover .group-hover\:text-white,
+      html.light-mode .group:hover .group-hover\:bg-\[\#4361ee\] .group-hover\:text-white,
+      html.light-mode .group:hover .group-hover\:bg-\[\#4cc9f0\] .group-hover\:text-white {
+        color: #ffffff !important;
+      }
+      html.light-mode .hover\:text-\[\#4cc9f0\]:hover { color: #4361ee !important; }
+      html.light-mode .hover\:text-\[\#f72585\]:hover { color: #4361ee !important; }
+      html.light-mode .hover\:text-\[\#00f5d4\]:hover { color: #059669 !important; }
+      html.light-mode .hover\:text-\[\#ff9e00\]:hover { color: #d97706 !important; }
+      html.light-mode .hover\:text-\[\#10002b\]:hover { color: #1e1b4b !important; }
+      html.light-mode .hover\:text-slate-200:hover { color: #334155 !important; }
+      html.light-mode .hover\:text-indigo-300:hover { color: #6366f1 !important; }
+      html.light-mode .hover\:text-indigo-400:hover { color: #4361ee !important; }
+      html.light-mode .hover\:text-red-300:hover { color: #dc2626 !important; }
+
+      /* ----- BORDERS ----- */
+      html.light-mode .border-white      { border-color: #e2e8f0 !important; }
+      html.light-mode .border-white\/5   { border-color: #f1f5f9 !important; }
+      html.light-mode .border-white\/10  { border-color: #e2e8f0 !important; }
+      html.light-mode .border-white\/20  { border-color: #cbd5e1 !important; }
+      html.light-mode .border-white\/30  { border-color: #94a3b8 !important; }
+      html.light-mode .border-black      { border-color: #e2e8f0 !important; }
+      html.light-mode .border-black\/30  { border-color: #e2e8f0 !important; }
+      html.light-mode .border-\[\#4cc9f0\] { border-color: #4cc9f0 !important; }
+      html.light-mode .border-\[\#f72585\] { border-color: #6366f1 !important; }
+      html.light-mode .border-\[\#4361ee\] { border-color: #6366f1 !important; }
+      html.light-mode .border-\[\#7209b7\] { border-color: #8b5cf6 !important; }
+      html.light-mode .border-\[\#ef233c\] { border-color: #ef4444 !important; }
+      html.light-mode .border-\[\#ff9e00\] { border-color: #f59e0b !important; }
+      html.light-mode .border-\[\#00f5d4\] { border-color: #10b981 !important; }
+      html.light-mode .border-\[\#25D366\] { border-color: #22c55e !important; }
+      html.light-mode .border-red-500    { border-color: #ef4444 !important; }
+      html.light-mode .border-indigo-500 { border-color: #6366f1 !important; }
+      html.light-mode .border-slate-200  { border-color: #cbd5e1 !important; }
+      html.light-mode .border-slate-500  { border-color: #94a3b8 !important; }
+      html.light-mode .border-orange-500 { border-color: #f97316 !important; }
+
+      /* Hover borders */
+      html.light-mode .hover\:border-white\/5:hover,
+      html.light-mode .hover\:border-white\/10:hover { border-color: #e2e8f0 !important; }
+      html.light-mode .hover\:border-white\/20:hover { border-color: #cbd5e1 !important; }
+      html.light-mode .hover\:border-\[\#4cc9f0\]\/20:hover,
+      html.light-mode .hover\:border-\[\#4cc9f0\]\/30:hover,
+      html.light-mode .hover\:border-\[\#4cc9f0\]\/40:hover { border-color: rgba(14,165,233,0.4) !important; }
+      html.light-mode .hover\:border-\[\#f72585\]\/20:hover { border-color: rgba(99,102,241,0.35) !important; }
+      html.light-mode .hover\:border-\[\#ff9e00\]\/50:hover { border-color: rgba(245,158,11,0.5) !important; }
+      html.light-mode .hover\:border-\[\#00f5d4\]\/50:hover { border-color: rgba(16,185,129,0.5) !important; }
+      html.light-mode .hover\:border-\[\#4361ee\]:hover { border-color: #6366f1 !important; }
+      html.light-mode .hover\:border-indigo-500\/30:hover { border-color: rgba(99,102,241,0.3) !important; }
+
+      /* ----- GRADIENTS → all light ----- */
+      html.light-mode .from-\[\#10002b\]  { --tw-gradient-from: #f7f8fc !important; }
+      html.light-mode .from-\[\#240046\]  { --tw-gradient-from: #f1f5f9 !important; }
+      html.light-mode .from-\[\#3c096c\]  { --tw-gradient-from: #e8ecf5 !important; }
+      html.light-mode .from-\[\#4cc9f0\]  { --tw-gradient-from: #e0e7ff !important; }
+      html.light-mode .from-\[\#f72585\]  { --tw-gradient-from: #eef2ff !important; }
+      html.light-mode .from-\[\#4361ee\]  { --tw-gradient-from: #e0e7ff !important; }
+      html.light-mode .from-\[\#ff9e00\]  { --tw-gradient-from: #fef3c7 !important; }
+      html.light-mode .to-\[\#10002b\]    { --tw-gradient-to: #f7f8fc !important; }
+      html.light-mode .to-\[\#240046\]    { --tw-gradient-to: #f1f5f9 !important; }
+      html.light-mode .to-\[\#3c096c\]    { --tw-gradient-to: #e8ecf5 !important; }
+      html.light-mode .to-\[\#5a189a\]    { --tw-gradient-to: #eef2ff !important; }
+      html.light-mode .to-\[\#7209b7\]    { --tw-gradient-to: #e0e7ff !important; }
+      html.light-mode .to-\[\#f72585\]    { --tw-gradient-to: #eef2ff !important; }
+      html.light-mode .to-\[\#ff6d00\]    { --tw-gradient-to: #fed7aa !important; }
+      html.light-mode .via-\[\#10002b\]   { --tw-gradient-via: #f7f8fc !important; }
+      html.light-mode .via-\[\#3c096c\]   { --tw-gradient-via: #e8ecf5 !important; }
+      html.light-mode .hover\:from-\[\#4cc9f0\]\/5:hover { --tw-gradient-from: rgba(14,165,233,0.05) !important; }
+      html.light-mode .hover\:to-\[\#f72585\]\/5:hover { --tw-gradient-to: rgba(99,102,241,0.05) !important; }
+
+      /* ----- SHADOWS ----- */
+      html.light-mode .shadow-\[\#240046\]  { --tw-shadow-color: rgba(0,0,0,0.04) !important; }
+      html.light-mode .shadow-\[\#f72585\]  { --tw-shadow-color: rgba(99,102,241,0.08) !important; }
+      html.light-mode .shadow-\[\#ef233c\]  { --tw-shadow-color: rgba(239,68,68,0.08) !important; }
+      html.light-mode .shadow-purple-900    { --tw-shadow-color: rgba(99,102,241,0.05) !important; }
+
+      /* ----- CSS VARS ----- */
+      html.light-mode {
+        --bas-surface: #ffffff;
+        --bas-border: #e2e8f0;
+        --bas-glow: 0 1px 4px rgba(0,0,0,0.06);
+        --bas-accent: #6366f1;
+        --bas-accent-2: #6366f1;
+        color-scheme: light;
+      }
+
+      /* ----- GLASS / CARDS → SOLID WHITE ----- */
+      html.light-mode .glass-surface {
+        background: #ffffff !important;
+        border: 1px solid #e2e8f0 !important;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.04) !important;
+      }
+      html.light-mode .card-gradient {
+        background: #ffffff !important;
+      }
+      html.light-mode .card-blur {
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+        background: #ffffff !important;
+      }
+
+      /* ----- FORMS ----- */
+      html.light-mode input,
+      html.light-mode textarea,
+      html.light-mode select {
+        background: #ffffff !important;
+        border: 1px solid #e2e8f0 !important;
+        color: #1e293b !important;
+        box-shadow: inset 0 1px 2px rgba(0,0,0,0.04) !important;
+      }
+      html.light-mode input:focus,
+      html.light-mode textarea:focus,
+      html.light-mode select:focus {
+        border-color: #818cf8 !important;
+        box-shadow: 0 0 0 3px rgba(99,102,241,0.1), inset 0 1px 2px rgba(0,0,0,0.04) !important;
+        outline: none !important;
+      }
+      html.light-mode input::placeholder,
+      html.light-mode textarea::placeholder { color: #94a3b8 !important; }
+      html.light-mode .placeholder-slate-500::placeholder { color: #94a3b8 !important; }
+
+      /* ----- EFFECTS OFF ----- */
+      html.light-mode .text-glow { text-shadow: none !important; }
+      html.light-mode .text-gradient {
+        background: linear-gradient(135deg, #6366f1, #6366f1) !important;
+        -webkit-background-clip: text !important;
+        -webkit-text-fill-color: transparent !important;
+        background-clip: text !important;
+      }
+      html.light-mode .chip-accent {
+        background: #eef2ff !important;
+        color: #6366f1 !important;
+        border: 1px solid #e0e7ff !important;
+      }
+      html.light-mode .scanline-effect,
+      html.light-mode .scanline-effect:after { display: none !important; }
+      html.light-mode .animate-blob,
+      html.light-mode .animate-blob-reverse { display: none !important; }
+
+      /* ----- SCROLLBAR ----- */
+      html.light-mode ::-webkit-scrollbar-track { background: #f8fafc !important; }
+      /* thumb colors defined in THEME POLISH section below */
+
+      /* ----- BUTTONS ----- */
+      html.light-mode main button:hover,
+      html.light-mode .settings-panel button:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.06) !important; }
+      html.light-mode button:focus-visible,
+      html.light-mode a:focus-visible { box-shadow: 0 0 0 3px rgba(99,102,241,0.15) !important; }
+
+      /* ----- ANIMATIONS ----- */
+      html.light-mode .animate-pulse-glow { animation: glow-light 2s infinite !important; }
+      @keyframes glow-light {
+        0%, 100% { box-shadow: 0 0 6px rgba(99,102,241,0.08); }
+        50% { box-shadow: 0 0 14px rgba(99,102,241,0.14); }
+      }
+      html.light-mode .btn-hover-lift:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.06) !important; }
+      html.light-mode .skeleton-loader {
+        background: linear-gradient(90deg, #f1f5f9, #e2e8f0, #f1f5f9) !important;
+        background-size: 1000px 100% !important;
+      }
+
+      /* ----- HEADER/NAV ----- */
+      html.light-mode header {
+        background: linear-gradient(135deg, #ffffff 0%, #f0f0ff 50%, #eef2ff 100%) !important;
+        backdrop-filter: blur(24px) saturate(180%) !important;
+        -webkit-backdrop-filter: blur(24px) saturate(180%) !important;
+        border-bottom: none !important;
+        box-shadow:
+          0 1px 0 rgba(99,102,241,0.08),
+          0 4px 16px rgba(99,102,241,0.06),
+          0 8px 32px rgba(0,0,0,0.03) !important;
+        position: relative !important;
+      }
+      html.light-mode header::before {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0;
+        height: 3px;
+        background: linear-gradient(90deg, #6366f1, #818cf8, #a78bfa, #c084fc, #818cf8, #6366f1);
+        background-size: 200% 100%;
+        animation: headerAccentShimmer 4s linear infinite;
+        z-index: 50;
+      }
+      @keyframes headerAccentShimmer {
+        0% { background-position: 0% 0%; }
+        100% { background-position: 200% 0%; }
+      }
+      html.light-mode nav {
+        background: rgba(255,255,255,0.95) !important;
+        backdrop-filter: blur(20px) saturate(150%) !important;
+        -webkit-backdrop-filter: blur(20px) saturate(150%) !important;
+        border-color: #e2e8f0 !important;
+        box-shadow: 0 -2px 16px rgba(0,0,0,0.04) !important;
+      }
+      /* ===== HEADER — CLEAN BOTH MODES ===== */
+
+      /* Hide company subtitle & avatar circle (both modes) */
+      header p { display: none !important; }
+      header .w-10.h-10.rounded-full,
+      header [class*="bg-gradient-to-br"][class*="from-[#3c096c]"] {
+        display: none !important;
+      }
+
+      /* Header layout: clean padding, vertically centered */
+      header {
+        padding: 14px 20px !important;
+        min-height: 48px !important;
+      }
+      header > div {
+        display: flex !important;
+        align-items: center !important;
+      }
+
+      /* Remove text glow/shadow in both modes */
+      header .drop-shadow-\[0_0_5px_rgba\(255\,255\,255\,0\.5\)\] {
+        filter: none !important;
+        -webkit-filter: none !important;
+      }
+      header h1 {
+        background: none !important;
+        text-shadow: none !important;
+      }
+
+      /* Header logo image (replaces BAS text) */
+      header .bas-header-logo {
+        height: 18px;
+        max-width: 110px;
+        width: auto;
+        object-fit: contain;
+        display: block;
+      }
+
+      /* -- Dark mode header specifics -- */
+      header .bas-header-logo {
+        filter: brightness(0) invert(1);
+      }
+
+      /* -- Light mode header specifics -- */
+      html.light-mode header h1 {
+        color: #1a1a1a !important;
+        -webkit-text-fill-color: #1a1a1a !important;
+        font-weight: 900 !important;
+        filter: none !important;
+        -webkit-filter: none !important;
+      }
+      html.light-mode header h1[style*="color"] {
+        color: #1a1a1a !important;
+        -webkit-text-fill-color: #1a1a1a !important;
+      }
+      html.light-mode header .bas-header-logo {
+        filter: brightness(0) !important;
+      }
+      /* Remove child backgrounds in light mode */
+      html.light-mode header > div,
+      html.light-mode header > div > div,
+      html.light-mode header span:not([class*="bg-"]),
+      html.light-mode header h1,
+      html.light-mode header h2 {
+        background: transparent !important;
+        background-color: transparent !important;
+        background-image: none !important;
+      }
+
+      /* ===== LOGIN LOBBY — LOGO & LAYOUT ===== */
+      /* Logo container: strip circle bg, transparent, centered */
+      .max-w-sm .w-20.h-20.rounded-full[class*="bg-gradient-to-br"] {
+        background: transparent !important;
+        border: none !important;
+        border-radius: 0 !important;
+        padding: 0 !important;
+        width: 8rem !important;
+        height: 8rem !important;
+        box-shadow: none !important;
+        aspect-ratio: 1 !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+      }
+      .max-w-sm .w-20.h-20.rounded-full[class*="bg-gradient-to-br"]:hover {
+        box-shadow: none !important;
+      }
+      /* Logo image: crisp, contain, no rounding */
+      .max-w-sm .w-20.h-20 img[alt="Logo"] {
+        border-radius: 0 !important;
+        object-fit: contain !important;
+        width: 100% !important;
+        height: 100% !important;
+        image-rendering: -webkit-optimize-contrast;
+      }
+      /* Header section: compact spacing */
+      .max-w-sm .text-center.mb-8 {
+        margin-bottom: 1.25rem !important;
+      }
+      .max-w-sm .text-center.mb-8 > .mb-4 {
+        margin-bottom: 0.5rem !important;
+      }
+      /* SUPER-BAS title: HIDDEN — teks dihilangkan dari login */
+      .max-w-sm .water-wave-text.text-4xl {
+        display: none !important;
+      }
+      .max-w-sm .water-wave-text.text-4xl::after {
+        display: none !important;
+      }
+      /* Status badge: neat gap */
+      .max-w-sm .mt-3.flex.justify-center {
+        margin-top: 0.75rem !important;
+      }
+
+      /* Superbas SVG logo: HIDDEN — dihilangkan dari login */
+      .superbas-logo-login {
+        display: none !important;
+      }
+      /* Card: clean padding & radius */
+      .max-w-sm.rounded-\[3rem\] {
+        padding: 2.25rem 2rem 2rem !important;
+        border-radius: 2rem !important;
+        position: relative;
+        overflow: hidden;
+      }
+      /* Input containers: balanced height */
+      .max-w-sm input {
+        padding-top: 0.85rem !important;
+        padding-bottom: 0.85rem !important;
+        font-size: 0.95rem !important;
+      }
+      /* Input focus: clearer glow */
+      .max-w-sm input:focus {
+        transform: scale(1.01);
+      }
+      /* Input label spacing */
+      .max-w-sm .space-y-1 {
+        gap: 0.3rem !important;
+      }
+      .max-w-sm .space-y-1\.5 {
+        gap: 0.4rem !important;
+      }
+      /* Form fields gap */
+      .max-w-sm .space-y-5 {
+        gap: 1rem !important;
+      }
+      /* Submit button: balanced */
+      .max-w-sm button[type="submit"] {
+        margin-top: 0.75rem !important;
+        padding-top: 0.9rem !important;
+        padding-bottom: 0.9rem !important;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+      }
+      .max-w-sm button[type="submit"]:not(:disabled):hover {
+        transform: translateY(-1px) !important;
+      }
+      .max-w-sm button[type="submit"]:not(:disabled):active {
+        transform: translateY(0) scale(0.98) !important;
+      }
+      /* Error message: subtle shake animation */
+      @keyframes error-shake {
+        0%, 100% { transform: translateX(0); }
+        20% { transform: translateX(-6px); }
+        40% { transform: translateX(6px); }
+        60% { transform: translateX(-4px); }
+        80% { transform: translateX(4px); }
+      }
+      .max-w-sm .bg-red-500\/10 {
+        animation: error-shake 0.5s ease, fade-in-down 0.4s ease both !important;
+      }
+      /* Hide the BAS text h1 on login (logo speaks for itself) */
+      .max-w-sm h1.text-4xl {
+        display: none !important;
+      }
+
+      /* ===== LOGIN SCREEN — FULL LIGHT MODE ===== */
+      /* Login page bg */
+      html.light-mode .min-h-screen.bg-\[\#10002b\].flex.items-center {
+        background: linear-gradient(135deg, #f0f0ff 0%, #e8e0ff 50%, #f5f0ff 100%) !important;
+      }
+      /* Login card */
+      html.light-mode .max-w-sm.rounded-\[3rem\] {
+        background: rgba(255,255,255,0.85) !important;
+        border-color: rgba(99,102,241,0.15) !important;
+        box-shadow: 0 8px 40px rgba(99,102,241,0.12), 0 2px 8px rgba(0,0,0,0.04) !important;
+      }
+      /* Login logo: tinted in light mode (not fully black) */
+      html.light-mode .max-w-sm .w-20.h-20 img[alt="Logo"] {
+        filter: brightness(0.15) saturate(1.2) !important;
+      }
+      /* SUPER-BAS title — hidden in light mode too */
+      html.light-mode .max-w-sm .water-wave-text {
+        display: none !important;
+      }
+      /* Server status badges */
+      html.light-mode .max-w-sm .text-\[\#00f5d4\] {
+        color: #059669 !important;
+      }
+      html.light-mode .max-w-sm .bg-\[\#00f5d4\]\/10 {
+        background: rgba(5,150,105,0.08) !important;
+        border-color: rgba(5,150,105,0.25) !important;
+      }
+      /* Input fields */
+      html.light-mode .max-w-sm input {
+        background: rgba(99,102,241,0.04) !important;
+        border-color: #e0e7ff !important;
+        color: #1e1b4b !important;
+      }
+      html.light-mode .max-w-sm input::placeholder {
+        color: #94a3b8 !important;
+      }
+      html.light-mode .max-w-sm input:focus {
+        background: rgba(99,102,241,0.08) !important;
+        border-color: #818cf8 !important;
+        box-shadow: 0 0 0 3px rgba(99,102,241,0.1) !important;
+      }
+      /* Input labels */
+      html.light-mode .max-w-sm label {
+        color: #6366f1 !important;
+      }
+      html.light-mode .max-w-sm .text-slate-500,
+      html.light-mode .max-w-sm .text-slate-400 {
+        color: #64748b !important;
+      }
+      /* Input icons */
+      html.light-mode .max-w-sm .text-slate-500.group-focus-within\:text-\[\#4361ee\] {
+        color: #94a3b8 !important;
+      }
+      html.light-mode .max-w-sm .group:focus-within .text-slate-500 {
+        color: #6366f1 !important;
+      }
+      /* Submit button */
+      html.light-mode .max-w-sm button[type="submit"] {
+        background: linear-gradient(135deg, #6366f1, #8b5cf6) !important;
+        box-shadow: 0 4px 16px rgba(99,102,241,0.3) !important;
+      }
+      html.light-mode .max-w-sm button[type="submit"]:hover {
+        box-shadow: 0 6px 24px rgba(99,102,241,0.4) !important;
+      }
+      /* Error message */
+      html.light-mode .max-w-sm .bg-red-500\/10 {
+        background: rgba(239,68,68,0.06) !important;
+        border-color: rgba(239,68,68,0.2) !important;
+      }
+      /* Eye toggle button */
+      html.light-mode .max-w-sm button[type="button"] .text-slate-500 {
+        color: #94a3b8 !important;
+      }
+      /* Tip text */
+      html.light-mode .max-w-sm p.text-\[9px\] {
+        color: #94a3b8 !important;
+      }
+      /* 16 ANGKA label */
+      html.light-mode .max-w-sm span.text-\[8px\] {
+        color: #94a3b8 !important;
+      }
+      /* White text in login → dark */
+      html.light-mode .max-w-sm .text-white {
+        color: #1e1b4b !important;
+      }
+      html.light-mode .max-w-sm button[type="submit"] .text-white,
+      html.light-mode .max-w-sm button[type="submit"] span {
+        color: #ffffff !important;
+      }
+
+      /* Light mode login: add subtle bg decoration (blobs hidden) */
+      html.light-mode .min-h-screen.bg-\[\#10002b\].flex.items-center::before {
+        content: '';
+        position: absolute;
+        top: -15%; right: -10%;
+        width: 500px; height: 500px;
+        background: radial-gradient(circle, rgba(99,102,241,0.12) 0%, transparent 70%);
+        border-radius: 50%;
+        pointer-events: none;
+        animation: blob-float 20s infinite alternate ease-in-out;
+      }
+      html.light-mode .min-h-screen.bg-\[\#10002b\].flex.items-center::after {
+        content: '';
+        position: absolute;
+        bottom: -10%; left: -15%;
+        width: 450px; height: 450px;
+        background: radial-gradient(circle, rgba(139,92,246,0.1) 0%, transparent 70%);
+        border-radius: 50%;
+        pointer-events: none;
+        animation: blob-float 25s infinite alternate-reverse ease-in-out;
+      }
+
+      /* Light mode card: add subtle shimmer border */
+      html.light-mode .max-w-sm.rounded-\[3rem\]::before {
+        content: '';
+        position: absolute;
+        inset: -1px;
+        border-radius: inherit;
+        padding: 1px;
+        background: linear-gradient(135deg, rgba(99,102,241,0.2), rgba(139,92,246,0.1), rgba(99,102,241,0.2));
+        -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+        -webkit-mask-composite: xor;
+        mask-composite: exclude;
+        pointer-events: none;
+      }
+
+      /* ===== SHOW THEME TOGGLE ON LOGIN SCREEN ===== */
+      /* When there's no header (login page), show the floating toggle */
+      body:not(:has(header)) #theme-toggle-btn,
+      #root:empty ~ #theme-toggle-btn {
+        display: flex !important;
+      }
+      /* Also show when #root has the login screen (no header present) */
+      #root:has(.min-h-screen.flex.items-center.justify-center) ~ #theme-toggle-btn {
+        display: flex !important;
+      }
+
+      /* ===== MODAL STACKING CONTEXT FIX ===== */
+      /* main has z-10, header has z-30 — modal z-50 inside main can't beat header.
+         Use :has() to raise main above header when modal is present. */
+      main:has(.fixed.inset-0.z-50) {
+        z-index: 60 !important;
+      }
+      /* Hide header when full-screen modal is open */
+      .max-w-md:has(.fixed.inset-0.z-50) > header {
+        opacity: 0 !important;
+        pointer-events: none !important;
+        z-index: -1 !important;
+        transition: opacity 0.2s ease !important;
+      }
+      /* Hide bottom nav when modal is open for clean full-screen look */
+      html.light-mode .max-w-md:has(.fixed.inset-0.z-50) > nav,
+      html.light-mode .max-w-md:has(.fixed.inset-0.z-50) ~ nav {
+        opacity: 0 !important;
+        pointer-events: none !important;
+        z-index: -1 !important;
+      }
+      /* JS fallback: class added by observer */
+      main.modal-active {
+        z-index: 60 !important;
+      }
+      .modal-active-parent > header {
+        opacity: 0 !important;
+        pointer-events: none !important;
+        z-index: -1 !important;
+      }
+      html.light-mode .modal-active-parent > nav {
+        opacity: 0 !important;
+        pointer-events: none !important;
+        z-index: -1 !important;
+      }
+
+      /* ===== SLIP GAJI — FULL LIGHT MODE FIX ===== */
+
+      /* --- Modal Overlay --- */
+      html.light-mode .fixed.inset-0.z-50 {
+        background: #f5f3ff !important;
+        backdrop-filter: none !important;
+      }
+
+      /* --- Modal Container --- */
+      html.light-mode .fixed.inset-0.z-50 > .bg-\[\#1a0b2e\],
+      html.light-mode .fixed.inset-0.z-50 > div {
+        background: #f5f3ff !important;
+        border: none !important;
+        box-shadow: none !important;
+      }
+
+      /* --- Modal Header (SLIP #1 / DC KOSAMBI) --- */
+      html.light-mode .fixed.inset-0.z-50 .bg-gradient-to-r.from-\[\#240046\],
+      html.light-mode .fixed.inset-0.z-50 [class*="bg-gradient-to-r"][class*="from-[#240046]"][class*="to-[#3c096c]"] {
+        background: linear-gradient(135deg, #4361ee 0%, #6366f1 50%, #818cf8 100%) !important;
+        border-bottom: none !important;
+        border-radius: 0 0 20px 20px !important;
+        padding: 20px 24px 18px !important;
+        box-shadow: 0 4px 20px rgba(67,97,238,0.25) !important;
+      }
+      /* Decorative blob in header */
+      html.light-mode .fixed.inset-0.z-50 .bg-gradient-to-r.from-\[\#240046\] .bg-\[\#f72585\],
+      html.light-mode .fixed.inset-0.z-50 [class*="from-[#240046]"] .bg-\[\#f72585\] {
+        background: rgba(255,255,255,0.10) !important;
+      }
+      /* All text white inside header */
+      html.light-mode .fixed.inset-0.z-50 .bg-gradient-to-r.from-\[\#240046\] *,
+      html.light-mode .fixed.inset-0.z-50 [class*="bg-gradient-to-r"][class*="from-[#240046]"] * {
+        color: #ffffff !important;
+        -webkit-text-fill-color: #ffffff !important;
+      }
+      html.light-mode .fixed.inset-0.z-50 .bg-gradient-to-r.from-\[\#240046\] .text-\[\#4cc9f0\],
+      html.light-mode .fixed.inset-0.z-50 [class*="from-[#240046]"] .text-\[\#4cc9f0\] {
+        color: rgba(255,255,255,0.75) !important;
+        -webkit-text-fill-color: rgba(255,255,255,0.75) !important;
+      }
+      /* Back & close buttons — almost invisible, subtle glass */
+      html.light-mode .fixed.inset-0.z-50 .bg-gradient-to-r.from-\[\#240046\] button,
+      html.light-mode .fixed.inset-0.z-50 [class*="from-[#240046]"] button {
+        background: rgba(255,255,255,0.08) !important;
+        backdrop-filter: blur(4px) !important;
+        border: 1px solid rgba(255,255,255,0.15) !important;
+        box-shadow: none !important;
+      }
+      html.light-mode .fixed.inset-0.z-50 .bg-gradient-to-r.from-\[\#240046\] button:hover,
+      html.light-mode .fixed.inset-0.z-50 [class*="from-[#240046]"] button:hover {
+        background: rgba(255,255,255,0.18) !important;
+        border-color: rgba(255,255,255,0.25) !important;
+      }
+
+      /* --- Scrollable body --- */
+      html.light-mode .fixed.inset-0.z-50 .overflow-y-auto {
+        background: #f5f3ff !important;
+      }
+
+      /* --- Total Dibayarkan area --- */
+      html.light-mode .fixed.inset-0.z-50 .text-center {
+        background: #ffffff !important;
+        border-radius: 20px !important;
+        margin: 16px 16px 8px !important;
+        padding: 24px 20px !important;
+        box-shadow: 0 2px 12px rgba(99,102,241,0.06), 0 1px 3px rgba(0,0,0,0.04) !important;
+      }
+      html.light-mode .fixed.inset-0.z-50 .text-4xl.font-black {
+        color: #1e293b !important;
+        -webkit-text-fill-color: #1e293b !important;
+        text-shadow: none !important;
+        filter: none !important;
+      }
+      html.light-mode .fixed.inset-0.z-50 .tracking-\[0\.15em\],
+      html.light-mode .fixed.inset-0.z-50 .tracking-widest {
+        color: #818cf8 !important;
+        -webkit-text-fill-color: #818cf8 !important;
+        font-weight: 700 !important;
+        font-size: 11px !important;
+        letter-spacing: 0.2em !important;
+      }
+      html.light-mode .fixed.inset-0.z-50 .text-center .text-slate-500 {
+        color: #6366f1 !important;
+        -webkit-text-fill-color: #6366f1 !important;
+      }
+      /* CAIR badge */
+      html.light-mode .fixed.inset-0.z-50 .bg-\[\#00f5d4\]\/20 {
+        background: #ecfdf5 !important;
+        border: 1px solid #a7f3d0 !important;
+        border-color: #a7f3d0 !important;
+      }
+      html.light-mode .fixed.inset-0.z-50 .text-\[\#00f5d4\] {
+        color: #059669 !important;
+        -webkit-text-fill-color: #059669 !important;
+      }
+      /* Separator pipes */
+      html.light-mode .fixed.inset-0.z-50 .text-white\/30,
+      html.light-mode .fixed.inset-0.z-50 .text-white\/50 {
+        color: #c7d2fe !important;
+        -webkit-text-fill-color: #c7d2fe !important;
+      }
+
+      /* --- Section Cards --- */
+      html.light-mode .fixed.inset-0.z-50 .bg-white\/5.rounded-3xl {
+        background: #ffffff !important;
+        border: none !important;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.04), 0 0 0 1px rgba(0,0,0,0.03) !important;
+        margin-left: 16px !important;
+        margin-right: 16px !important;
+      }
+      html.light-mode .fixed.inset-0.z-50 .bg-\[\#00f5d4\]\/5.rounded-3xl {
+        background: #ffffff !important;
+        border: none !important;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.04), 0 0 0 1px rgba(0,0,0,0.03) !important;
+        margin-left: 16px !important;
+        margin-right: 16px !important;
+      }
+      html.light-mode .fixed.inset-0.z-50 .bg-red-500\/5.rounded-3xl {
+        background: #ffffff !important;
+        border: none !important;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.04), 0 0 0 1px rgba(0,0,0,0.03) !important;
+        margin-left: 16px !important;
+        margin-right: 16px !important;
+      }
+      html.light-mode .fixed.inset-0.z-50 .bg-\[\#4361ee\]\/5.rounded-3xl {
+        background: #ffffff !important;
+        border: none !important;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.04), 0 0 0 1px rgba(0,0,0,0.03) !important;
+        margin-left: 16px !important;
+        margin-right: 16px !important;
+      }
+
+      /* --- Section Title Icons (colored left accent) --- */
+      html.light-mode .fixed.inset-0.z-50 h4.text-\[\#4cc9f0\] {
+        color: #4361ee !important;
+        -webkit-text-fill-color: #4361ee !important;
+      }
+      html.light-mode .fixed.inset-0.z-50 h4.text-\[\#00f5d4\] {
+        color: #059669 !important;
+        -webkit-text-fill-color: #059669 !important;
+      }
+      html.light-mode .fixed.inset-0.z-50 h4.text-red-400 {
+        color: #ef4444 !important;
+        -webkit-text-fill-color: #ef4444 !important;
+      }
+      html.light-mode .fixed.inset-0.z-50 h4.text-\[\#4361ee\] {
+        color: #4361ee !important;
+        -webkit-text-fill-color: #4361ee !important;
+      }
+
+      /* --- Data row text --- */
+      html.light-mode .fixed.inset-0.z-50 .text-white {
+        color: #1e293b !important;
+        -webkit-text-fill-color: #1e293b !important;
+      }
+      html.light-mode .fixed.inset-0.z-50 .text-slate-400 {
+        color: #94a3b8 !important;
+        -webkit-text-fill-color: #94a3b8 !important;
+      }
+      html.light-mode .fixed.inset-0.z-50 .text-slate-300 {
+        color: #64748b !important;
+        -webkit-text-fill-color: #64748b !important;
+      }
+      html.light-mode .fixed.inset-0.z-50 .text-slate-500 {
+        color: #64748b !important;
+        -webkit-text-fill-color: #64748b !important;
+      }
+      html.light-mode .fixed.inset-0.z-50 .text-slate-600 {
+        color: #475569 !important;
+        -webkit-text-fill-color: #475569 !important;
+      }
+      /* Borders inside modal — softer */
+      html.light-mode .fixed.inset-0.z-50 .border-white\/5,
+      html.light-mode .fixed.inset-0.z-50 .border-white\/10 {
+        border-color: #f1f5f9 !important;
+      }
+
+      /* --- Footer area (DOWNLOAD PNG, KEMBALI) --- */
+      html.light-mode .fixed.inset-0.z-50 .border-t.border-white\/10,
+      html.light-mode .fixed.inset-0.z-50 > div > .bg-\[\#10002b\],
+      html.light-mode .fixed.inset-0.z-50 .shrink-0.bg-\[\#10002b\] {
+        background: #f5f3ff !important;
+        border-top: none !important;
+        padding: 12px 16px !important;
+      }
+      /* DOWNLOAD PNG button — vibrant but clean */
+      html.light-mode .fixed.inset-0.z-50 button.bg-\[\#4cc9f0\] {
+        background: linear-gradient(135deg, #4361ee, #818cf8) !important;
+        color: #ffffff !important;
+        -webkit-text-fill-color: #ffffff !important;
+        border-radius: 16px !important;
+        box-shadow: 0 4px 16px rgba(67,97,238,0.3) !important;
+        font-weight: 700 !important;
+      }
+      html.light-mode .fixed.inset-0.z-50 button.bg-\[\#4cc9f0\]:hover {
+        background: linear-gradient(135deg, #4338ca, #6366f1) !important;
+        box-shadow: 0 6px 20px rgba(67,97,238,0.4) !important;
+      }
+      html.light-mode .fixed.inset-0.z-50 button.bg-\[\#4cc9f0\] * {
+        color: #ffffff !important;
+        -webkit-text-fill-color: #ffffff !important;
+      }
+      /* KEMBALI button — minimal outline */
+      html.light-mode .fixed.inset-0.z-50 .shrink-0 button.bg-white\/5,
+      html.light-mode .fixed.inset-0.z-50 .shrink-0 .bg-white\/5 {
+        background: #ffffff !important;
+        border: 1.5px solid #e0e7ff !important;
+        border-radius: 16px !important;
+        box-shadow: none !important;
+      }
+      html.light-mode .fixed.inset-0.z-50 .shrink-0 button.bg-white\/5:hover {
+        background: #f5f3ff !important;
+        border-color: #c7d2fe !important;
+      }
+      html.light-mode .fixed.inset-0.z-50 .shrink-0 .text-\[\#10002b\],
+      html.light-mode .fixed.inset-0.z-50 .shrink-0 button .text-white {
+        color: #4361ee !important;
+        -webkit-text-fill-color: #4361ee !important;
+        font-weight: 600 !important;
+      }
+
+      /* --- Notes card --- */
+      html.light-mode .fixed.inset-0.z-50 .italic.bg-white\/5 {
+        background: #fffbeb !important;
+        border: 1px solid #fde68a !important;
+      }
+
+      /* --- Slip List Page --- */
+      html.light-mode .text-xl.font-black.text-white {
+        color: #1e293b !important;
+        -webkit-text-fill-color: #1e293b !important;
+      }
+      /* .bg-[#240046]/30 base + hover defined in INFO CARDS section below */
+      html.light-mode .bg-\[\#240046\]\/30 .text-white.text-lg,
+      html.light-mode .bg-\[\#240046\]\/30 .font-bold.text-white {
+        color: #1e293b !important;
+        -webkit-text-fill-color: #1e293b !important;
+      }
+      html.light-mode .text-\[\#00f5d4\] {
+        color: #059669 !important;
+        -webkit-text-fill-color: #059669 !important;
+      }
+      html.light-mode .bg-\[\#240046\]\/30 .bg-white\/5 {
+        background: #f1f5f9 !important;
+      }
+      html.light-mode .bg-\[\#240046\]\/30 > .bg-white\/5 {
+        background: #f8fafc !important;
+        border-bottom: 1px solid #e2e8f0 !important;
+      }
+      html.light-mode .text-\[\#f72585\] {
+        color: #6366f1 !important;
+        -webkit-text-fill-color: #6366f1 !important;
+      }
+      /* Ensure -webkit-text-fill-color is set for key global text overrides (WebKit bug) */
+      html.light-mode .text-white     { -webkit-text-fill-color: #1e293b !important; }
+      html.light-mode .text-white\/70 { -webkit-text-fill-color: #475569 !important; }
+      html.light-mode .text-white\/50 { -webkit-text-fill-color: #64748b !important; }
+      html.light-mode .bg-\[\#f72585\].rounded-full.w-2.h-2,
+      html.light-mode span.bg-\[\#f72585\] {
+        background: #6366f1 !important;
+        box-shadow: 0 0 8px rgba(99,102,241,0.3) !important;
+      }
+      html.light-mode .bg-\[\#4361ee\]\/20 {
+        background: #eef2ff !important;
+        border-color: #c7d2fe !important;
+      }
+      /* Left accent bar on slip items */
+      html.light-mode .bg-\[\#4cc9f0\].w-1 {
+        background: #6366f1 !important;
+      }
+
+      /* ===== ID CARD — PREMIUM REDESIGN ===== */
+      #card-capture-target {
+        background: linear-gradient(160deg, #0d0025 0%, #10002b 30%, #1a0a3e 60%, #0d0025 100%) !important;
+        position: relative !important;
+      }
+      /* QR code container */
+      #card-capture-target .p-3.rounded-3xl {
+        background: rgba(10, 5, 24, 0.8) !important;
+        border: 1px solid rgba(67, 97, 238, 0.25) !important;
+        box-shadow: 0 0 30px rgba(67, 97, 238, 0.15), inset 0 1px 0 rgba(255,255,255,0.05) !important;
+      }
+      /* OPS ID glow */
+      #card-capture-target .font-mono.font-black.tracking-widest {
+        text-shadow: 0 0 10px rgba(0, 245, 212, 0.5), 0 0 30px rgba(0, 245, 212, 0.2) !important;
+        letter-spacing: 0.25em !important;
+      }
+      /* Name styling */
+      #card-capture-target h2.font-black.uppercase {
+        text-shadow: 0 2px 8px rgba(0,0,0,0.6), 0 0 20px rgba(67,97,238,0.15) !important;
+      }
+      /* Position divider lines */
+      #card-capture-target .flex.items-center.justify-center.gap-2 div[style*="height: 1.5px"] {
+        width: 30px !important;
+        height: 2px !important;
+        background: linear-gradient(90deg, transparent, #f72585, transparent) !important;
+      }
+      /* Hide bottom clutter (SECURE ACCESS TOKEN, dots) */
+      #card-capture-target > .absolute.bottom-0 {
+        display: none !important;
+      }
+      /* Decorative side bars */
+      #card-capture-target .w-1\.5.h-6.rounded-full {
+        box-shadow: 0 0 8px rgba(67, 97, 238, 0.6) !important;
+      }
+      #card-capture-target .w-1\.5.h-4.rounded-full {
+        box-shadow: 0 0 8px rgba(247, 37, 133, 0.6) !important;
+      }
+
+      /* ===== ID CARD — LIGHT MODE ISOLATION (always dark) ===== */
+      html.light-mode #card-capture-target {
+        background: linear-gradient(160deg, #0d0025 0%, #10002b 30%, #1a0a3e 60%, #0d0025 100%) !important;
+      }
+      html.light-mode #card-capture-target .bg-gradient-to-b.to-\[\#10002b\] {
+        --tw-gradient-to: #10002b !important;
+      }
+      html.light-mode #card-capture-target .bg-gradient-to-b.from-\[\#10002b\]\/10 {
+        --tw-gradient-from: rgba(16,0,43,0.1) !important;
+      }
+      html.light-mode #card-capture-target .bg-gradient-to-b.via-\[\#10002b\]\/20 {
+        --tw-gradient-via: rgba(16,0,43,0.2) !important;
+      }
+      html.light-mode #card-capture-target .bg-white {
+        background-color: #ffffff !important;
+      }
+      html.light-mode #card-capture-target .p-3.rounded-3xl {
+        background: rgba(10, 5, 24, 0.8) !important;
+        border: 1px solid rgba(67, 97, 238, 0.25) !important;
+        box-shadow: 0 0 30px rgba(67, 97, 238, 0.15), inset 0 1px 0 rgba(255,255,255,0.05) !important;
+      }
+      /* Force all text inside ID card to keep dark-mode colors */
+      html.light-mode #card-capture-target h2.font-black.uppercase {
+        color: #ffffff !important;
+        text-shadow: 0 2px 8px rgba(0,0,0,0.6), 0 0 20px rgba(67,97,238,0.15) !important;
+      }
+      html.light-mode #card-capture-target .font-mono.font-black.tracking-widest {
+        color: #00f5d4 !important;
+      }
+      html.light-mode #card-capture-target .font-bold.uppercase {
+        color: #f72585 !important;
+      }
+      html.light-mode #card-capture-target .font-mono {
+        color: #4cc9f0 !important;
+      }
+      html.light-mode #card-capture-target .text-white,
+      html.light-mode #card-capture-target [style*="color: rgb(255, 255, 255)"],
+      html.light-mode #card-capture-target [style*="color:#ffffff"] {
+        color: #ffffff !important;
+      }
+
+      /* ===== PAYSLIP PNG TEMPLATE — CLEAN REDESIGN ===== */
+      /* Target: hidden div inside modal used by html2canvas */
+      .fixed.inset-0.z-50 .absolute.top-0.left-0.w-full > div[style*="width"] {
+        background: #ffffff !important;
+        padding: 0 !important;
+        font-family: 'Open Sans', 'Inter', sans-serif !important;
+        overflow: hidden !important;
+        border-radius: 0 !important;
+      }
+
+      /* === HEADER — gradient band === */
+      .fixed.inset-0.z-50 .absolute.top-0.left-0.w-full > div[style*="width"] > .text-center.mb-6 {
+        background: linear-gradient(135deg, #1e1b4b 0%, #312e81 40%, #4338ca 100%) !important;
+        border: none !important;
+        border-bottom: 3px solid #6366f1 !important;
+        border-radius: 0 !important;
+        padding: 24px 32px 20px !important;
+        margin: 0 !important;
+      }
+      .fixed.inset-0.z-50 .absolute.top-0.left-0.w-full > div[style*="width"] > .text-center.mb-6 h2 {
+        color: #ffffff !important;
+        font-size: 15px !important;
+        font-weight: 900 !important;
+        letter-spacing: 0.04em !important;
+        text-shadow: 0 1px 6px rgba(0,0,0,0.2) !important;
+        margin-bottom: 4px !important;
+      }
+      .fixed.inset-0.z-50 .absolute.top-0.left-0.w-full > div[style*="width"] > .text-center.mb-6 p {
+        color: rgba(199,210,254,0.85) !important;
+        font-size: 9px !important;
+        letter-spacing: 0.2em !important;
+      }
+      /* Hide tagline injected by enhancer */
+      .fixed.inset-0.z-50 .absolute.top-0.left-0.w-full > div[style*="width"] .bas-tagline {
+        display: none !important;
+      }
+
+      /* === EMPLOYEE / PAYMENT INFO GRID === */
+      .fixed.inset-0.z-50 .absolute.top-0.left-0.w-full > div[style*="width"] > .grid.grid-cols-2 {
+        background: #f8fafc !important;
+        border: 1px solid #e2e8f0 !important;
+        border-radius: 10px !important;
+        padding: 16px 20px 20px !important;
+        margin: 20px 28px 16px !important;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.04) !important;
+      }
+      /* Left column — employee info */
+      .fixed.inset-0.z-50 .absolute.top-0.left-0.w-full > div[style*="width"] > .grid.grid-cols-2 > .space-y-1 {
+        overflow: visible !important;
+      }
+      /* Right column — payment info: prevent truncation */
+      .fixed.inset-0.z-50 .absolute.top-0.left-0.w-full > div[style*="width"] > .grid.grid-cols-2 > .space-y-1.text-right p {
+        line-height: 1.4 !important;
+      }
+      .fixed.inset-0.z-50 .absolute.top-0.left-0.w-full > div[style*="width"] > .grid.grid-cols-2 > .space-y-1.text-right .truncate {
+        white-space: normal !important;
+        overflow: visible !important;
+        text-overflow: clip !important;
+        word-break: break-word !important;
+      }
+
+      /* === EARNINGS / DEDUCTIONS SECTIONS === */
+      .fixed.inset-0.z-50 .absolute.top-0.left-0.w-full > div[style*="width"] > .space-y-2 {
+        padding: 0 28px !important;
+      }
+      /* Section headers (PENDAPATAN, POTONGAN) */
+      .fixed.inset-0.z-50 .absolute.top-0.left-0.w-full > div[style*="width"] > .space-y-2 > .font-black {
+        font-size: 9px !important;
+        letter-spacing: 0.15em !important;
+        padding-bottom: 5px !important;
+        margin-top: 14px !important;
+        margin-bottom: 6px !important;
+        border-bottom: 2px solid !important;
+      }
+      .fixed.inset-0.z-50 .absolute.top-0.left-0.w-full > div[style*="width"] > .space-y-2 > .font-black.text-blue-600 {
+        color: #4338ca !important;
+        border-color: #c7d2fe !important;
+      }
+      .fixed.inset-0.z-50 .absolute.top-0.left-0.w-full > div[style*="width"] > .space-y-2 > .font-black.text-red-600 {
+        color: #dc2626 !important;
+        border-color: #fecaca !important;
+      }
+      /* Row items */
+      .fixed.inset-0.z-50 .absolute.top-0.left-0.w-full > div[style*="width"] > .space-y-2 > .flex.justify-between {
+        padding: 5px 0 !important;
+        border-bottom: 1px solid #f1f5f9 !important;
+        font-size: 10px !important;
+      }
+      .fixed.inset-0.z-50 .absolute.top-0.left-0.w-full > div[style*="width"] > .space-y-2 > .flex.justify-between > span:first-child {
+        color: #475569 !important;
+      }
+      .fixed.inset-0.z-50 .absolute.top-0.left-0.w-full > div[style*="width"] > .space-y-2 > .flex.justify-between > .font-bold {
+        color: #1e293b !important;
+        font-weight: 800 !important;
+      }
+      .fixed.inset-0.z-50 .absolute.top-0.left-0.w-full > div[style*="width"] > .space-y-2 > .flex.justify-between.text-red-600 {
+        color: #dc2626 !important;
+      }
+      .fixed.inset-0.z-50 .absolute.top-0.left-0.w-full > div[style*="width"] > .space-y-2 > .flex.justify-between.text-red-600 .font-bold {
+        color: #dc2626 !important;
+      }
+
+      /* === NET TAKE HOME PAY — horizontal layout === */
+      .fixed.inset-0.z-50 .absolute.top-0.left-0.w-full > div[style*="width"] > .space-y-2 > .flex.justify-between.text-base.font-black {
+        background: linear-gradient(135deg, #1e1b4b, #312e81) !important;
+        color: #ffffff !important;
+        padding: 14px 28px !important;
+        margin: 12px -28px 0 !important;
+        border: none !important;
+        border-radius: 0 !important;
+        font-size: 11px !important;
+        letter-spacing: 0.1em !important;
+        display: flex !important;
+        flex-direction: row !important;
+        flex-wrap: nowrap !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+      }
+      .fixed.inset-0.z-50 .absolute.top-0.left-0.w-full > div[style*="width"] > .space-y-2 > .flex.justify-between.text-base.font-black span {
+        color: #ffffff !important;
+      }
+      .fixed.inset-0.z-50 .absolute.top-0.left-0.w-full > div[style*="width"] > .space-y-2 > .flex.justify-between.text-base.font-black .text-blue-800 {
+        color: #c77dff !important;
+        font-size: 18px !important;
+        font-weight: 900 !important;
+        letter-spacing: 0.02em !important;
+      }
+
+      /* === FOOTER === */
+      .fixed.inset-0.z-50 .absolute.top-0.left-0.w-full > div[style*="width"] > .mt-10 {
+        padding: 16px 28px !important;
+        margin: 0 !important;
+        background: #f8fafc !important;
+        border-top: 1px solid #e2e8f0 !important;
+      }
+      .fixed.inset-0.z-50 .absolute.top-0.left-0.w-full > div[style*="width"] > .mt-10 .text-slate-400 {
+        color: #94a3b8 !important;
+        font-size: 7px !important;
+      }
+      .fixed.inset-0.z-50 .absolute.top-0.left-0.w-full > div[style*="width"] > .mt-10 .font-black.text-slate-700 {
+        color: #4338ca !important;
+        font-size: 8px !important;
+        letter-spacing: 0.15em !important;
+      }
+      .fixed.inset-0.z-50 .absolute.top-0.left-0.w-full > div[style*="width"] > .mt-10 .bg-black {
+        background: #4338ca !important;
+        height: 2px !important;
+      }
+
+      /* ----- BOTTOM NAV FIX ----- */
+      html.light-mode nav,
+      html.light-mode [class*="fixed"][class*="bottom-0"],
+      html.light-mode [class*="sticky"][class*="bottom"] {
+        background: rgba(255,255,255,0.95) !important;
+        border-top: 1px solid #e2e8f0 !important;
+      }
+
+      /* ----- BOTTOM NAV: Active tab indicator stays vibrant in light mode ----- */
+      html.light-mode nav .bg-gradient-to-r.from-\[\#f72585\] {
+        --tw-gradient-from: #6366f1 !important;
+        --tw-gradient-to: #8b5cf6 !important;
+        background: linear-gradient(to right, #6366f1, #8b5cf6) !important;
+        box-shadow: 0 0 12px rgba(99,102,241,0.4) !important;
+      }
+      /* Active tab icon: indigo instead of pink */
+      html.light-mode nav .text-\[\#f72585\] {
+        color: #6366f1 !important;
+      }
+      /* Active tab icon glow: match indigo */
+      html.light-mode nav .shadow-\[0_0_15px_rgba\(247\,37\,133\,0\.3\)\] {
+        box-shadow: 0 0 12px rgba(99,102,241,0.2) !important;
+      }
+      /* Active tab bg-white/5 → light indigo tint */
+      html.light-mode nav .bg-white\/5 {
+        background-color: rgba(99,102,241,0.06) !important;
+      }
+      /* Inactive tab icons → muted */
+      html.light-mode nav .text-slate-500 {
+        color: #94a3b8 !important;
+      }
+      html.light-mode nav .text-slate-600 {
+        color: #94a3b8 !important;
+      }
+      /* Inactive tab labels on hover */
+      html.light-mode nav .group:hover .group-hover\:text-white {
+        color: #4338ca !important;
+      }
+      html.light-mode nav .group:hover .group-hover\:text-\[\#4cc9f0\] {
+        color: #6366f1 !important;
+      }
+      html.light-mode nav .group:hover .group-hover\:scale-105 {
+        transform: scale(1.05) !important;
+      }
+      /* Nav shadow override — soft bottom bar */
+      html.light-mode nav.shadow-\[0_-10px_40px_rgba\(0\,0\,0\,0\.8\)\] {
+        box-shadow: 0 -2px 16px rgba(0,0,0,0.04) !important;
+      }
+
+      /* ----- INLINE STYLE PATCHER (CSS) ----- */
+      html.light-mode [style*="background-color: rgb(16, 0, 43)"],
+      html.light-mode [style*="background: rgb(16, 0, 43)"],
+      html.light-mode [style*="background-color: rgb(26, 11, 46)"],
+      html.light-mode [style*="background: rgb(26, 11, 46)"],
+      html.light-mode [style*="background-color: rgb(36, 0, 70)"],
+      html.light-mode [style*="background: rgb(36, 0, 70)"],
+      html.light-mode [style*="background-color: rgb(60, 9, 108)"],
+      html.light-mode [style*="background: rgb(60, 9, 108)"] {
+        background: #f7f8fc !important;
+      }
+      html.light-mode [style*="color: rgb(255, 255, 255)"],
+      html.light-mode [style*="color: white"] {
+        color: #1e293b !important;
+      }
+      /* But keep white text INSIDE gradient welcome card */
+      html.light-mode .bg-gradient-to-r.from-\[\#240046\] [style*="color: rgb(255, 255, 255)"],
+      html.light-mode .bg-gradient-to-r.from-\[\#240046\] [style*="color: white"],
+      html.light-mode [class*="bg-gradient-to-r"][class*="from-[#240046]"] [style*="color: rgb(255, 255, 255)"],
+      html.light-mode [class*="bg-gradient-to-r"][class*="from-[#240046]"] [style*="color: white"] {
+        color: #ffffff !important;
+      }
+
+      /* Force #root children to respect light theme */
+      html.light-mode #root {
+        background: #f7f8fc !important;
+      }
+      html.light-mode #root > div {
+        background: #f7f8fc !important;
+      }
+
+      /* SVGs */
+      html.light-mode svg { transition: color 0.3s ease, fill 0.3s ease, stroke 0.3s ease; }
+
+      /* =============================================
+         HOME TAB — LIGHT MODE SPECIFIC OVERRIDES
+         ============================================= */
+
+      /* === WELCOME CARD ("Selamat Datang") === */
+      /* The main gradient card: bg-gradient-to-r from-[#240046] via-[#3c096c] to-[#5a189a] */
+      html.light-mode .bg-gradient-to-r.from-\[\#240046\] {
+        background: linear-gradient(135deg, #6366f1, #8b5cf6, #a78bfa) !important;
+        border-color: rgba(99,102,241,0.2) !important;
+        box-shadow: 0 4px 24px rgba(99,102,241,0.15), 0 1px 3px rgba(0,0,0,0.05) !important;
+      }
+      /* Text inside welcome card should stay WHITE (not dark) */
+      html.light-mode .bg-gradient-to-r.from-\[\#240046\] .text-white,
+      html.light-mode .bg-gradient-to-r.from-\[\#240046\] h2,
+      html.light-mode .bg-gradient-to-r.from-\[\#240046\] p {
+        color: #ffffff !important;
+      }
+      /* "Selamat datang" label stays cyan-ish but lighter */
+      html.light-mode .bg-gradient-to-r.from-\[\#240046\] .text-\[\#4cc9f0\] {
+        color: #eef2ff !important;
+      }
+      /* Animated dot stays light */
+      html.light-mode .bg-gradient-to-r.from-\[\#240046\] .bg-\[\#4cc9f0\] {
+        background-color: #eef2ff !important;
+      }
+      /* Avatar outer ring — frosted white */
+      html.light-mode .bg-gradient-to-r.from-\[\#240046\] .bg-white\/10 {
+        background-color: rgba(255,255,255,0.25) !important;
+        box-shadow: 0 0 12px rgba(255,255,255,0.3) !important;
+      }
+      /* Avatar inner circle — solid blue */
+      html.light-mode .bg-gradient-to-r.from-\[\#240046\] .bg-\[\#10002b\] {
+        background-color: #4361ee !important;
+        border-color: rgba(255,255,255,0.3) !important;
+      }
+      html.light-mode .bg-gradient-to-r.from-\[\#240046\] .bg-\[\#10002b\] .text-\[\#4cc9f0\],
+      html.light-mode .bg-gradient-to-r.from-\[\#240046\] .text-2xl {
+        color: #ffffff !important;
+      }
+      /* Position badge (Quality Control) */
+      html.light-mode .bg-gradient-to-r.from-\[\#240046\] .bg-black\/30 {
+        background-color: rgba(255,255,255,0.2) !important;
+        border-color: rgba(255,255,255,0.3) !important;
+        backdrop-filter: blur(8px) !important;
+      }
+      html.light-mode .bg-gradient-to-r.from-\[\#240046\] .text-\[\#00f5d4\],
+      html.light-mode .bg-gradient-to-r.from-\[\#240046\] .text-\[\#00F5D4\] {
+        color: #bbf7d0 !important;
+      }
+      html.light-mode .bg-gradient-to-r.from-\[\#240046\] .text-slate-200 {
+        color: #ffffff !important;
+      }
+      /* Decorative blur circles in welcome card — softer */
+      html.light-mode .bg-gradient-to-r.from-\[\#240046\] > .bg-\[\#f72585\] {
+        background-color: rgba(255,255,255,0.2) !important;
+        opacity: 0.3 !important;
+      }
+      html.light-mode .bg-gradient-to-r.from-\[\#240046\] > .bg-\[\#4361ee\] {
+        background-color: rgba(255,255,255,0.15) !important;
+        opacity: 0.3 !important;
+      }
+      /* Welcome card hover */
+      html.light-mode .bg-gradient-to-r.from-\[\#240046\]:hover {
+        box-shadow: 0 8px 32px rgba(99,102,241,0.2), 0 2px 6px rgba(0,0,0,0.06) !important;
+      }
+
+      /* === INFO CARDS ("Informasi Karyawan", "Kontak & Keuangan") === */
+      /* Card wrapper: bg-[#240046]/30 backdrop-blur-md */
+      html.light-mode .bg-\[\#240046\]\/30 {
+        background-color: #ffffff !important;
+        border: 1px solid #e2e8f0 !important;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.04), 0 0 0 0 transparent !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+      }
+      html.light-mode .bg-\[\#240046\]\/30:hover {
+        border-color: #cbd5e1 !important;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.06) !important;
+      }
+      /* Info card header: bg-white/5 with pink title */
+      html.light-mode .bg-\[\#240046\]\/30 > .bg-white\/5,
+      html.light-mode .bg-\[\#240046\]\/30 > div:first-child {
+        background-color: #ffffff !important;
+        border-bottom: 1px solid #f1f5f9 !important;
+      }
+      html.light-mode .bg-\[\#240046\]\/30 > .bg-white\/5:hover,
+      html.light-mode .bg-\[\#240046\]\/30 .group-hover\:bg-white\/10 {
+        background-color: #f8fafc !important;
+      }
+      /* Info card title dot — keep vibrant */
+      html.light-mode .bg-\[\#240046\]\/30 .bg-\[\#f72585\] {
+        background-color: #6366f1 !important;
+      }
+      html.light-mode .bg-\[\#240046\]\/30 .text-\[\#f72585\] {
+        color: #6366f1 !important;
+      }
+
+      /* === INFO ROWS === */
+      /* Icon circles inside info rows: bg-[#10002b]/50 */
+      html.light-mode .bg-\[\#10002b\]\/50 {
+        background-color: #f1f5f9 !important;
+        border-color: #e2e8f0 !important;
+      }
+      html.light-mode .bg-\[\#10002b\]\/50 .text-\[\#4cc9f0\] {
+        color: #4cc9f0 !important;
+      }
+      /* Info row hover */
+      html.light-mode .hover\:bg-white\/5:hover {
+        background-color: #f1f5f9 !important;
+        border-color: #e2e8f0 !important;
+        border-radius: 12px !important;
+      }
+      /* Info row icon hover: bg changes to accent */
+      html.light-mode .group:hover .group-hover\:bg-\[\#4cc9f0\] {
+        background-color: #4cc9f0 !important;
+      }
+      html.light-mode .group:hover .group-hover\:text-\[\#10002b\] {
+        color: #ffffff !important;
+      }
+      /* Labels */
+      html.light-mode .text-slate-400 { color: #64748b !important; }
+      html.light-mode .group:hover .group-hover\:text-slate-200 {
+        color: #334155 !important;
+      }
+      /* group-hover nav text — keep visible */
+      html.light-mode .group:hover .group-hover\:text-\[\#4cc9f0\] {
+        color: #4361ee !important;
+      }
+      html.light-mode .group:hover .group-hover\:text-\[\#f72585\] {
+        color: #4361ee !important;
+      }
+      html.light-mode .group:hover .group-hover\:opacity-100 {
+        opacity: 1 !important;
+      }
+      html.light-mode .group:hover .group-hover\:scale-105 {
+        transform: scale(1.05) !important;
+      }
+      html.light-mode .group:hover .group-hover\:scale-110 {
+        transform: scale(1.1) !important;
+      }
+
+      /* ============================================
+         INFO CARDS — NUCLEAR TEXT VISIBILITY FIX
+         ============================================ */
+      /* Every single text element inside info cards must be dark */
+      html.light-mode .bg-\[\#240046\]\/30 .text-white,
+      html.light-mode .bg-\[\#240046\]\/30 span.text-white,
+      html.light-mode .bg-\[\#240046\]\/30 span[class*="text-white"],
+      html.light-mode .bg-\[\#240046\]\/30 span.group-hover\:text-white,
+      html.light-mode .bg-\[\#240046\]\/30 .group:hover span,
+      html.light-mode .bg-\[\#240046\]\/30 .group:hover .text-white,
+      html.light-mode .bg-\[\#240046\]\/30 .group:hover .group-hover\:text-white {
+        color: #1e293b !important;
+      }
+      /* Force ALL spans & p inside info cards */
+      html.light-mode .bg-\[\#240046\]\/30 span,
+      html.light-mode .bg-\[\#240046\]\/30 p {
+        color: #1e293b !important;
+      }
+      /* Also force via style attribute selector (catches inline color overrides) */
+      html.light-mode .bg-\[\#240046\]\/30 [style*="color"] {
+        color: #1e293b !important;
+      }
+      /* Preserve accent colors */
+      html.light-mode .bg-\[\#240046\]\/30 .text-\[\#f72585\],
+      html.light-mode .bg-\[\#240046\]\/30 h3.text-\[\#f72585\] {
+        color: #6366f1 !important;
+      }
+      html.light-mode .bg-\[\#240046\]\/30 .text-\[\#4cc9f0\] {
+        color: #4cc9f0 !important;
+      }
+      html.light-mode .bg-\[\#240046\]\/30 .text-\[\#00f5d4\],
+      html.light-mode .bg-\[\#240046\]\/30 .text-\[\#00F5D4\] {
+        color: #059669 !important;
+      }
+      html.light-mode .bg-\[\#240046\]\/30 .text-slate-400 {
+        color: #64748b !important;
+      }
+      html.light-mode .bg-\[\#240046\]\/30 .text-slate-500 {
+        color: #94a3b8 !important;
+      }
+      html.light-mode .bg-\[\#240046\]\/30 .text-slate-600 {
+        color: #475569 !important;
+      }
+      /* Copy button icon */
+      html.light-mode .bg-\[\#240046\]\/30 .border-slate-500 {
+        border-color: #94a3b8 !important;
+      }
+      /* Copy button visibility */
+      html.light-mode .bg-\[\#240046\]\/30 button.text-slate-500 {
+        opacity: 0.6 !important;
+      }
+      html.light-mode .bg-\[\#240046\]\/30 .group:hover button {
+        opacity: 1 !important;
+      }
+
+      /* Status highlight (bg-[#00f5d4]/10) */
+      html.light-mode .bg-\[\#00f5d4\]\/10,
+      html.light-mode .bg-\[\#00F5D4\]\/10 {
+        background-color: #ecfdf5 !important;
+        border-color: #a7f3d0 !important;
+      }
+
+      /* === SYSTEM MESSAGE / ANNOUNCEMENT CARD === */
+      html.light-mode .bg-\[\#240046\]\/40 {
+        background-color: #ffffff !important;
+        border-color: #fde68a !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.04) !important;
+      }
+      html.light-mode .bg-\[\#240046\]\/40:hover {
+        border-color: #fbbf24 !important;
+        box-shadow: 0 4px 16px rgba(245,158,11,0.08) !important;
+      }
+      /* System message orange blur → hidden */
+      html.light-mode .bg-\[\#240046\]\/40 > .bg-\[\#ff9e00\] { display: none !important; }
+      /* System message title */
+      html.light-mode .bg-\[\#240046\]\/40 .text-white { color: #1e293b !important; }
+      html.light-mode .bg-\[\#240046\]\/40 .text-slate-300 { color: #64748b !important; }
+
+      /* === WARNING CARD ("Data Belum Lengkap") === */
+      html.light-mode .bg-\[\#ef233c\]\/10 {
+        background-color: #fef2f2 !important;
+        border-color: #fecaca !important;
+      }
+      html.light-mode .bg-\[\#ef233c\]\/20 {
+        background-color: #fee2e2 !important;
+      }
+      /* Warning text */
+      html.light-mode .bg-\[\#ef233c\]\/10 .text-white { color: #1e293b !important; }
+      html.light-mode .bg-\[\#ef233c\]\/10 .text-slate-400 { color: #64748b !important; }
+
+      /* === FOOTER TEXT — scoped so it doesn't override global .text-slate-500 === */
+      html.light-mode footer .text-slate-500,
+      html.light-mode .settings-footer .text-slate-500 { color: #94a3b8 !important; }
+
+      /* === DROP SHADOWS OFF IN LIGHT MODE === */
+      html.light-mode .drop-shadow-sm,
+      html.light-mode .drop-shadow-md {
+        filter: none !important;
+        -webkit-filter: none !important;
+      }
+
+      /* === GLOW SHADOWS → SUBTLE LIGHT SHADOWS === */
+      html.light-mode [class*="shadow-\[0_0_15px"],
+      html.light-mode [class*="shadow-\[0_0_20px"],
+      html.light-mode [class*="shadow-\[0_0_25px"],
+      html.light-mode [class*="shadow-\[0_0_8px"] {
+        box-shadow: 0 1px 3px rgba(0,0,0,0.06) !important;
+      }
+
+      /* =============================================
+         ABSENSI TAB — LIGHT MODE SPECIFIC OVERRIDES
+         ============================================= */
+
+      /* --- Header icon box (bg-[#240046]) --- */
+      html.light-mode .bg-\[\#240046\] {
+        background-color: #eef2ff !important;
+        border-color: #e0e7ff !important;
+        box-shadow: 0 1px 4px rgba(99,102,241,0.08) !important;
+      }
+      html.light-mode .bg-\[\#240046\]:hover {
+        box-shadow: 0 2px 8px rgba(99,102,241,0.12) !important;
+      }
+
+      /* --- STAT CARD: "Total Masuk Kerja" big number card ---
+           bg-gradient-to-br from-[#240046] to-[#10002b] */
+      html.light-mode .bg-gradient-to-br.from-\[\#240046\] {
+        background: linear-gradient(135deg, #6366f1, #7c3aed) !important;
+        border-color: rgba(99,102,241,0.2) !important;
+        box-shadow: 0 4px 24px rgba(99,102,241,0.15) !important;
+      }
+      /* Keep text white inside stat card and welcome card */
+      html.light-mode div[class*="bg-gradient"][class*="from-[#240046]"] p,
+      html.light-mode div[class*="bg-gradient"][class*="from-[#240046]"] span,
+      html.light-mode div[class*="bg-gradient"][class*="from-[#240046]"] div,
+      html.light-mode div[class*="bg-gradient"][class*="from-[#240046]"] h2 {
+        color: #ffffff !important;
+      }
+      html.light-mode div[class*="bg-gradient"][class*="from-[#240046]"] p[class*="text-slate-500"],
+      html.light-mode div[class*="bg-gradient"][class*="from-[#240046]"] span[class*="text-slate-500"] {
+        color: rgba(255,255,255,0.9) !important;
+      }
+      html.light-mode div[class*="bg-gradient"][class*="from-[#240046]"] span[class*="text-[#00F5D4]"],
+      html.light-mode div[class*="bg-gradient"][class*="from-[#240046]"] span[class*="text-[#00f5d4]"],
+      html.light-mode div[class*="bg-gradient"][class*="from-[#240046]"] span[class*="text-[#4cc9f0]"] {
+        color: #00f5d4 !important; /* Kept Cyan because it looks brilliant on purple */
+      }
+      /* Decorative blurs inside stat card → softer */
+      html.light-mode .bg-gradient-to-br.from-\[\#240046\] > .bg-\[\#00F5D4\],
+      html.light-mode .bg-gradient-to-br.from-\[\#240046\] > .bg-\[\#4361ee\] {
+        opacity: 0.08 !important;
+        background-color: rgba(255,255,255,0.3) !important;
+      }
+      html.light-mode .bg-gradient-to-br.from-\[\#240046\]:hover {
+        box-shadow: 0 8px 32px rgba(99,102,241,0.2) !important;
+      }
+
+      /* --- ATTENDANCE LIST CARDS ---
+           bg-[#240046]/30 backdrop-blur-md → white card */
+      /* (already handled by generic .bg-[#240046]/30 rule above) */
+
+      /* Attendance card: formatted date text */
+      html.light-mode .bg-\[\#240046\]\/30 .text-white {
+        color: #1e293b !important;
+      }
+      html.light-mode .bg-\[\#240046\]\/30 .text-slate-200 {
+        color: #334155 !important;
+      }
+
+      /* --- DATE BOX: bg-black/40 → light gray --- */
+      html.light-mode .bg-black\/40 {
+        background-color: #f1f5f9 !important;
+        border-color: #e2e8f0 !important;
+      }
+      html.light-mode .bg-black\/40 .text-white {
+        color: #1e293b !important;
+      }
+      html.light-mode .bg-black\/40 .text-slate-500 {
+        color: #94a3b8 !important;
+      }
+      /* Date box hover: bg-[#4361ee] — keep blue but better */
+      html.light-mode .group:hover .group-hover\:bg-\[\#4361ee\] {
+        background-color: #6366f1 !important;
+      }
+      html.light-mode .group:hover .group-hover\:border-\[\#4361ee\] {
+        border-color: #6366f1 !important;
+      }
+      html.light-mode .group:hover .group-hover\:text-white {
+        color: #ffffff !important;
+      }
+
+      /* --- STATION & SHIFTING mini-cards: bg-black/20 --- */
+      /* bg-black/20 already overridden generically to #f1f5f9 */
+      /* Icon bg variations */
+      html.light-mode .bg-\[\#4cc9f0\]\/10 {
+        background-color: #eef2ff !important;
+      }
+      html.light-mode .bg-\[\#4cc9f0\]\/20,
+      html.light-mode .group:hover .group-hover\:bg-\[\#4cc9f0\]\/20 {
+        background-color: #e0e7ff !important;
+      }
+      html.light-mode .bg-\[\#f72585\]\/10 {
+        background-color: #eef2ff !important;
+      }
+      html.light-mode .bg-\[\#f72585\]\/20,
+      html.light-mode .group:hover .group-hover\:bg-\[\#f72585\]\/20 {
+        background-color: #e0e7ff !important;
+      }
+
+      /* Period badges */
+      html.light-mode .bg-\[\#4361ee\]\/10 {
+        background-color: #eef2ff !important;
+      }
+      html.light-mode .group:hover .group-hover\:bg-\[\#4361ee\]\/20 {
+        background-color: #e0e7ff !important;
+      }
+      html.light-mode .bg-\[\#7209b7\]\/10 {
+        background-color: #f5f3ff !important;
+      }
+      html.light-mode .group:hover .group-hover\:bg-\[\#7209b7\]\/20 {
+        background-color: #eef2ff !important;
+      }
+
+      /* Chevron icon box */
+      html.light-mode .bg-\[\#240046\]\/30 .bg-white\/5 {
+        background-color: #f1f5f9 !important;
+      }
+      html.light-mode .bg-\[\#240046\]\/30 .group-hover\:bg-white\/10,
+      html.light-mode .bg-\[\#240046\]\/30 .group:hover .group-hover\:bg-white\/10 {
+        background-color: #e2e8f0 !important;
+      }
+
+      /* ===== ENHANCED IN-APP LOADING SPINNER ===== */
+
+      /* --- Spinner container (the relative wrapper) --- */
+      .flex.flex-col.items-center.justify-center.h-\[60vh\] > .relative {
+        width: 64px !important; height: 64px !important;
+      }
+
+      /* --- Track ring (static) --- */
+      .flex.flex-col.items-center.justify-center .relative > .w-12.h-12.border-4.border-white\/10 {
+        width: 64px !important; height: 64px !important;
+        border-width: 3px !important;
+        border-color: rgba(124,58,237,0.1) !important;
+        box-shadow: inset 0 0 20px rgba(124,58,237,0.05);
+      }
+      html.light-mode .flex.flex-col.items-center.justify-center .relative > .w-12.h-12.border-4.border-white\/10 {
+        border-color: rgba(99,102,241,0.1) !important;
+        box-shadow: inset 0 0 20px rgba(99,102,241,0.03);
+      }
+
+      /* --- Spinning ring --- */
+      .flex.flex-col.items-center.justify-center .relative > .w-12.h-12.border-4.animate-spin {
+        width: 64px !important; height: 64px !important;
+        border-width: 3px !important;
+        border-color: transparent !important;
+        border-top-color: #4cc9f0 !important;
+        border-right-color: #7c3aed !important;
+        box-shadow: 0 0 20px rgba(76,201,240,0.3), 0 0 40px rgba(124,58,237,0.15) !important;
+        animation: enhanced-spin 1.2s cubic-bezier(0.68, -0.15, 0.27, 1.15) infinite !important;
+      }
+      .flex.flex-col.items-center.justify-center .relative > .w-12.h-12.border-4.animate-spin::after {
+        content: '';
+        position: absolute; top: -3px; right: 8px;
+        width: 6px; height: 6px;
+        border-radius: 50%;
+        background: #4cc9f0;
+        box-shadow: 0 0 8px #4cc9f0, 0 0 16px rgba(76,201,240,0.5);
+      }
+      html.light-mode .flex.flex-col.items-center.justify-center .relative > .w-12.h-12.border-4.animate-spin {
+        border-color: transparent !important;
+        border-top-color: #6366f1 !important;
+        border-right-color: #8b5cf6 !important;
+        box-shadow: 0 0 20px rgba(99,102,241,0.2), 0 0 40px rgba(139,92,246,0.1) !important;
+      }
+      html.light-mode .flex.flex-col.items-center.justify-center .relative > .w-12.h-12.border-4.animate-spin::after {
+        background: #6366f1;
+        box-shadow: 0 0 8px rgba(99,102,241,0.6), 0 0 16px rgba(99,102,241,0.3);
+      }
+
+      /* --- Second orbit ring (added via pseudo-element on container) --- */
+      .flex.flex-col.items-center.justify-center.h-\[60vh\] > .relative::before {
+        content: '';
+        position: absolute; inset: -8px;
+        border-radius: 50%;
+        border: 2px solid transparent;
+        border-bottom-color: #f72585;
+        border-left-color: rgba(247,37,133,0.4);
+        animation: enhanced-spin-reverse 2s linear infinite;
+        opacity: 0.7;
+      }
+      .flex.flex-col.items-center.justify-center.h-\[60vh\] > .relative::after {
+        content: '';
+        position: absolute; inset: -16px;
+        border-radius: 50%;
+        border: 1px solid transparent;
+        border-top-color: rgba(76,201,240,0.2);
+        border-right-color: rgba(124,58,237,0.15);
+        animation: enhanced-spin 4s linear infinite;
+      }
+      html.light-mode .flex.flex-col.items-center.justify-center.h-\[60vh\] > .relative::before {
+        border-bottom-color: #a855f7;
+        border-left-color: rgba(168,85,247,0.3);
+        opacity: 0.5;
+      }
+      html.light-mode .flex.flex-col.items-center.justify-center.h-\[60vh\] > .relative::after {
+        border-top-color: rgba(99,102,241,0.12);
+        border-right-color: rgba(139,92,246,0.1);
+      }
+
+      /* --- Loading text styling --- */
+      .flex.flex-col.items-center.justify-center .text-slate-400.animate-pulse {
+        color: rgba(148,163,184,0.7) !important;
+        font-size: 10px !important;
+        letter-spacing: 3px !important;
+        position: relative;
+      }
+      .flex.flex-col.items-center.justify-center .text-slate-400.animate-pulse::after {
+        content: '';
+        position: absolute; bottom: -6px; left: 10%; right: 10%;
+        height: 1px;
+        background: linear-gradient(90deg, transparent, rgba(76,201,240,0.3), transparent);
+        animation: loading-line-shimmer 2s ease-in-out infinite;
+      }
+      html.light-mode .flex.flex-col.items-center.justify-center .text-slate-400.animate-pulse {
+        color: rgba(100,116,139,0.6) !important;
+      }
+      html.light-mode .flex.flex-col.items-center.justify-center .text-slate-400.animate-pulse::after {
+        background: linear-gradient(90deg, transparent, rgba(99,102,241,0.2), transparent);
+      }
+
+      /* --- Subtle background pulse behind spinner --- */
+      .flex.flex-col.items-center.justify-center.h-\[60vh\]::before {
+        content: '';
+        position: absolute;
+        width: 120px; height: 120px;
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(124,58,237,0.08) 0%, transparent 70%);
+        animation: loading-bg-pulse 3s ease-in-out infinite;
+        pointer-events: none;
+      }
+      html.light-mode .flex.flex-col.items-center.justify-center.h-\[60vh\]::before {
+        background: radial-gradient(circle, rgba(99,102,241,0.06) 0%, transparent 70%);
+      }
+      .flex.flex-col.items-center.justify-center.h-\[60vh\] {
+        position: relative;
+      }
+
+      /* --- Also style the initial app-level spinner (no 60vh wrapper) --- */
+      .min-h-screen.flex.items-center.justify-center > .w-12.h-12.border-4.animate-spin {
+        width: 64px !important; height: 64px !important;
+        border-width: 3px !important;
+        border-color: transparent !important;
+        border-top-color: #f72585 !important;
+        border-right-color: #7c3aed !important;
+        box-shadow: 0 0 20px rgba(247,37,133,0.3), 0 0 40px rgba(124,58,237,0.15) !important;
+        animation: enhanced-spin 1.2s cubic-bezier(0.68, -0.15, 0.27, 1.15) infinite !important;
+      }
+
+      @keyframes enhanced-spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+      @keyframes enhanced-spin-reverse {
+        0% { transform: rotate(360deg); }
+        100% { transform: rotate(0deg); }
+      }
+      @keyframes loading-line-shimmer {
+        0%, 100% { opacity: 0.3; transform: scaleX(0.6); }
+        50% { opacity: 1; transform: scaleX(1); }
+      }
+      @keyframes loading-bg-pulse {
+        0%, 100% { transform: scale(1); opacity: 0.5; }
+        50% { transform: scale(1.3); opacity: 1; }
+      }
+
+      /* Empty state */
+      html.light-mode .border-dashed.border-white\/10 {
+        border-color: #e2e8f0 !important;
+        background-color: #fafbfd !important;
+      }
+      /* text-slate-600 for empty state — already covered by global rule at L846 */
+
+      /* --- Transition overlay --- */
+      .theme-transition-overlay {
+        position: fixed; inset: 0; z-index: 99998;
+        pointer-events: none; opacity: 0;
+        transition: opacity 0.35s ease;
+      }
+      .theme-transition-overlay.active { opacity: 1; }
+
+      /* ===== HIDE FLOATING TOGGLE (moved to Settings tab, shown on login) ===== */
+      #theme-toggle-btn { display: none !important; }
+      /* Re-show toggle on login screen (no header = not logged in) */
+      #root:has(.min-h-screen.flex.items-center.justify-center) ~ #theme-toggle-btn {
+        display: flex !important;
+      }
+
+      /* ===== HIDE LOGOUT BUTTON IN HEADER (sr-only, still clickable via JS) ===== */
+      header .justify-between > button {
+        position: absolute !important;
+        width: 1px !important;
+        height: 1px !important;
+        padding: 0 !important;
+        margin: -1px !important;
+        overflow: hidden !important;
+        clip: rect(0, 0, 0, 0) !important;
+        white-space: nowrap !important;
+        border: 0 !important;
+      }
+
+      /* ===== LOGO FIX LIGHT MODE ===== */
+      html.light-mode header .rounded-full[class*="bg-gradient"],
+      html.light-mode header .w-10.h-10.rounded-full,
+      html.light-mode header [class*="bg-gradient-to-br"][class*="from-[#3c096c]"],
+      html.light-mode header .bg-gradient-to-br.from-\[\#3c096c\] {
+        background: linear-gradient(135deg, #4338ca, #6366f1, #7c3aed) !important;
+        box-shadow:
+          0 2px 8px rgba(99, 102, 241, 0.3),
+          0 0 0 2px rgba(255,255,255,0.8),
+          0 0 0 4px rgba(99,102,241,0.15) !important;
+        border: none !important;
+        transition: all 0.3s ease !important;
+      }
+      html.light-mode header .group:hover .rounded-full[class*="bg-gradient"],
+      html.light-mode header .group:hover .w-10.h-10.rounded-full {
+        box-shadow:
+          0 4px 16px rgba(99, 102, 241, 0.4),
+          0 0 0 2px rgba(255,255,255,0.9),
+          0 0 0 4px rgba(99,102,241,0.25) !important;
+        transform: scale(1.05) !important;
+      }
+      /* Header logo shadow glow → clean */
+      html.light-mode header [class*="shadow-\[0_0"] {
+        box-shadow: 0 2px 8px rgba(99, 102, 241, 0.2) !important;
+      }
+
+      /* ===== SETTINGS PANEL (inline tab, bukan overlay) ===== */
+      #settings-panel {
+        display: none;
+        flex-direction: column;
+        min-height: calc(100vh - 140px);
+        padding: 0 0 24px 0;
+        font-family: 'Open Sans', sans-serif;
+        background: transparent;
+      }
+      #settings-panel.active {
+        display: flex;
+      }
+
+      /* Sembunyikan main saat settings aktif */
+      html.settings-panel-open main { display: none !important; }
+      html.settings-panel-open header { display: block !important; }
+
+      .settings-header {
+        padding: 20px 16px 16px;
+        font-size: 22px;
+        font-weight: 700;
+        color: #ffffff;
+        border-bottom: 1px solid rgba(255,255,255,0.08);
+        flex-shrink: 0;
+      }
+      html.light-mode .settings-header {
+        color: #1e293b !important;
+        border-bottom-color: #e2e8f0 !important;
+      }
+
+      .settings-section { padding: 16px; }
+      .settings-section-title {
+        font-size: 11px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: #4cc9f0;
+        margin-bottom: 12px;
+        padding-left: 4px;
+      }
+      html.light-mode .settings-section-title { color: #6366f1 !important; }
+
+      .settings-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 14px 16px;
+        border-radius: 14px;
+        background: rgba(255,255,255,0.05);
+        border: 1px solid rgba(255,255,255,0.08);
+        margin-bottom: 10px;
+        cursor: pointer;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      .settings-item:hover {
+        background: rgba(255,255,255,0.1);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(124,58,237,0.08);
+      }
+      html.light-mode .settings-item {
+        background: #ffffff !important;
+        border-color: #e2e8f0 !important;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.04) !important;
+      }
+      html.light-mode .settings-item:hover { background: #f8fafc !important; }
+
+      .settings-item-left { display: flex; align-items: center; gap: 14px; }
+      .settings-item-icon {
+        width: 42px; height: 42px; border-radius: 12px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 20px; flex-shrink: 0;
+      }
+      .settings-item-label { font-weight: 600; font-size: 14px; color: #ffffff; }
+      html.light-mode .settings-item-label { color: #1e293b !important; }
+      .settings-item-desc { font-size: 12px; color: rgba(255,255,255,0.45); margin-top: 2px; }
+      html.light-mode .settings-item-desc { color: #64748b !important; }
+
+      /* Theme toggle switch */
+      .theme-switch {
+        width: 52px; height: 28px; border-radius: 14px;
+        background: rgba(255,255,255,0.12);
+        position: relative; cursor: pointer;
+        transition: background 0.3s ease;
+        border: 1px solid rgba(255,255,255,0.1);
+        flex-shrink: 0;
+      }
+      .theme-switch .switch-knob {
+        width: 22px; height: 22px; border-radius: 50%;
+        background: #4cc9f0;
+        position: absolute; top: 2px; left: 3px;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        display: flex; align-items: center; justify-content: center;
+        font-size: 12px;
+      }
+      html.light-mode .theme-switch {
+        background: #e0e7ff !important;
+        border-color: #c7d2fe !important;
+      }
+      html.light-mode .theme-switch .switch-knob {
+        background: #6366f1 !important;
+        transform: translateX(24px);
+      }
+
+      /* Logout button in settings */
+      #settings-logout-btn {
+        display: flex; align-items: center; justify-content: center;
+        gap: 10px; padding: 14px; border-radius: 14px;
+        background: rgba(239, 68, 68, 0.08);
+        border: 1px solid rgba(239, 68, 68, 0.2);
+        color: #f87171; font-weight: 700; font-size: 14px;
+        cursor: pointer; transition: all 0.2s ease; width: 100%;
+      }
+      #settings-logout-btn:hover {
+        background: rgba(239, 68, 68, 0.15);
+        border-color: rgba(239, 68, 68, 0.4);
+      }
+      html.light-mode #settings-logout-btn {
+        background: #fef2f2 !important;
+        border-color: #fecaca !important;
+        color: #dc2626 !important;
+      }
+      html.light-mode #settings-logout-btn:hover { background: #fee2e2 !important; }
+      /* Link Gaji button light mode */
+      html.light-mode #settings-linkgaji-btn {
+        background: linear-gradient(135deg, #eef2ff, #fdf2f8) !important;
+        border-color: #c7d2fe !important;
+        color: #6366f1 !important;
+      }
+      html.light-mode #settings-linkgaji-btn:hover {
+        background: linear-gradient(135deg, #e0e7ff, #fce7f3) !important;
+      }
+
+      /* Tab Pengaturan aktif: nav buttons normal (tidak di-dim) */
+
+      /* Tab Pengaturan aktif: styling disamakan dengan tab lain (CSS ini telah dihapus karena bentrok) */
+
+      .settings-footer { margin-top: auto; padding: 24px 16px; text-align: center; }
+      .settings-footer-text { font-size: 11px; color: rgba(255,255,255,0.2); line-height: 1.6; }
+      html.light-mode .settings-footer-text { color: #94a3b8 !important; }
+
+      /* ===== DESKTOP EXPERIENCE ===== */
+
+      /* --- Tablet landscape --- */
+      @media (min-width: 768px) {
+        .max-w-md {
+          max-width: min(92vw, 900px) !important;
+          border-radius: 0 !important;
+          box-shadow: none !important;
+        }
+
+        /* Bottom nav → floating pill */
+        nav[class*="fixed"][class*="bottom-0"] {
+          left: 50% !important;
+          transform: translateX(-50%) !important;
+          width: auto !important;
+          min-width: 420px !important;
+          max-width: 540px !important;
+          bottom: 16px !important;
+          border-radius: 22px !important;
+          padding: 4px 12px !important;
+          border: 1px solid rgba(255,255,255,0.06) !important;
+          box-shadow: 0 8px 40px rgba(0,0,0,0.45), 0 0 0 1px rgba(255,255,255,0.04) !important;
+        }
+        html.light-mode nav[class*="fixed"][class*="bottom-0"] {
+          border-color: rgba(99,102,241,0.12) !important;
+          box-shadow: 0 6px 28px rgba(99,102,241,0.10), 0 2px 6px rgba(0,0,0,0.06) !important;
+          background: rgba(255,255,255,0.90) !important;
+          backdrop-filter: blur(16px) saturate(180%) !important;
+        }
+
+        /* Beri ruang bawah untuk floating nav */
+        main { padding-bottom: 90px !important; }
+        #settings-panel { padding-bottom: 90px !important; }
+      }
+
+      /* --- Desktop --- */
+      @media (min-width: 1024px) {
+        .max-w-md {
+          max-width: min(94vw, 1080px) !important;
+        }
+
+        nav[class*="fixed"][class*="bottom-0"] {
+          min-width: 480px !important;
+          max-width: 600px !important;
+          bottom: 20px !important;
+          border-radius: 24px !important;
+        }
+      }
+
+      /* --- Wide desktop --- */
+      @media (min-width: 1400px) {
+        .max-w-md {
+          max-width: 1200px !important;
+        }
+
+        nav[class*="fixed"][class*="bottom-0"] {
+          max-width: 640px !important;
+        }
+      }
+
+      /* ===== MOBILE OPTIMIZATION OVERRIDES ===== */
+      @media (max-width: 640px) {
+
+
+
+
+
+        /* =========================================================
+           VIRTUAL DOM RECONCILIATION DEFENSE (DUAL-ACTIVE FIX)
+           React aggressively re-renders its native tabs. When a custom
+           tab is active, we MUST visually squash React's attempts to 
+           re-activate itself in the layout.
+           ========================================================= */
+        body.custom-tab-active nav[class*="fixed"] button:not(.is-custom-active) > div.absolute,
+        body.custom-tab-active nav[class*="fixed"] button:not(.is-custom-active) > .nav-active-indicator {
+            display: none !important;
+        }
+        body.custom-tab-active nav[class*="fixed"] button:not(.is-custom-active) > div.mb-1 {
+            background-color: transparent !important;
+            transform: none !important;
+            box-shadow: none !important;
+            color: #64748b !important;
+        }
+        html.light-mode body.custom-tab-active nav[class*="fixed"] button:not(.is-custom-active) > div.mb-1 {
+            color: #94a3b8 !important;
+        }
+        body.custom-tab-active nav[class*="fixed"] button:not(.is-custom-active) > span {
+            opacity: 0 !important;
+        }
+        
+        /* Preserve hover interactions for suppressed tabs */
+        body.custom-tab-active nav[class*="fixed"] button:not(.is-custom-active):hover > div.mb-1 {
+            color: #ffffff !important;
+            transform: scale(1.05) !important;
+        }
+        html.light-mode body.custom-tab-active nav[class*="fixed"] button:not(.is-custom-active):hover > div.mb-1 {
+            color: #1e293b !important;
+        }
+        body.custom-tab-active nav[class*="fixed"] button:not(.is-custom-active):hover > span {
+            opacity: 1 !important;
+        }
+
+
+        /* Nav spacer so nothing gets hidden behind the nav */
+        main.pb-32 {
+            padding-bottom: 96px !important; /* Ensure enough scroll clearance */
+        }
+
+        /* ID Card Tab Styling Fixes */
+        #root .animate-fade-in.p-5 {
+            padding: 16px 12px 100px !important; /* More space at bottom for scrolling */
+        }
+        #root h2.text-xl {
+            font-size: 16px !important;
+            margin-bottom: 16px !important;
+        }
+        
+        /* The container for the Generate Form */
+        #root .bg-\[\#240046\]\/40.p-6 {
+            padding: 20px 16px !important;
+            border-radius: 20px !important;
+            margin-bottom: 20px !important;
+            margin-top: 10px !important;
+            display: flex !important;
+            flex-direction: column !important;
+            width: 100% !important;
+            box-sizing: border-box !important;
+        }
+        
+        #root .bg-\[\#240046\]\/40 .space-y-3 {
+            display: flex !important;
+            flex-direction: column !important;
+            width: 100% !important;
+            margin-bottom: 12px !important;
+        }
+
+        #root .bg-\[\#240046\]\/40 label {
+            display: block !important;
+            width: 100% !important;
+            margin-bottom: 8px !important;
+        }
+        
+        /* Make inputs cleaner and force full width */
+        #root .bg-\[\#240046\]\/40 input[type="text"] {
+            display: block !important;
+            width: 100% !important;
+            padding: 14px !important;
+            font-size: 13px !important;
+            border-radius: 12px !important;
+            height: 48px !important;
+            box-shadow: none !important;
+            box-sizing: border-box !important;
+        }
+        
+        /* Fix the browser autofill or clear icon */
+        #root input::-webkit-contacts-auto-fill-button,
+        #root input::-webkit-credentials-auto-fill-button,
+        #root input::-webkit-search-cancel-button {
+            display: none !important;
+            visibility: hidden !important;
+            pointer-events: none !important;
+        }
+        
+        #root .bg-\[\#240046\]\/40 div.text-white.bg-\[\#10002b\] {
+            display: none !important; /* Hide potential misaligned artifact */
+        }
+        
+        #root .bg-\[\#240046\]\/40 button {
+            width: 100% !important;
+            display: flex !important;
+            padding: 14px !important;
+            border-radius: 12px !important;
+            font-size: 13px !important;
+            height: auto !important;
+            min-height: 48px !important;
+            box-sizing: border-box !important;
+        }
+
+        /* Fix ID Card Preview scale on very small screens */
+        @media (max-width: 380px) {
+            #card-capture-target {
+                transform: scale(0.85) !important;
+                transform-origin: top center !important;
+            }
+            .shadow-\[0_0_50px_rgba\(67\,97\,238\,0\.3\)\] {
+                height: 410px !important;
+            }
+            nav[class*="fixed"][class*="bottom-0"] button .nav-icon-wrap {
+                width: 28px !important;
+                height: 28px !important;
+                padding: 5px !important;
+            }
+            nav[class*="fixed"][class*="bottom-0"] button svg {
+                width: 16px !important;
+                height: 16px !important;
+            }
+        }
+        
+      } /* End of @media (max-width: 640px) */
+
+      /* MOBILE POLISH: Welcome Card Name Wrapping (Fix Truncation) */
+      @media (max-width: 640px) {
+        #root h2.truncate[class*="max-w-[200px]"] {
+            max-width: 100% !important;
+            white-space: normal !important;
+            overflow: visible !important;
+            word-wrap: break-word !important;
+            font-size: 20px !important;
+            line-height: 1.3 !important;
+        }
+
+        /* Fix Copy Icon Artifact on Mobile */
+        .group button div[class*="w-3.5"][class*="border-2"] {
+            opacity: 1 !important;
+            border-color: #64748b !important;
+            background-color: transparent !important;
+            position: relative;
+        }
+        /* Reveal copy icons on mobile (no hover needed) */
+        .group button[class*="opacity-0"] {
+            opacity: 1 !important;
+            padding: 8px !important;
+        }
+        
+        /* Status Pill Fixes (Mobile) */
+        .group div[class*="bg-[#00f5d4]/10"] {
+            padding: 4px 10px !important;
+            font-size: 11px !important;
+        }
+      }
+
+      /* Fixed Light Mode Status Pill */
+      html.light-mode .group span[class*="text-[#00f5d4]"][class*="bg-[#00f5d4]/10"] {
+          color: #059669 !important; /* Emerald Green for better contrast */
+          background-color: rgba(5, 150, 105, 0.1) !important;
+          border-color: rgba(5, 150, 105, 0.2) !important;
+          box-shadow: none !important;
+      }
+      html.light-mode .group button div[class*="w-3.5"][class*="border-2"] {
+          border-color: #94a3b8 !important;
+      }
+
+      /* ===== MOBILE POLISH ===== */
+      @supports (padding: env(safe-area-inset-bottom)) {
+        nav[class*="fixed"][class*="bottom-0"] {
+          padding-bottom: env(safe-area-inset-bottom, 8px) !important;
+        }
+      }
+
+      /* ===== THEME POLISH: Micro-interactions & Refinements ===== */
+
+      /* --- Smooth scrollbar --- */
+      ::-webkit-scrollbar { width: 6px; height: 6px; }
+      ::-webkit-scrollbar-track { background: transparent; }
+      ::-webkit-scrollbar-thumb {
+        background: rgba(124,58,237,0.2);
+        border-radius: 3px;
+      }
+      ::-webkit-scrollbar-thumb:hover { background: rgba(124,58,237,0.4); }
+      html.light-mode ::-webkit-scrollbar-thumb { background: rgba(99,102,241,0.15) !important; }
+      html.light-mode ::-webkit-scrollbar-thumb:hover { background: rgba(99,102,241,0.3) !important; }
+
+      /* --- Card hover micro-animations --- */
+      main .group {
+        transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s ease !important;
+      }
+      main .group:hover {
+        transform: translateY(-1px) !important;
+      }
+      main .group:active {
+        transform: translateY(0) scale(0.995) !important;
+      }
+
+      /* --- Bottom nav glass polish (dark mode) --- */
+      nav[class*="fixed"][class*="bottom-0"] {
+        backdrop-filter: blur(20px) saturate(150%) !important;
+        -webkit-backdrop-filter: blur(20px) saturate(150%) !important;
+      }
+
+      /* --- Nav button ripple effect --- */
+      nav button {
+        position: relative;
+        overflow: hidden;
+      }
+      nav button::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(circle at center, rgba(247,37,133,0.15), transparent 60%);
+        opacity: 0;
+        transform: scale(0.5);
+        transition: opacity 0.3s ease, transform 0.3s ease;
+        pointer-events: none;
+        border-radius: inherit;
+      }
+      nav button:active::after {
+        opacity: 1;
+        transform: scale(1.5);
+      }
+      html.light-mode nav button::after {
+        background: radial-gradient(circle at center, rgba(99,102,241,0.1), transparent 60%);
+      }
+
+      /* --- Settings panel smooth entrance --- */
+      #settings-panel .settings-section {
+        animation: settingsFadeIn 0.3s ease both;
+      }
+      #settings-panel .settings-section:nth-child(2) { animation-delay: 0.05s; }
+      #settings-panel .settings-section:nth-child(3) { animation-delay: 0.1s; }
+      #settings-panel .settings-footer { animation: settingsFadeIn 0.3s ease 0.15s both; }
+      @keyframes settingsFadeIn {
+        from { opacity: 0; transform: translateY(8px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+
+      /* --- Welcome card shimmer effect --- */
+      .bg-gradient-to-r[class*="from-[#240046]"]::before {
+        content: '';
+        position: absolute;
+        top: 0; left: -100%; right: 0; bottom: 0;
+        background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.04) 40%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.04) 60%, transparent 100%);
+        animation: welcomeShimmer 6s ease-in-out infinite;
+        pointer-events: none;
+        z-index: 1;
+      }
+      @keyframes welcomeShimmer {
+        0%, 100% { transform: translateX(-50%); }
+        50% { transform: translateX(150%); }
+      }
+
+      /* --- Focus visible outline (accessibility) --- */
+      *:focus-visible {
+        outline: 2px solid rgba(76,201,240,0.6) !important;
+        outline-offset: 2px !important;
+        border-radius: 8px;
+      }
+      html.light-mode *:focus-visible {
+        outline-color: rgba(99,102,241,0.5) !important;
+      }
+
+      /* --- Header glow underline (dark mode) --- */
+      header::after {
+        content: '';
+        position: absolute;
+        bottom: 0; left: 10%; right: 10%;
+        height: 1px;
+        background: linear-gradient(90deg, transparent, rgba(76,201,240,0.2), rgba(247,37,133,0.15), transparent);
+        pointer-events: none;
+      }
+      html.light-mode header::after {
+        background: linear-gradient(90deg, transparent, rgba(99,102,241,0.1), transparent) !important;
+      }
+
+      /* --- Subtle pulse on active nav indicator --- */
+      .nav-active-indicator,
+      #settings-nav-btn .nav-active-indicator {
+        animation: navPulse 2s ease-in-out infinite !important;
+      }
+      @keyframes navPulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.7; }
+      }
+
+      /* --- Smoother page text rendering --- */
+      body {
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        text-rendering: optimizeLegibility;
+      }
+
+      /* --- Info card border glow on hover (dark mode) --- */
+      .bg-\[\#240046\]\/30:hover {
+        box-shadow: 0 0 20px rgba(124,58,237,0.06), 0 4px 16px rgba(0,0,0,0.2) !important;
+      }
+      html.light-mode .bg-\[\#240046\]\/30:hover {
+        box-shadow: 0 4px 20px rgba(99,102,241,0.08), 0 2px 6px rgba(0,0,0,0.04) !important;
+      }
+
+      /* Settings item light hover — consolidated with main .settings-item above */
+      html.light-mode .settings-item:hover {
+        box-shadow: 0 4px 12px rgba(99,102,241,0.06) !important;
+      }
+
+      /* --- Improved selection color --- */
+      ::selection {
+        background: rgba(124,58,237,0.3);
+        color: #ffffff;
+      }
+      html.light-mode ::selection {
+        background: rgba(99,102,241,0.2);
+        color: #1e293b;
+      }
+
+
+      /* ═══════════════════════════════════════════════════════════════
+         MOBILE MODERN POLISH — Minimalist & Clean v1.0
+         ═══════════════════════════════════════════════════════════════ */
+
+      /* ── 1. BOTTOM NAV — Modern Pill Style ── */
+      @media (max-width: 767px) {
+        nav[class*="fixed"][class*="bottom-0"] {
+          height: 68px !important;
+          padding: 6px 8px env(safe-area-inset-bottom) !important;
+          border-top: none !important;
+          box-shadow: 0 -1px 0 rgba(255,255,255,0.04), 0 -8px 32px rgba(0,0,0,0.25) !important;
+          background: rgba(16,0,43,0.92) !important;
+          backdrop-filter: blur(24px) saturate(180%) !important;
+          -webkit-backdrop-filter: blur(24px) saturate(180%) !important;
+        }
+        html.light-mode nav[class*="fixed"][class*="bottom-0"] {
+          background: rgba(255,255,255,0.95) !important;
+          box-shadow: 0 -1px 0 rgba(0,0,0,0.04), 0 -4px 20px rgba(0,0,0,0.06) !important;
+          border-top: 1px solid rgba(0,0,0,0.04) !important;
+        }
+
+        /* Nav buttons — bigger touch targets */
+        nav[class*="fixed"][class*="bottom-0"] button {
+          min-height: 52px !important;
+          padding: 4px 0 2px !important;
+        }
+
+
+      }
+
+      /* ── 2. HEADER — Minimal & Clean on Mobile ── */
+      @media (max-width: 767px) {
+        header {
+          padding: 12px 16px !important;
+          min-height: 52px !important;
+        }
+        /* Remove glow underline on mobile */
+        header::after {
+          display: none !important;
+        }
+        /* Remove accent stripe on mobile in light mode */
+        html.light-mode header::before {
+          height: 2px !important;
+          opacity: 0.5 !important;
+        }
+        /* Header logo: adjust sizing */
+        header .bas-header-logo {
+          height: 14px !important;
+        }
+        /* Company subtitle: slightly larger */
+        header p {
+          font-size: 8px !important;
+          letter-spacing: 0.15em !important;
+        }
+      }
+
+      /* ── 3. CARDS — Better Spacing & Typography ── */
+      @media (max-width: 767px) {
+        /* Welcome card: more breathing room */
+        .bg-gradient-to-r[class*="from-[#240046]"] {
+          border-radius: 20px !important;
+          padding: 20px 18px !important;
+        }
+        /* Welcome card: prevent name truncation, allow wrapping */
+        .bg-gradient-to-r[class*="from-[#240046]"] h2 {
+          font-size: 20px !important;
+          line-height: 1.3 !important;
+          word-break: break-word !important;
+        }
+
+        /* Info cards: modern rounded style */
+        .bg-\[\#240046\]\/30 {
+          border-radius: 20px !important;
+          overflow: hidden !important;
+        }
+
+        /* Info card rows: better spacing */
+        .bg-\[\#240046\]\/30 .group {
+          padding: 14px 16px !important;
+          min-height: 56px !important;
+        }
+
+        /* Info card section title */
+        .bg-\[\#240046\]\/30 h3 {
+          font-size: 11px !important;
+          letter-spacing: 0.12em !important;
+        }
+
+        /* Info row label text — more readable */
+        .bg-\[\#240046\]\/30 .text-slate-400 {
+          font-size: 12px !important;
+        }
+        /* Info row value text — consistent */
+        .bg-\[\#240046\]\/30 .text-white,
+        .bg-\[\#240046\]\/30 span.text-white {
+          font-size: 13px !important;
+          font-weight: 600 !important;
+        }
+
+        /* Icon circles: slightly larger */
+        .bg-\[\#10002b\]\/50 {
+          width: 42px !important;
+          height: 42px !important;
+          border-radius: 12px !important;
+        }
+
+        /* Attendance cards: rounded style */
+        .bg-\[\#240046\]\/30[class*="backdrop-blur"] {
+          border-radius: 18px !important;
+        }
+
+        /* System/announcement card */
+        .bg-\[\#240046\]\/40 {
+          border-radius: 18px !important;
+        }
+
+        /* Warning card */
+        .bg-\[\#ef233c\]\/10 {
+          border-radius: 16px !important;
+        }
+
+        /* Main content: comfortable bottom padding for nav */
+        main {
+          padding-bottom: 80px !important;
+        }
+        #settings-panel {
+          padding-bottom: 80px !important;
+        }
+
+        /* Stats card (attendance) */
+        .bg-gradient-to-br[class*="from-[#240046]"] {
+          border-radius: 20px !important;
+        }
+      }
+
+      /* ── 4. TOUCH TARGETS — Apple HIG Compliant ── */
+      @media (max-width: 767px) {
+        /* All group cards/buttons: minimum touch height */
+        main .group,
+        main button,
+        main a {
+          min-height: 44px !important;
+        }
+
+        /* Card press feedback */
+        main .group:active {
+          transform: scale(0.985) !important;
+          transition: transform 0.12s ease !important;
+        }
+
+        /* Settings items */
+        .settings-item {
+          min-height: 56px !important;
+          padding: 16px !important;
+          border-radius: 16px !important;
+        }
+
+        /* Settings section title */
+        .settings-section-title {
+          font-size: 12px !important;
+          margin-bottom: 14px !important;
+        }
+      }
+
+      /* ── 5. LIGHT MODE — Stronger Contrast on Mobile ── */
+      @media (max-width: 767px) {
+        html.light-mode .bg-\[\#240046\]\/30 {
+          box-shadow: 0 2px 8px rgba(0,0,0,0.05), 0 0 0 1px rgba(0,0,0,0.03) !important;
+        }
+        html.light-mode .bg-\[\#240046\]\/30:hover {
+          box-shadow: 0 4px 16px rgba(0,0,0,0.07) !important;
+        }
+
+        /* Light mode header — cleaner mobile look */
+        html.light-mode header {
+          box-shadow: 0 1px 0 rgba(0,0,0,0.04), 0 2px 8px rgba(0,0,0,0.03) !important;
+        }
+
+        /* Light mode bottom nav — crisp */
+        html.light-mode nav[class*="fixed"][class*="bottom-0"] {
+          backdrop-filter: blur(20px) saturate(160%) !important;
+          -webkit-backdrop-filter: blur(20px) saturate(160%) !important;
+        }
+
+        /* Light mode welcome card — vibrant gradient */
+        html.light-mode .bg-gradient-to-r.from-\[\#240046\] {
+          border-radius: 20px !important;
+          box-shadow: 0 4px 20px rgba(99,102,241,0.18) !important;
+        }
+
+        /* Light mode info card rows hover — subtle */
+        html.light-mode .bg-\[\#240046\]\/30 .group:active {
+          background: rgba(99,102,241,0.04) !important;
+        }
+      }
+
+      /* ── 6. SMOOTH SCROLLING & REDUCED MOTION ── */
+      main {
+        scroll-behavior: smooth;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after {
+          animation-duration: 0.01ms !important;
+          animation-iteration-count: 1 !important;
+          transition-duration: 0.01ms !important;
+          scroll-behavior: auto !important;
+        }
+      }
+
+      /* ── 7. SMALL SCREENS (<375px) ── */
+      @media (max-width: 374px) {
+        /* Welcome card: compact */
+        .bg-gradient-to-r[class*="from-[#240046]"] h2 {
+          font-size: 17px !important;
+        }
+        .bg-gradient-to-r[class*="from-[#240046]"] {
+          padding: 16px 14px !important;
+        }
+
+        /* Info rows: tighter */
+        .bg-\[\#240046\]\/30 .group {
+          padding: 12px 14px !important;
+        }
+        .bg-\[\#240046\]\/30 .text-slate-400 {
+          font-size: 11px !important;
+        }
+
+        /* Bottom nav: compact */
+        nav[class*="fixed"][class*="bottom-0"] {
+          height: 62px !important;
+        }
+
+
+        /* Header: compact */
+        header {
+          padding: 10px 12px !important;
+        }
+      }
+
+      /* ── 8. GENERAL MOBILE OVERFLOW FIX ── */
+      @media (max-width: 767px) {
+        body, #root, .max-w-md {
+          overflow-x: hidden !important;
+        }
+        /* Ensure long text doesn't cause horizontal scroll */
+        main p, main span, main h2, main h3 {
+          overflow-wrap: break-word !important;
+          word-break: break-word !important;
+        }
+      }
+
+      /* ═══════════════════════════════════════════════════════════════
+         PHOTO ATTENDANCE PANEL
+         ═══════════════════════════════════════════════════════════════ */
+
+      .photo-att-panel {
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        z-index: 25;
+        overflow-y: auto;
+        background: #10002b;
+        max-width: 448px;
+        margin: 0 auto;
+      }
+      html.light-mode .photo-att-panel {
+        background: #f8f9fa;
+      }
+
+      .pa-container {
+        padding: 0 16px 100px;
+      }
+
+      /* Header */
+      .pa-header {
+        display: flex; justify-content: space-between; align-items: center;
+        padding: 16px 0; position: sticky; top: 0; z-index: 5;
+        background: rgba(16,0,43,0.9); backdrop-filter: blur(16px);
+      }
+      html.light-mode .pa-header {
+        background: rgba(248,249,250,0.9);
+      }
+      .pa-title {
+        font-size: 18px; font-weight: 900; color: #fff;
+        text-transform: uppercase; letter-spacing: 0.05em;
+      }
+      html.light-mode .pa-title { color: #1a1a1a; }
+      .pa-close-btn {
+        width: 36px; height: 36px; border-radius: 50%;
+        background: rgba(255,255,255,0.1); border: none;
+        color: #fff; font-size: 20px; cursor: pointer;
+        display: flex; align-items: center; justify-content: center;
+        transition: all 0.2s;
+      }
+      .pa-close-btn:hover { background: rgba(247,37,133,0.3); }
+      html.light-mode .pa-close-btn { background: rgba(0,0,0,0.05); color: #333; }
+
+      /* Camera */
+      .pa-camera-wrap {
+        position: relative; border-radius: 24px; overflow: hidden;
+        background: #000; aspect-ratio: 4/3; margin-bottom: 16px;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+      }
+      #pa-video {
+        width: 100%; height: 100%; object-fit: cover;
+        transform: scaleX(-1);
+      }
+      .pa-preview-img {
+        width: 100%; height: 100%; object-fit: cover;
+        border-radius: 24px;
+      }
+      .pa-camera-overlay {
+        position: absolute; inset: 0;
+        display: flex; align-items: center; justify-content: center;
+        pointer-events: none;
+      }
+      .pa-face-guide {
+        width: 140px; height: 180px;
+        border: 2px dashed rgba(255,255,255,0.3);
+        border-radius: 50%;
+        animation: pa-pulse 2s infinite;
+      }
+      @keyframes pa-pulse {
+        0%, 100% { border-color: rgba(255,255,255,0.2); transform: scale(1); }
+        50% { border-color: rgba(76,201,240,0.5); transform: scale(1.03); }
+      }
+
+      /* GPS Info */
+      .pa-gps-info {
+        display: flex; align-items: center; gap: 8px;
+        background: rgba(255,255,255,0.05); border-radius: 14px;
+        padding: 12px 16px; margin-bottom: 12px;
+        border: 1px solid rgba(255,255,255,0.05);
+        font-size: 12px; color: #94a3b8;
+      }
+      html.light-mode .pa-gps-info {
+        background: #fff; border-color: #e5e7eb; color: #64748b;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+      }
+      html.light-mode #pa-gps-area { color: #1a1a1a !important; }
+      .pa-gps-dot {
+        width: 10px; height: 10px; border-radius: 50%;
+        background: #ef4444; flex-shrink: 0;
+        animation: pa-blink 1.5s infinite;
+      }
+      .pa-gps-dot.active { background: #22c55e; animation: none; }
+      @keyframes pa-blink { 0%,100% { opacity:1; } 50% { opacity:0.3; } }
+
+      /* Time */
+      .pa-time { text-align: center; margin-bottom: 16px; }
+      .pa-time-clock {
+        display: block; font-size: 32px; font-weight: 900;
+        color: #fff; letter-spacing: 0.05em;
+        font-variant-numeric: tabular-nums;
+      }
+      html.light-mode .pa-time-clock { color: #1a1a1a; }
+      .pa-time-date {
+        display: block; font-size: 12px; color: #64748b;
+        text-transform: capitalize; margin-top: 2px;
+      }
+
+      /* Action Buttons */
+      .pa-actions {
+        display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+        margin-bottom: 16px;
+      }
+      .pa-btn {
+        display: flex; align-items: center; justify-content: center; gap: 8px;
+        padding: 16px; border-radius: 18px; border: none;
+        font-size: 14px; font-weight: 900; cursor: pointer;
+        text-transform: uppercase; letter-spacing: 0.08em;
+        transition: all 0.2s; min-height: 56px;
+      }
+      .pa-btn:active { transform: scale(0.97); }
+      .pa-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+      .pa-btn-masuk {
+        background: linear-gradient(135deg, #22c55e, #16a34a);
+        color: #fff; box-shadow: 0 4px 16px rgba(34,197,94,0.3);
+      }
+      .pa-btn-masuk:hover { box-shadow: 0 6px 24px rgba(34,197,94,0.4); }
+      .pa-btn-keluar {
+        background: linear-gradient(135deg, #ef4444, #dc2626);
+        color: #fff; box-shadow: 0 4px 16px rgba(239,68,68,0.3);
+      }
+      .pa-btn-keluar:hover { box-shadow: 0 6px 24px rgba(239,68,68,0.4); }
+
+      /* Status */
+      .pa-status {
+        padding: 14px 18px; border-radius: 16px; margin-bottom: 16px;
+        font-size: 13px; font-weight: 700; text-align: center;
+        animation: pa-slideIn 0.3s ease;
+      }
+      @keyframes pa-slideIn { from { opacity:0; transform:translateY(-8px); } to { opacity:1; transform:translateY(0); } }
+      .pa-status-success { background: rgba(34,197,94,0.15); color: #22c55e; border: 1px solid rgba(34,197,94,0.2); }
+      .pa-status-error { background: rgba(239,68,68,0.15); color: #ef4444; border: 1px solid rgba(239,68,68,0.2); }
+      .pa-status-loading { background: rgba(76,201,240,0.15); color: #4cc9f0; border: 1px solid rgba(76,201,240,0.2); }
+
+      /* History */
+      .pa-history { margin-top: 8px; }
+      .pa-history-title {
+        font-size: 11px; font-weight: 900; text-transform: uppercase;
+        letter-spacing: 0.15em; color: #64748b; margin-bottom: 12px;
+        padding-left: 4px;
+      }
+      .pa-history-list { display: flex; flex-direction: column; gap: 10px; }
+      .pa-history-empty {
+        text-align: center; color: #475569; font-size: 12px;
+        padding: 24px; background: rgba(255,255,255,0.03);
+        border-radius: 16px; border: 1px dashed rgba(255,255,255,0.06);
+      }
+      html.light-mode .pa-history-empty {
+        background: #fff; border-color: #e5e7eb; color: #9ca3af;
+      }
+      .pa-history-item {
+        display: flex; align-items: center; gap: 12px;
+        background: rgba(255,255,255,0.04); border-radius: 16px;
+        padding: 12px; border: 1px solid rgba(255,255,255,0.04);
+      }
+      html.light-mode .pa-history-item {
+        background: #fff; border-color: #f1f5f9;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+      }
+      .pa-history-thumb {
+        width: 48px; height: 48px; border-radius: 12px;
+        object-fit: cover; flex-shrink: 0;
+      }
+      .pa-history-info {
+        display: flex; flex-direction: column; gap: 2px; flex-shrink: 0;
+      }
+      .pa-history-type {
+        font-size: 10px; font-weight: 900; text-transform: uppercase;
+        letter-spacing: 0.1em; padding: 2px 8px; border-radius: 6px;
+        display: inline-block; width: fit-content;
+      }
+      .pa-history-type.masuk { background: rgba(34,197,94,0.15); color: #22c55e; }
+      .pa-history-type.keluar { background: rgba(239,68,68,0.15); color: #ef4444; }
+      .pa-history-time {
+        font-size: 16px; font-weight: 800; color: #fff;
+        font-variant-numeric: tabular-nums;
+      }
+      html.light-mode .pa-history-time { color: #1a1a1a; }
+      .pa-history-loc {
+        font-size: 10px; color: #64748b; flex: 1;
+        text-align: right; line-height: 1.3;
+        overflow: hidden; text-overflow: ellipsis;
+        display: -webkit-box; -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+      }
+

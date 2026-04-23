@@ -21,9 +21,9 @@ if ($method === 'GET') {
         SELECT b.id, b.nik, b.reason, b.created_at,
                a.name AS creator_name,
                c.name AS candidate_name
-        FROM blacklists b
-        LEFT JOIN admins a ON b.created_by = a.id
-        LEFT JOIN candidates c ON c.nik = b.nik
+        FROM drv_blacklists b
+        LEFT JOIN drv_admins a ON b.created_by = a.id
+        LEFT JOIN drv_candidates c ON c.nik = b.nik
         ORDER BY b.created_at DESC
     ');
     jsonResponse(['blacklists' => $stmt->fetchAll()]);
@@ -48,7 +48,7 @@ if ($method === 'POST') {
     }
 
     try {
-        $stmt = $db->prepare('INSERT INTO blacklists (nik, reason, created_by) VALUES (?, ?, ?)');
+        $stmt = $db->prepare('INSERT INTO drv_blacklists (nik, reason, created_by) VALUES (?, ?, ?)');
         $stmt->execute([$nik, $reason, $admin['id']]);
         jsonResponse(['success' => true, 'message' => 'NIK berhasil diblacklist.']);
     } catch (PDOException $e) {
@@ -65,7 +65,7 @@ if ($method === 'DELETE') {
     $id = intval($data['id'] ?? 0);
     if (!$id) jsonResponse(['error' => 'ID tidak valid'], 400);
 
-    $stmt = $db->prepare('DELETE FROM blacklists WHERE id = ?');
+    $stmt = $db->prepare('DELETE FROM drv_blacklists WHERE id = ?');
     $stmt->execute([$id]);
     jsonResponse(['success' => true, 'message' => 'Blacklist berhasil dicabut']);
 }

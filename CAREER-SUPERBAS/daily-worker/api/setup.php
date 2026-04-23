@@ -1,77 +1,228 @@
 <?php
 /**
- * Setup Script — Jalankan SEKALI via browser
- * URL: https://super-bas.com/api/setup.php
- * 
- * Setelah berhasil, HAPUS file ini dari server!
+ * BAS Daily Worker — Database Setup
+ * Run once to create all required tables.
+ * Access: GET /api/setup.php?key=BAS2026
  */
+require_once __DIR__ . '/../config.php';
 
-require_once __DIR__ . '/config.php';
+$key = $_GET['key'] ?? '';
+if ($key !== 'BAS2026') {
+    jsonResponse(['error' => 'Invalid setup key. Use ?key=BAS2026'], 403);
+}
 
-header('Content-Type: text/html; charset=utf-8');
-echo '<h2>BAS — Setup Database Absen Foto</h2>';
+$db = getDB();
+$results = [];
 
-// 1. Create uploads directory
-if (!is_dir(UPLOAD_DIR)) {
-    if (mkdir(UPLOAD_DIR, 0755, true)) {
-        echo '<p>✅ Folder uploads dibuat: ' . UPLOAD_DIR . '</p>';
-    } else {
-        echo '<p>❌ Gagal buat folder uploads. Buat manual via File Manager.</p>';
+$tables = [
+    'dw_users' => "CREATE TABLE IF NOT EXISTS dw_users (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(100) NOT NULL,
+        email VARCHAR(150),
+        nik VARCHAR(16) NOT NULL,
+        password VARCHAR(255),
+        google_id VARCHAR(100),
+        picture TEXT,
+        phone VARCHAR(20),
+        provinsi VARCHAR(100),
+        kabupaten VARCHAR(100),
+        kecamatan VARCHAR(100),
+        kelurahan VARCHAR(100),
+        is_active TINYINT(1) DEFAULT 1,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE KEY unique_nik (nik),
+        UNIQUE KEY unique_email (email)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
+
+    'dw_admins' => "CREATE TABLE IF NOT EXISTS dw_admins (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        username VARCHAR(50) NOT NULL,
+        password VARCHAR(255) NOT NULL,
+        name VARCHAR(100) NOT NULL,
+        role ENUM('owner','korlap','admin') DEFAULT 'admin',
+        location_id INT DEFAULT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE KEY unique_username (username)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
+
+    'dw_locations' => "CREATE TABLE IF NOT EXISTS dw_locations (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(100) NOT NULL,
+        address TEXT,
+        maps_link VARCHAR(500),
+        is_active TINYINT(1) DEFAULT 1
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
+
+    'dw_candidates' => "CREATE TABLE IF NOT EXISTS dw_candidates (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT,
+        candidate_id VARCHAR(20),
+        given_id VARCHAR(20),
+        nik VARCHAR(16),
+        name VARCHAR(100) NOT NULL,
+        whatsapp VARCHAR(20),
+        address TEXT,
+        provinsi VARCHAR(100),
+        kabupaten VARCHAR(100),
+        kecamatan VARCHAR(100),
+        kelurahan VARCHAR(100),
+        tempat_lahir VARCHAR(100),
+        tanggal_lahir DATE,
+        pendidikan_terakhir VARCHAR(50),
+        posisi_dilamar VARCHAR(100),
+        pengalaman_kerja TEXT,
+        keahlian TEXT,
+        pernah_kerja_spx VARCHAR(10),
+        surat_sehat VARCHAR(20),
+        paklaring VARCHAR(20),
+        status VARCHAR(50) DEFAULT 'Belum Pemberkasan',
+        location_id INT,
+        jadwal_interview DATE,
+        interview_location VARCHAR(100),
+        test_drive_date DATE,
+        test_drive_time VARCHAR(10),
+        emergency_name VARCHAR(100),
+        emergency_phone VARCHAR(20),
+        emergency_relation VARCHAR(50),
+        bank_name VARCHAR(50),
+        bank_account_no VARCHAR(30),
+        bank_account_name VARCHAR(100),
+        referensi TEXT,
+        korlap_notes TEXT,
+        signature_data LONGTEXT,
+        photo_data LONGTEXT,
+        track_requested TINYINT(1) DEFAULT 0,
+        last_latitude DOUBLE,
+        last_longitude DOUBLE,
+        last_accuracy FLOAT,
+        last_location_at DATETIME,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_user (user_id),
+        INDEX idx_nik (nik),
+        INDEX idx_status (status)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
+
+    'dw_documents' => "CREATE TABLE IF NOT EXISTS dw_documents (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        candidate_id INT NOT NULL,
+        doc_type VARCHAR(30) NOT NULL,
+        file_path VARCHAR(255),
+        original_name VARCHAR(255),
+        file_size INT,
+        uploaded_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE KEY unique_doc (candidate_id, doc_type),
+        INDEX idx_candidate (candidate_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
+
+    'dw_chat_messages' => "CREATE TABLE IF NOT EXISTS dw_chat_messages (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        candidate_id INT NOT NULL,
+        sender_type ENUM('user','admin') NOT NULL,
+        sender_id INT,
+        sender_name VARCHAR(100),
+        message_type ENUM('text','image','file','location') DEFAULT 'text',
+        message TEXT,
+        file_path VARCHAR(255),
+        file_name VARCHAR(255),
+        file_size INT,
+        file_mime VARCHAR(100),
+        latitude DOUBLE,
+        longitude DOUBLE,
+        is_read TINYINT(1) DEFAULT 0,
+        reply_to_id INT,
+        reply_preview TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_candidate (candidate_id),
+        INDEX idx_read (candidate_id, sender_type, is_read)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
+
+    'dw_chat_templates' => "CREATE TABLE IF NOT EXISTS dw_chat_templates (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        admin_id INT DEFAULT 0,
+        title VARCHAR(100),
+        message TEXT,
+        sort_order INT DEFAULT 0
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
+
+    'dw_push_subscriptions' => "CREATE TABLE IF NOT EXISTS dw_push_subscriptions (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT,
+        admin_id INT,
+        endpoint TEXT NOT NULL,
+        p256dh VARCHAR(255),
+        auth_key VARCHAR(255),
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_user (user_id),
+        INDEX idx_admin (admin_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
+
+    'dw_blacklist' => "CREATE TABLE IF NOT EXISTS dw_blacklist (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        nik VARCHAR(16) NOT NULL,
+        name VARCHAR(100),
+        reason TEXT,
+        blacklisted_by VARCHAR(100),
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE KEY unique_nik (nik)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
+
+    'dw_settings' => "CREATE TABLE IF NOT EXISTS dw_settings (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        setting_key VARCHAR(50) NOT NULL,
+        setting_value TEXT,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        UNIQUE KEY unique_key (setting_key)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
+
+    'dw_track_requests' => "CREATE TABLE IF NOT EXISTS dw_track_requests (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        candidate_id INT NOT NULL,
+        candidate_name VARCHAR(100) DEFAULT '',
+        candidate_nik VARCHAR(20) DEFAULT '',
+        status ENUM('pending','received','cancelled') DEFAULT 'pending',
+        requested_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        received_at DATETIME DEFAULT NULL,
+        latitude DOUBLE DEFAULT NULL,
+        longitude DOUBLE DEFAULT NULL,
+        accuracy FLOAT DEFAULT NULL,
+        INDEX idx_status (status),
+        INDEX idx_candidate (candidate_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4"
+];
+
+foreach ($tables as $name => $sql) {
+    try {
+        $db->exec($sql);
+        $results[] = "✅ $name";
+    } catch (PDOException $e) {
+        $results[] = "❌ $name: " . $e->getMessage();
     }
-} else {
-    echo '<p>✅ Folder uploads sudah ada.</p>';
 }
 
-// 2. Connect to database
+// Insert default admin
 try {
-    $pdo = new PDO(
-        'mysql:host=' . DB_HOST . ';dbname=' . DB_NAME . ';charset=utf8mb4',
-        DB_USER, DB_PASS,
-        [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
-    );
-    echo '<p>✅ Koneksi database berhasil.</p>';
+    $hash = password_hash('admin123', PASSWORD_DEFAULT);
+    $db->exec("INSERT IGNORE INTO dw_admins (username, password, name, role) VALUES ('owner', '$hash', 'Owner BAS', 'owner')");
+    $results[] = "✅ Default admin (owner/admin123)";
 } catch (PDOException $e) {
-    die('<p>❌ Koneksi database gagal: ' . $e->getMessage() . '</p>
-         <p>Pastikan DB_NAME, DB_USER, DB_PASS di config.php sudah benar.</p>');
+    $results[] = "⚠ Admin exists";
 }
 
-// 3. Create table
-$sql = "
-CREATE TABLE IF NOT EXISTS absensi_foto (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    ops_id VARCHAR(20) NOT NULL,
-    nama VARCHAR(100) NOT NULL,
-    tipe ENUM('MASUK','KELUAR') NOT NULL,
-    foto_path VARCHAR(255) NOT NULL,
-    status ENUM('PENDING','DITERIMA','DITOLAK') NOT NULL DEFAULT 'PENDING',
-    latitude DECIMAL(10,7) DEFAULT NULL,
-    longitude DECIMAL(10,7) DEFAULT NULL,
-    alamat VARCHAR(255) DEFAULT NULL,
-    station VARCHAR(50) DEFAULT NULL,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    INDEX idx_ops (ops_id),
-    INDEX idx_date (created_at),
-    INDEX idx_tipe (tipe),
-    INDEX idx_status (status),
-    INDEX idx_station (station),
-    INDEX idx_date_station (created_at, station),
-    INDEX idx_date_status (created_at, status)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-";
-
+// Insert default locations
 try {
-    $pdo->exec($sql);
-    echo '<p>✅ Tabel <strong>absensi_foto</strong> berhasil dibuat.</p>';
+    $db->exec("INSERT IGNORE INTO dw_locations (name, address, maps_link) VALUES 
+        ('Makobas', 'Jl. Raya Bekasi KM.28', 'https://maps.google.com'),
+        ('Mess Cileungsi', 'Cileungsi, Bogor', 'https://maps.google.com'),
+        ('Cibitung', 'Cibitung, Bekasi', 'https://maps.google.com'),
+        ('Cakung 2', 'Cakung, Jakarta Timur', 'https://maps.google.com')
+    ");
+    $results[] = "✅ Default locations";
 } catch (PDOException $e) {
-    echo '<p>❌ Gagal buat tabel: ' . $e->getMessage() . '</p>';
+    $results[] = "⚠ Locations exist";
 }
 
-echo '<hr>';
-echo '<p>🎉 <strong>Setup selesai!</strong></p>';
-echo '<p>⚠️ <strong>HAPUS file setup.php ini dari server setelah selesai!</strong></p>';
-$endpoint = ((isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http')
-    . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost')
-    . rtrim(dirname($_SERVER['SCRIPT_NAME'] ?? '/api/setup.php'), '/\\')
-    . '/absen-foto.php';
-echo '<p>API endpoint: <code>' . htmlspecialchars($endpoint, ENT_QUOTES, 'UTF-8') . '</code></p>';
-?>
+jsonResponse([
+    'success' => true,
+    'message' => 'Daily Worker database setup complete!',
+    'results' => $results
+]);

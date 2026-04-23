@@ -82,14 +82,12 @@
               if (cached && (Date.now() - ts) < 600000) {
                 _empCache = JSON.parse(cached);
                 if (_empCache && _empCache.length > 0) {
-                  console.log('[BAS] Employee cache hit (sessionStorage):', _empCache.length);
                   return Promise.resolve(_empCache);
                 }
               }
             } catch(e) {}
             // 3. Fetch from server (reuse existing promise if in-flight)
             if (!_empCachePromise) {
-              console.log('[BAS] Fetching employee list (background)...');
               _empCachePromise = _originalFetch.call(window, NEW_API, {
                 method: 'POST',
                 headers: {'Content-Type':'text/plain;charset=utf-8'},
@@ -100,7 +98,6 @@
                 try { arr = JSON.parse(text); } catch(e) { arr = []; }
                 if (!Array.isArray(arr)) arr = [];
                 _empCache = arr;
-                console.log('[BAS] Employee list loaded:', arr.length, 'records');
                 // Save to sessionStorage for next page load
                 try {
                   sessionStorage.setItem('bas_emp_cache', text);
@@ -228,7 +225,6 @@
             // 1. Memory cache (TTL 5 menit)
             var cached = _payCache[opsId];
             if (cached && cached.data && (Date.now() - cached.ts) < 300000) {
-              console.log('[BAS-SYNC] Payslip cache hit:', opsId, '→', cached.data.length, 'slips');
               return Promise.resolve(cached.data);
             }
             // 2. sessionStorage cache (TTL 5 menit)
@@ -239,14 +235,12 @@
                 var sData = JSON.parse(sessionStorage.getItem(sKey));
                 if (Array.isArray(sData) && sData.length > 0) {
                   _payCache[opsId] = { data: sData, ts: sTs };
-                  console.log('[BAS-SYNC] Payslip sessionStorage hit:', opsId, '→', sData.length, 'slips');
                   return Promise.resolve(sData);
                 }
               }
             } catch(e) {}
             // 3. Fetch dari server (reuse promise kalau sedang fetch)
             if (!_payFetchPromise[opsId]) {
-              console.log('[BAS-SYNC] Fetching payslips for', opsId, '...');
               _payFetchPromise[opsId] = _originalFetch.call(window, NEW_API, {
                 method: 'POST',
                 headers: {'Content-Type': 'text/plain;charset=utf-8'},
@@ -265,7 +259,6 @@
                   sessionStorage.setItem('bas_pay_' + opsId, JSON.stringify(arr));
                   sessionStorage.setItem('bas_pay_' + opsId + '_ts', String(now));
                 } catch(e) {}
-                console.log('[BAS-SYNC] Payslips loaded:', opsId, '→', arr.length, 'records');
                 _payFetchPromise[opsId] = null;
                 return arr;
               }).catch(function(err) {
@@ -298,7 +291,6 @@
                 var decoded = JSON.parse(atob(session));
                 var opsId = decoded && decoded.user && (decoded.user.opsId || decoded.user.ops);
                 if (opsId) {
-                  console.log('[BAS-SYNC] Refreshing payslips for', opsId, '...');
                   _getPayslips(opsId);
                 }
               }
@@ -318,7 +310,6 @@
               sessionStorage.removeItem('bas_emp_cache');
               sessionStorage.removeItem('bas_emp_cache_ts');
             } catch(e) {}
-            console.log('[BAS-SYNC] Refreshing employee data...');
             return _getEmployees();
           }
 
@@ -345,7 +336,6 @@
               var ts = parseInt(sessionStorage.getItem('bas_emp_cache_ts') || '0');
               var age = Date.now() - ts;
               if (age > 120000) { // > 2 menit
-                console.log('[BAS-SYNC] Tab active, cache stale (' + Math.round(age/1000) + 's), refreshing all...');
                 _refreshAllCaches();
               }
             } catch(e) {
@@ -396,7 +386,6 @@
 
             // Demo Account Hook (React fallback preventer)
             if ((oid === '123' || oid === 'OPS123') && nk === '321') {
-              console.log('[BAS] ✓ Demo Login bypassed in Interceptor');
               var demoNode = {
                 opsId: 'OPS123',
                 name: 'Karyawan Demo',
@@ -411,7 +400,6 @@
             }
 
             var oidClean = oid.toUpperCase().replace(/^OPS/i, '').trim();
-            console.log('[BAS] Login attempt → opsId:', oid, '(clean:', oidClean, ') | nik:', nk);
 
             // Jalankan PARALEL: employee match + owner check
             var empPromise = _getEmployees().then(function(allEmps) {
@@ -440,7 +428,6 @@
 
               // Priority 1: Employee match
               if (foundEmp) {
-                console.log('[BAS] ✓ Employee matched →', foundEmp.nama || foundEmp.name);
                 var normalized = normalizeResponse('login', foundEmp);
                 return new Response(JSON.stringify(normalized), {
                   status: 200, headers: {'Content-Type':'application/json'}
@@ -450,7 +437,6 @@
               // Priority 2: Owner/Korlap
               if (ownerData && ownerData.isOwner === true) {
                 var st = (ownerData.status || '').toUpperCase();
-                console.log('[BAS] ✓ ' + st + ' login →', ownerData.nama);
                 sessionStorage.setItem('bas_owner_auth', 'true');
                 sessionStorage.setItem('bas_owner_profile', JSON.stringify({
                   ops: ownerData.ops,
@@ -464,7 +450,6 @@
               }
 
               // Tidak ditemukan
-              console.log('[BAS] ✗ Tidak ditemukan di Employee maupun Owner');
               return new Response(JSON.stringify({error: 'OPS ID atau NIK tidak terdaftar atau salah.'}), {
                 status: 200, headers: {'Content-Type':'application/json'}
               });
@@ -479,10 +464,8 @@
           // Intercept jika URL mengandung OLD_API
           if (urlStr.indexOf(OLD_API) !== -1) {
             var newUrl = urlStr.replace(OLD_API, NEW_API);
-            console.log("[BAS-API] " + (bodyAction||'?') + " → redirected to new URL");
 
             return _originalFetch.call(window, newUrl, options).then(function(resp) {
-              console.log("[BAS-API] " + (bodyAction||'?') + " → status " + resp.status);
               // Normalize employee-related responses
               if (bodyAction === 'getAllEmployees') {
                 return resp.text().then(function(txt) {
@@ -508,7 +491,6 @@
         // (smartLogin menggabungkan owner + employee check dalam 1 request)
         // Helper functions legacy dihapus — sudah tidak diperlukan
 
-        console.log("[BAS] Fetch interceptor aktif → API dialihkan ke URL baru");
         window.__basInterceptorActive = true;
 
         // ═══════════════════════════════════════════════════════════
@@ -534,7 +516,6 @@
               if (needsFix) {
                 decoded.user = u;
                 localStorage.setItem('bas_session', btoa(JSON.stringify(decoded)));
-                console.log('[BAS] Session diperbaiki: field names dinormalisasi');
               }
             }
           }

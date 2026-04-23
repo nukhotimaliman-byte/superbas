@@ -2,242 +2,1184 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
+    <link rel="icon" type="image/png" href="favicon-bas.png">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="icon" type="image/png" href="favicon-bas.png">`n    <title>Kurir — Segera Hadir | Super-BAS Karir</title>
-    <meta name="description" content="Portal rekrutmen Kurir BAS sedang dalam persiapan. Segera hadir!">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,100..900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="../style.css">
+    <meta name="description" content="Bergabung menjadi Kurir Profesional Vendor BAS — Pengiriman Last-Mile, Same-Day, dan Express. Daftar sekarang!">
+    <title>Super-BAS — Kurir Profesional</title>
+    <link rel="stylesheet" href="css/style.css?v=4.1">
+    <script src="js/theme.js?v=4.1"></script>
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-
-        body {
-            min-height: 100dvh;
+        /* ── Landing Page Specific ───────────── */
+        .landing-hero {
+            min-height: 92vh;
             display: flex;
-            flex-direction: column;
-            font-family: 'Inter', sans-serif;
-            background: var(--bg);
-            color: var(--text);
-        }
-
-        .maintenance-wrap {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
             align-items: center;
             justify-content: center;
             text-align: center;
-            padding: 40px 24px 80px;
-            gap: 0;
-        }
-
-        .maintenance-anim {
+            padding: 60px 20px;
             position: relative;
-            width: 140px;
-            height: 140px;
-            margin-bottom: 32px;
+            overflow: hidden;
         }
 
-        .maintenance-anim .ring {
+        /* Dark overlay with aesthetic blur */
+        .landing-hero::before {
+            content: '';
             position: absolute;
             inset: 0;
-            border-radius: 50%;
-            border: 3px solid transparent;
-            animation: spin 3s linear infinite;
+            background: rgba(10, 15, 25, 0.65);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            z-index: 0;
+            transition: background 0.3s ease;
         }
 
-        .maintenance-anim .ring-1 {
-            border-top-color: var(--accent);
-            border-right-color: var(--accent);
-            animation-duration: 2.4s;
+        [data-theme="light"] .landing-hero::before {
+            background: rgba(248, 250, 252, 0.75);
         }
 
-        .maintenance-anim .ring-2 {
-            inset: 12px;
-            border-bottom-color: #6366f1;
-            border-left-color: #6366f1;
-            animation-duration: 1.8s;
-            animation-direction: reverse;
-        }
-
-        .maintenance-anim .icon-center {
-            position: absolute;
-            inset: 24px;
-            background: var(--bg-card);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 2.2rem;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.12);
-            animation: pulse 2s ease-in-out infinite;
-        }
-
-        @keyframes spin { to { transform: rotate(360deg); } }
-        @keyframes pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.08); }
-        }
-
-        .maintenance-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            background: rgba(245, 158, 11, 0.12);
-            color: #f59e0b;
-            border: 1px solid rgba(245, 158, 11, 0.3);
-            padding: 5px 14px;
-            border-radius: 100px;
-            font-size: 0.72rem;
-            font-weight: 700;
-            letter-spacing: 0.08em;
-            text-transform: uppercase;
-            margin-bottom: 20px;
-        }
-
-        .maintenance-badge::before {
+        /* Ambient glow on top of overlay */
+        .landing-hero::after {
             content: '';
-            width: 7px;
-            height: 7px;
-            background: #f59e0b;
-            border-radius: 50%;
-            animation: blink 1.2s ease-in-out infinite;
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle at 30% 50%, var(--accent-glow) 0%, transparent 50%),
+                        radial-gradient(circle at 70% 80%, rgba(135,206,235,0.08) 0%, transparent 40%);
+            animation: heroGlow 8s ease-in-out infinite alternate;
+            pointer-events: none;
+            z-index: 1;
         }
 
-        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
-
-        .maintenance-title {
-            font-size: clamp(1.6rem, 5vw, 2.4rem);
-            font-weight: 800;
-            letter-spacing: -0.03em;
-            line-height: 1.2;
-            margin-bottom: 14px;
+        @keyframes heroGlow {
+            0%   { transform: translate(0, 0) scale(1); }
+            100% { transform: translate(-5%, 5%) scale(1.1); }
         }
 
-        .maintenance-title span {
-            background: linear-gradient(135deg, var(--accent), #6366f1);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+        .landing-hero-content {
+            position: relative;
+            z-index: 2;
+            max-width: 800px;
         }
 
-        .maintenance-sub {
-            color: var(--text-2);
-            font-size: 1rem;
-            line-height: 1.6;
-            max-width: 400px;
-            margin-bottom: 36px;
-        }
-
-        .maintenance-features {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            justify-content: center;
-            margin-bottom: 40px;
-            max-width: 400px;
-        }
-
-        .feature-chip {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 100px;
-            padding: 6px 14px;
-            font-size: 0.78rem;
-            font-weight: 500;
-            color: var(--text-2);
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .back-btn {
+        .landing-badge {
             display: inline-flex;
             align-items: center;
             gap: 8px;
-            padding: 14px 28px;
+            padding: 8px 20px;
+            background: var(--accent-light);
+            border: 1px solid var(--accent);
+            border-radius: 100px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--accent);
+            margin-bottom: 24px;
+            animation: fadeInDown 0.8s ease;
+        }
+
+        .landing-badge .pulse {
+            width: 8px;
+            height: 8px;
             background: var(--accent);
-            color: var(--btn-text);
-            border: none;
-            border-radius: 12px;
-            font-size: 0.9rem;
+            border-radius: 50%;
+            animation: pulse 2s ease infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(1.5); }
+        }
+
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .landing-title {
+            font-size: 3.5rem;
+            font-weight: 900;
+            letter-spacing: -2px;
+            line-height: 1.1;
+            margin-bottom: 20px;
+            animation: fadeInUp 0.8s ease 0.1s both;
+        }
+
+        .landing-title .accent { color: var(--accent); }
+        .landing-title .line2 { display: block; }
+
+        .landing-desc {
+            font-size: 1.15rem;
+            color: var(--text-secondary);
+            line-height: 1.7;
+            max-width: 580px;
+            margin: 0 auto 36px;
+            animation: fadeInUp 0.8s ease 0.2s both;
+        }
+
+        .landing-cta {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+            flex-wrap: wrap;
+            animation: fadeInUp 0.8s ease 0.3s both;
+        }
+
+        .landing-cta .btn-primary {
+            padding: 16px 40px;
+            font-size: 1.1rem;
+            border-radius: var(--radius-lg);
+            box-shadow: 0 4px 20px var(--accent-glow);
+        }
+
+        .landing-cta .btn-primary:hover {
+            box-shadow: 0 8px 30px var(--accent-glow);
+            transform: translateY(-3px);
+        }
+
+        .landing-cta .btn-secondary {
+            padding: 16px 32px;
+            font-size: 1.1rem;
+            border-radius: var(--radius-lg);
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ── Stats Bar ───────────────────────── */
+        .stats-bar {
+            display: flex;
+            justify-content: center;
+            gap: 48px;
+            padding: 40px 20px;
+            border-top: 1px solid var(--border);
+            border-bottom: 1px solid var(--border);
+            background: var(--bg-secondary);
+            animation: fadeInUp 0.8s ease 0.5s both;
+        }
+
+        .stat-item { text-align: center; }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 900;
+            color: var(--accent);
+            line-height: 1;
+        }
+
+        .stat-label {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
+        /* ── Features Section ────────────────── */
+        .section {
+            padding: 80px 20px;
+        }
+
+        .section-header {
+            text-align: center;
+            max-width: 600px;
+            margin: 0 auto 48px;
+        }
+
+        .section-header h2 {
+            font-size: 2rem;
+            font-weight: 800;
+            letter-spacing: -1px;
+            margin-bottom: 12px;
+        }
+
+        .section-header p {
+            color: var(--text-muted);
+            font-size: 1rem;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        .feature-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 32px 24px;
+            text-align: center;
+            transition: var(--transition);
+        }
+
+        .feature-card:hover {
+            transform: translateY(-6px);
+            box-shadow: var(--shadow-lift);
+            border-color: var(--accent);
+        }
+
+        .feature-icon {
+            width: 64px;
+            height: 64px;
+            background: var(--accent-light);
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            margin: 0 auto 16px;
+        }
+
+        .feature-title {
             font-weight: 700;
-            font-family: inherit;
-            cursor: pointer;
-            text-decoration: none;
-            transition: transform 0.2s, box-shadow 0.2s, filter 0.2s;
-            box-shadow: 0 4px 20px var(--accent-dim);
+            font-size: 1.05rem;
+            margin-bottom: 8px;
         }
 
-        .back-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 30px var(--accent-dim);
-            filter: brightness(1.12);
+        .feature-desc {
+            font-size: 0.88rem;
+            color: var(--text-muted);
+            line-height: 1.6;
         }
 
-        .back-btn svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+        /* ── Armada Showcase ─────────────────── */
+        .armada-showcase {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
 
-        .maintenance-note {
-            margin-top: 20px;
+        .armada-showcase-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-xl);
+            padding: 40px 24px;
+            text-align: center;
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .armada-showcase-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--accent);
+            transform: scaleX(0);
+            transition: transform 0.4s ease;
+        }
+
+        .armada-showcase-card:hover::before { transform: scaleX(1); }
+
+        .armada-showcase-card:hover {
+            transform: translateY(-8px);
+            box-shadow: var(--shadow-lift);
+        }
+
+        .armada-showcase-card .armada-icon { margin-bottom: 20px; }
+
+        .armada-showcase-card .armada-name {
+            font-size: 1.3rem;
+            font-weight: 800;
+            margin-bottom: 8px;
+        }
+
+        .armada-showcase-card .armada-desc {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            margin-bottom: 16px;
+        }
+
+        .armada-tag {
+            display: inline-block;
+            padding: 4px 14px;
+            background: var(--accent-light);
+            color: var(--accent);
+            border-radius: 100px;
+            font-size: 0.78rem;
+            font-weight: 600;
+        }
+
+        /* ── How It Works (Steps) ────────────── */
+        .steps-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 24px;
+            max-width: 1000px;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        .steps-grid::before {
+            content: '';
+            position: absolute;
+            top: 36px;
+            left: 12%;
+            right: 12%;
+            height: 3px;
+            background: var(--border);
+            z-index: 0;
+        }
+
+        .step-card {
+            text-align: center;
+            position: relative;
+            z-index: 1;
+        }
+
+        .step-number {
+            width: 56px;
+            height: 56px;
+            background: var(--accent);
+            color: #000;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 900;
+            font-size: 1.3rem;
+            margin: 0 auto 16px;
+            box-shadow: 0 4px 16px var(--accent-glow);
+        }
+
+        .step-title {
+            font-weight: 700;
+            font-size: 0.95rem;
+            margin-bottom: 6px;
+        }
+
+        .step-desc {
+            font-size: 0.82rem;
+            color: var(--text-muted);
+            line-height: 1.5;
+        }
+
+        /* ── Locations Section ───────────────── */
+        .locations-grid {
+            display: grid;
+            /* auto-fit: otomatis menyesuaikan jumlah kolom berapa pun lokasi */
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .location-info-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 28px 20px;
+            text-align: center;
+            transition: var(--transition);
+        }
+
+        .location-info-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-md);
+            border-color: var(--accent);
+        }
+
+        .location-info-card .loc-icon { font-size: 2rem; margin-bottom: 12px; }
+        .location-info-card .loc-name { font-weight: 700; font-size: 1rem; margin-bottom: 4px; }
+        .location-info-card .loc-managers { font-size: 0.8rem; color: var(--text-muted); }
+
+        /* ── CTA Section ─────────────────────── */
+        .cta-section {
+            text-align: center;
+            padding: 80px 20px;
+            background: var(--bg-secondary);
+            border-top: 1px solid var(--border);
+        }
+
+        .cta-section h2 {
+            font-size: 2rem;
+            font-weight: 800;
+            margin-bottom: 12px;
+        }
+
+        .cta-section p {
+            color: var(--text-muted);
+            margin-bottom: 32px;
+            font-size: 1rem;
+        }
+
+        /* ── Footer ──────────────────────────── */
+        .landing-footer {
+            text-align: center;
+            padding: 32px 20px;
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            border-top: 1px solid var(--border);
+        }
+
+        .landing-footer a { color: var(--accent); }
+
+        /* ── Linktree Section ────────────────── */
+        .linktree-section {
+            padding: 48px 20px;
+            background: var(--bg-primary);
+            border-bottom: 1px solid var(--border);
+        }
+        .linktree-section .section-header {
+            text-align: center; max-width: 600px; margin: 0 auto 28px;
+        }
+        .linktree-section .section-header h2 {
+            font-size: 1.6rem; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 8px;
+        }
+        .linktree-section .section-header p { color: var(--text-muted); font-size: 0.9rem; }
+        .linktree-container {
+            max-width: 600px; margin: 0 auto; display: flex; flex-direction: column; gap: 12px;
+        }
+        .linktree-item {
+            display: flex; align-items: center; gap: 16px; padding: 16px 20px;
+            background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: var(--radius-lg); text-decoration: none; color: inherit;
+            transition: all 0.3s ease; position: relative; overflow: hidden;
+        }
+        .linktree-item::before {
+            content: ''; position: absolute; left: 0; top: 0; bottom: 0;
+            width: 3px; background: var(--accent); transform: scaleY(0); transition: transform 0.3s ease;
+        }
+        .linktree-item:hover {
+            transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.10); border-color: var(--accent);
+        }
+        .linktree-item:hover::before { transform: scaleY(1); }
+        .linktree-icon {
+            width: 42px; height: 42px; background: var(--accent-light);
+            border-radius: var(--radius-md); display: flex; align-items: center;
+            justify-content: center; flex-shrink: 0; color: var(--accent);
+        }
+        .linktree-icon svg { width: 20px; height: 20px; }
+        .linktree-icon.ic-whatsapp { background: rgba(37,211,102,0.12); color: #25d366; }
+        .linktree-icon.ic-instagram { background: rgba(225,48,108,0.12); color: #e1306c; }
+        .linktree-icon.ic-tiktok { background: rgba(0,0,0,0.08); color: var(--text-primary); }
+        .linktree-icon.ic-facebook { background: rgba(24,119,242,0.12); color: #1877f2; }
+        .linktree-icon.ic-youtube { background: rgba(255,0,0,0.10); color: #ff0000; }
+        .linktree-icon.ic-telegram { background: rgba(38,165,224,0.12); color: #26a5e4; }
+        .linktree-content { flex: 1; min-width: 0; }
+        .linktree-title { font-weight: 700; font-size: 0.95rem; margin-bottom: 2px; }
+        .linktree-desc {
+            font-size: 0.8rem; color: var(--text-muted); white-space: nowrap;
+            overflow: hidden; text-overflow: ellipsis;
+        }
+        .linktree-arrow { color: var(--text-muted); transition: all 0.3s ease; flex-shrink: 0; }
+        .linktree-item:hover .linktree-arrow { color: var(--accent); transform: translateX(4px); }
+
+        /* ── Collapsible Groups ──────────────── */
+        .lt-group { border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; background: var(--bg-card); }
+        .lt-group-header {
+            display: flex; align-items: center; gap: 10px; padding: 14px 20px;
+            cursor: pointer; user-select: none; background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border); transition: background 0.2s;
+        }
+        .lt-group-header:hover { background: var(--accent-light); }
+        .lt-group-chevron { width: 18px; height: 18px; color: var(--text-muted); transition: transform 0.3s ease; flex-shrink: 0; }
+        .lt-group-title { font-weight: 700; font-size: 0.92rem; flex: 1; }
+        .lt-group-count {
+            background: var(--accent); color: #fff; font-size: 0.7rem; font-weight: 700;
+            padding: 2px 8px; border-radius: 10px; min-width: 20px; text-align: center;
+        }
+        .lt-group-body { max-height: 1000px; overflow: hidden; transition: max-height 0.4s ease, opacity 0.3s ease; opacity: 1; }
+        .lt-group-body .linktree-item { border-radius: 0; border-left: none; border-right: none; border-top: none; }
+        .lt-group-body .linktree-item:last-child { border-bottom: none; }
+        .lt-collapsed .lt-group-header { border-bottom-color: transparent; }
+        .lt-collapsed .lt-group-body { max-height: 0; opacity: 0; }
+        .lt-collapsed .lt-group-chevron { transform: rotate(-90deg); }
+
+        .linktree-skeleton {
+            height: 76px; background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: var(--radius-lg); animation: skeletonPulse 1.5s ease-in-out infinite;
+        }
+        @keyframes skeletonPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+        /* ── Responsive ──────────────────────── */
+        @media (max-width: 768px) {
+            .landing-title { font-size: 2.2rem; letter-spacing: -1px; }
+            .landing-desc { font-size: 1rem; }
+            .stats-bar { gap: 24px; flex-wrap: wrap; }
+            .stat-value { font-size: 1.5rem; }
+            .features-grid,
+            .armada-showcase { grid-template-columns: 1fr; max-width: 400px; }
+            .steps-grid { grid-template-columns: 1fr 1fr; }
+            .steps-grid::before { display: none; }
+            .locations-grid { grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); }
+            .section { padding: 48px 20px; }
+            .section-header h2 { font-size: 1.5rem; }
+        }
+
+        @media (max-width: 480px) {
+            .landing-title { font-size: 1.8rem; }
+            .landing-cta { flex-direction: column; align-items: center; }
+            .landing-cta .btn-primary,
+            .landing-cta .btn-secondary { width: 100%; max-width: 300px; }
+            .locations-grid { grid-template-columns: 1fr; }
+            .steps-grid { grid-template-columns: 1fr; }
+        }
+
+        /* ── Partners Marquee ────────────────── */
+        .partners-section {
+            padding: 48px 0 40px;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+            overflow: visible;
+        }
+
+        .partners-section .section-label {
+            text-align: center;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 28px;
+        }
+
+        .marquee-wrapper {
+            position: relative;
+            width: 100%;
+            overflow: hidden;
+            padding: 16px 0;
+        }
+
+        /* Fade edges */
+        .marquee-wrapper::before,
+        .marquee-wrapper::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 100px;
+            z-index: 2;
+            pointer-events: none;
+        }
+
+        .marquee-wrapper::before {
+            left: 0;
+            background: linear-gradient(to right, var(--bg-secondary), transparent);
+        }
+
+        .marquee-wrapper::after {
+            right: 0;
+            background: linear-gradient(to left, var(--bg-secondary), transparent);
+        }
+
+        .marquee-track {
+            display: flex;
+            gap: 64px;
+            width: max-content;
+        }
+
+        .marquee-track.paused {
+            animation-play-state: paused;
+        }
+
+        .partner-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-width: 160px;
+            flex-shrink: 0;
+            transition: var(--transition);
+        }
+
+        .partner-item:hover {
+            transform: scale(1.08);
+        }
+
+        .partner-item .logo-area {
+            height: 140px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .partner-item img {
+            height: 56px;
+            width: auto;
+            max-width: 160px;
+            object-fit: contain;
+            filter: grayscale(100%) opacity(0.5);
+            transition: all 0.4s ease;
+        }
+
+        /* Per-logo size tuning */
+        .partner-item img[alt="Shopee Express"]  { height: 48px; }
+        .partner-item img[alt="Sicepat Express"] { height: 64px; }
+        .partner-item img[alt="GoTo Logistic"]   { height: 140px; }
+        .partner-item img[alt="Astro"]           { height: 120px; }
+
+        .partner-item:hover img {
+            filter: grayscale(0%) opacity(1);
+        }
+
+        .partner-item .partner-name {
             font-size: 0.75rem;
-            color: var(--text-3);
+            font-weight: 600;
+            color: var(--text-muted);
+            text-align: center;
+            white-space: nowrap;
+            transition: color 0.3s ease;
+        }
+
+        .partner-item:hover .partner-name {
+            color: var(--accent);
+        }
+
+        @media (max-width: 768px) {
+            .marquee-wrapper::before,
+            .marquee-wrapper::after { width: 40px; }
+            .marquee-track { gap: 40px; }
+            .partner-item img { height: 36px; max-width: 110px; }
+            .partner-item .partner-name { font-size: 0.7rem; }
         }
     </style>
 </head>
 <body>
 
-    <header class="header" id="header">
-        <div class="container header__inner">
-            <a href="../" class="header__logo" id="logo">
-                <img src="../BAS.svg" alt="BAS" class="header__logo-img">
-            </a>
-            <button class="theme-toggle" id="theme-toggle" aria-label="Toggle theme">
-                <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
-                <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
-            </button>
+    <!-- ═══════════════════════════════════════ -->
+    <!-- HEADER -->
+    <!-- ═══════════════════════════════════════ -->
+    <header class="header">
+        <div class="header-inner">
+            <div class="header-logo">
+                <a href="/" style="text-decoration:none"><img src="../BAS.svg" alt="BAS" class="header-logo-img"></a>
+            </div>
+            <div class="header-actions">
+                <a href="login.html" class="btn btn-sm btn-primary login-btn">👤 Login</a>
+                <button class="theme-toggle" id="themeToggle" title="Toggle Dark/Light Mode" aria-label="Toggle theme">
+                    <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+                    <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+                </button>
+            </div>
         </div>
     </header>
 
-    <main class="maintenance-wrap">
+    <!-- ═══════════════════════════════════════ -->
+    <!-- HERO SECTION -->
+    <!-- ═══════════════════════════════════════ -->
+    <section class="landing-hero">
+        <div class="landing-hero-content">
+            <div class="landing-badge">
+                <span class="pulse"></span>
+                Rekrutmen Kurir Dibuka — 2026
+            </div>
 
-        <div class="maintenance-anim">
-            <div class="ring ring-1"></div>
-            <div class="ring ring-2"></div>
-            <div class="icon-center">🏍️</div>
+            <h1 class="landing-title">
+                Bergabung Menjadi
+                <span class="line2"><span class="accent">Kurir Profesional</span></span>
+                Vendor BAS
+            </h1>
+
+            <p class="landing-desc">
+                Raih karir sebagai kurir pengiriman logistik profesional. Proses cepat,
+                transparan, dan langsung dari smartphone Anda.
+            </p>
+
+            <div class="landing-cta">
+                <a href="login.html#register" class="btn btn-primary" id="ctaDaftar">Daftar Sekarang</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════ -->
+    <!-- LINKTREE SECTION -->
+    <!-- ═══════════════════════════════════════ -->
+    <section class="linktree-section" id="linktreeSection" style="display:none;">
+        <div class="section-header">
+            <h2>🔗 Link <span style="color:var(--accent);">Penting</span></h2>
+            <p>Akses cepat ke informasi dan resource yang Anda butuhkan.</p>
+        </div>
+        <div class="linktree-container" id="linktreeContainer">
+            <div class="linktree-skeleton"></div>
+            <div class="linktree-skeleton"></div>
+        </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════ -->
+    <!-- STATS BAR -->
+    <div class="stats-bar">
+        <div class="stat-item">
+            <div class="stat-value">4</div>
+            <div class="stat-label">Lokasi Rekrutmen</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-value">3</div>
+            <div class="stat-label">Tipe Pengiriman</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-value">6</div>
+            <div class="stat-label">Korlap Aktif</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-value">24/7</div>
+            <div class="stat-label">Daftar Online</div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════ -->
+    <!-- TRUSTED BY / PARTNER LOGOS -->
+    <!-- ═══════════════════════════════════════ -->
+    <section class="partners-section">
+        <div class="section-label">Support</div>
+        <div class="marquee-wrapper">
+            <div class="marquee-track" id="marqueeTrack">
+                <div class="partner-item">
+                    <div class="logo-area"><img src="assets/partners/LOGO-Shopee-Express.png" alt="Shopee Express"></div>
+                    <span class="partner-name">Shopee Express</span>
+                </div>
+                <div class="partner-item">
+                    <div class="logo-area"><img src="assets/partners/LOGO-Sicepat-Express.png" alt="Sicepat Express"></div>
+                    <span class="partner-name">Sicepat Express</span>
+                </div>
+                <div class="partner-item">
+                    <div class="logo-area"><img src="assets/partners/LOGO-GoTo-Logistic.png" alt="GoTo Logistic"></div>
+                    <span class="partner-name">GoTo Logistic</span>
+                </div>
+                <div class="partner-item">
+                    <div class="logo-area"><img src="assets/partners/LOGO-Astro.svg" alt="Astro"></div>
+                    <span class="partner-name">Astro</span>
+                </div>
+            </div>
+        </div>
+    </section>
+    <script>
+    (function() {
+        const track = document.getElementById('marqueeTrack');
+        if (!track) return;
+
+        // Wait for all images to load before measuring
+        const imgs = track.querySelectorAll('img');
+        let loaded = 0;
+        const total = imgs.length;
+
+        function initMarquee() {
+            const origItems = [...track.children];
+            const gap = 64;
+            // Calculate width of one set
+            let setWidth = 0;
+            origItems.forEach(el => { setWidth += el.offsetWidth + gap; });
+
+            // Clone until we have enough to fill 3x viewport
+            const vw = window.innerWidth;
+            const needSets = Math.ceil((vw * 3) / setWidth) + 1;
+            for (let i = 0; i < needSets; i++) {
+                origItems.forEach(item => track.appendChild(item.cloneNode(true)));
+            }
+
+            // Smooth scroll with requestAnimationFrame
+            let pos = 0;
+            let speed = 0.5; // pixels per frame
+            let paused = false;
+
+            track.addEventListener('mouseenter', () => paused = true);
+            track.addEventListener('mouseleave', () => paused = false);
+
+            function animate() {
+                if (!paused) {
+                    pos -= speed;
+                    if (Math.abs(pos) >= setWidth) {
+                        pos += setWidth; // seamless reset
+                    }
+                    track.style.transform = 'translateX(' + pos + 'px)';
+                }
+                requestAnimationFrame(animate);
+            }
+            requestAnimationFrame(animate);
+        }
+
+        if (total === 0) { initMarquee(); return; }
+        imgs.forEach(img => {
+            if (img.complete) { loaded++; if (loaded >= total) initMarquee(); }
+            else {
+                img.onload = img.onerror = () => { loaded++; if (loaded >= total) initMarquee(); };
+            }
+        });
+    })();
+    </script>
+
+    <!-- ═══════════════════════════════════════ -->
+    <!-- FEATURES SECTION -->
+    <!-- ═══════════════════════════════════════ -->
+    <section class="section">
+        <div class="section-header">
+            <h2>Kenapa Bergabung di <span style="color:var(--accent);">BAS</span>?</h2>
+            <p>Kami menyediakan proses rekrutmen yang modern, transparan, dan efisien untuk semua Calon Kurir.</p>
         </div>
 
-        <div class="maintenance-badge">Sedang Dalam Persiapan</div>
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon">📱</div>
+                <div class="feature-title">Daftar via HP</div>
+                <div class="feature-desc">Proses pendaftaran 100% online — cukup dari smartphone, tanpa perlu ke kantor.</div>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">⚡</div>
+                <div class="feature-title">Proses Cepat</div>
+                <div class="feature-desc">Upload dokumen langsung, langsung diproses oleh tim rekrutmen BAS.</div>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">📍</div>
+                <div class="feature-title">Pilih Lokasi</div>
+                <div class="feature-desc">Titik rekrutmen tersebar — pilih hub yang paling dekat dengan domisili Anda.</div>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🔍</div>
+                <div class="feature-title">Pantau Status</div>
+                <div class="feature-desc">Cek progres rekrutmen kapan saja lewat dashboard akun atau WhatsApp.</div>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🛡️</div>
+                <div class="feature-title">Aman & Terpercaya</div>
+                <div class="feature-desc">Dokumen Anda terproteksi watermark dan disimpan di server yang aman.</div>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">📦</div>
+                <div class="feature-title">Fleksibel & Beragam</div>
+                <div class="feature-desc">Tiga tipe pengiriman — Last-Mile, Same-Day, dan Express — sesuai kemampuan Anda.</div>
+            </div>
+        </div>
+    </section>
 
-        <h1 class="maintenance-title">Portal Kurir<br><span>Segera Hadir!</span></h1>
-        <p class="maintenance-sub">
-            Kami sedang menyiapkan sistem rekrutmen terbaik untuk posisi Kurir (Rider Motor &amp; Driver Mobil). Pantau terus halaman ini!
+    <!-- ═══════════════════════════════════════ -->
+    <!-- ARMADA SHOWCASE -->
+    <!-- ═══════════════════════════════════════ -->
+    <section class="section" id="armada" style="background:var(--bg-secondary);">
+        <div class="section-header">
+            <h2>Tipe <span style="color:var(--accent);">Pengiriman</span></h2>
+            <p>Pilih jalur pengiriman yang sesuai dengan kemampuan dan kendaraan Anda.</p>
+        </div>
+
+        <div class="armada-showcase">
+            <!-- Last-Mile -->
+            <div class="armada-showcase-card">
+                <div class="armada-icon">
+                    <svg width="80" height="56" viewBox="0 0 64 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect x="8" y="14" width="20" height="18" rx="3" fill="var(--accent)" opacity="0.3"/>
+                        <rect x="28" y="12" width="16" height="20" rx="3" fill="var(--accent)"/>
+                        <rect x="30" y="14" width="12" height="8" rx="2" fill="var(--bg-primary)" opacity="0.5"/>
+                        <circle cx="18" cy="38" r="5" fill="var(--text-primary)"/><circle cx="18" cy="38" r="2.5" fill="var(--bg-primary)"/>
+                        <circle cx="36" cy="38" r="5" fill="var(--text-primary)"/><circle cx="36" cy="38" r="2.5" fill="var(--bg-primary)"/>
+                        <rect x="10" y="18" width="6" height="6" rx="1" fill="var(--accent)" opacity="0.6"/>
+                        <rect x="18" y="18" width="6" height="6" rx="1" fill="var(--accent)" opacity="0.4"/>
+                    </svg>
+                </div>
+                <div class="armada-name">Last-Mile</div>
+                <div class="armada-desc">Pengiriman jarak dekat langsung ke pintu pelanggan. Rute harian di area perkotaan.</div>
+                <span class="armada-tag">Motor / Mobil Box</span>
+            </div>
+
+            <!-- Same-Day -->
+            <div class="armada-showcase-card">
+                <div class="armada-icon">
+                    <svg width="80" height="56" viewBox="0 0 64 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="32" cy="24" r="18" fill="var(--accent)" opacity="0.15"/>
+                        <circle cx="32" cy="24" r="12" fill="none" stroke="var(--accent)" stroke-width="2"/>
+                        <line x1="32" y1="16" x2="32" y2="24" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round"/>
+                        <line x1="32" y1="24" x2="38" y2="28" stroke="var(--accent)" stroke-width="2" stroke-linecap="round"/>
+                        <circle cx="32" cy="24" r="2" fill="var(--accent)"/>
+                        <path d="M46 10 L50 6" stroke="var(--accent)" stroke-width="1.5" opacity="0.5"/>
+                        <path d="M50 6 L54 8" stroke="var(--accent)" stroke-width="1.5" opacity="0.5"/>
+                    </svg>
+                </div>
+                <div class="armada-name">Same-Day</div>
+                <div class="armada-desc">Pengiriman hari yang sama. Kecepatan dan ketepatan waktu menjadi prioritas utama.</div>
+                <span class="armada-tag">Motor / Mobil</span>
+            </div>
+
+            <!-- Express -->
+            <div class="armada-showcase-card">
+                <div class="armada-icon">
+                    <svg width="80" height="56" viewBox="0 0 64 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M10 30 L22 12 L30 22 L38 8 L50 30" stroke="var(--accent)" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M50 30 L54 18" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round"/>
+                        <polygon points="52,14 56,20 50,20" fill="var(--accent)"/>
+                        <line x1="8" y1="38" x2="56" y2="38" stroke="var(--text-primary)" stroke-width="1" opacity="0.2"/>
+                        <rect x="14" y="32" width="8" height="6" rx="1" fill="var(--accent)" opacity="0.3"/>
+                        <rect x="28" y="32" width="8" height="6" rx="1" fill="var(--accent)" opacity="0.5"/>
+                        <rect x="42" y="32" width="8" height="6" rx="1" fill="var(--accent)" opacity="0.7"/>
+                    </svg>
+                </div>
+                <div class="armada-name">Express</div>
+                <div class="armada-desc">Pengiriman kilat antar kota dan wilayah. Untuk kurir berpengalaman dengan mobilitas tinggi.</div>
+                <span class="armada-tag">Mobil / Van</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════ -->
+    <!-- HOW IT WORKS -->
+    <!-- ═══════════════════════════════════════ -->
+    <section class="section" id="cara-daftar">
+        <div class="section-header">
+            <h2>Cara <span style="color:var(--accent);">Mendaftar</span></h2>
+            <p>Hanya 4 langkah mudah — semuanya bisa dilakukan dari smartphone.</p>
+        </div>
+
+        <div class="steps-grid">
+            <div class="step-card">
+                <div class="step-number">1</div>
+                <div class="step-title">Isi Formulir</div>
+                <div class="step-desc">Lengkapi data pribadi, pilih tipe pengiriman, dan lokasi hub terdekat.</div>
+            </div>
+            <div class="step-card">
+                <div class="step-number">2</div>
+                <div class="step-title">Upload Dokumen</div>
+                <div class="step-desc">Upload KTP, SIM, SKCK, dan dokumen pendukung lainnya (maks 2MB).</div>
+            </div>
+            <div class="step-card">
+                <div class="step-number">3</div>
+                <div class="step-title">Verifikasi</div>
+                <div class="step-desc">Tim Korlap akan memeriksa dokumen dan menghubungi Anda via WhatsApp.</div>
+            </div>
+            <div class="step-card">
+                <div class="step-number">4</div>
+                <div class="step-title">Mulai Bekerja</div>
+                <div class="step-desc">Setelah lolos verifikasi, langsung bergabung dan mulai pengiriman pertama!</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════ -->
+    <!-- LOCATIONS -->
+    <!-- ═══════════════════════════════════════ -->
+    <section class="section" style="background:var(--bg-secondary);">
+        <div class="section-header">
+            <h2>Lokasi <span style="color:var(--accent);">Rekrutmen</span></h2>
+            <p id="locationsSubtitle">Tersebar di berbagai titik strategis Jabodetabek. Pilih yang terdekat dari rumah Anda.</p>
+        </div>
+
+        <div class="locations-grid" id="indexLocationsGrid">
+            <div style="text-align:center;grid-column:1/-1;padding:40px;color:var(--text-muted);"><div class="spinner-sm"></div> Memuat lokasi...</div>
+        </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════ -->
+    <!-- FINAL CTA -->
+    <!-- ═══════════════════════════════════════ -->
+    <section class="cta-section">
+        <h2>Siap Bergabung?</h2>
+        <p>Daftar sekarang dan mulai perjalanan karir Anda sebagai kurir profesional BAS.</p>
+        <div class="landing-cta">
+            <a href="login.html#register" class="btn btn-primary" style="padding:16px 48px;font-size:1.1rem;border-radius:var(--radius-lg);box-shadow:0 4px 20px var(--accent-glow);">
+                Mulai Pendaftaran
+            </a>
+        </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════ -->
+    <!-- FOOTER -->
+    <!-- ═══════════════════════════════════════ -->
+    <footer class="landing-footer">
+        <p>© 2026 <strong>Vendor BAS</strong> — Sistem Rekrutmen Kurir. All rights reserved.</p>
+        <p style="margin-top:8px;">
+            <a href="login.html#register">Daftar</a> · 
+            <a href="login.html">Login</a>
         </p>
-
-        <div class="maintenance-features">
-            <div class="feature-chip">🏍️ Rider Motor (SIM C)</div>
-            <div class="feature-chip">🚗 Driver Mobil (SIM A)</div>
-            <div class="feature-chip">📍 Jabodetabek</div>
-            <div class="feature-chip">💰 Daftar Gratis</div>
-            <div class="feature-chip">📱 Proses Digital</div>
-        </div>
-
-        <a href="../" class="back-btn">
-            <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
-            Kembali ke Beranda
-        </a>
-        <p class="maintenance-note">Portal driver truk sudah tersedia sekarang →
-            <a href="../driver/" style="color:var(--accent);text-decoration:none;font-weight:600;">Daftar sebagai Driver</a>
-        </p>
-
-    </main>
-
-    <footer class="footer" id="footer">
-        <div class="container footer__inner">
-            <a href="../privacy-policy.html" class="footer__link">Kebijakan Privasi</a>
-            <p class="footer__copy">&copy; 2025 PT Barokah Amanah Sentosa</p>
-        </div>
     </footer>
 
-    <script src="../script.js"></script>
+    <script src="js/user-auth.js?v=4.1"></script>
+    <script>
+        // ── Utility ────────────────────────
+        function escapeHtml(str) {
+            if (!str) return '';
+            return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+        }
+
+        // Fix bfcache — reload when restored from back/forward cache
+        window.addEventListener('pageshow', function(e) {
+            if (e.persisted) {
+                window.location.reload();
+            }
+        });
+
+        // Check auth state and update header
+        (async () => {
+            const user = await checkUserAuth();
+            if (user) {
+                // Logged-in user should go to dashboard, not landing page
+                window.location.replace('daftar.html');
+                return;
+            }
+        })();
+
+        // ── Load Dynamic Locations ──────────────────────────────
+        (async () => {
+            const isLocal = ['localhost', '127.0.0.1'].includes(window.location.hostname);
+            // On localhost: pakai produksi karena Python server tidak bisa PHP
+            const API_URL = isLocal
+                ? 'https://super-bas.com/driver/api/locations.php'
+                : 'api/locations.php';
+
+            const META = {
+                'Makobas'       : { icon: '🏢', mgr: 'Korlap: Alim, Ilham, Gusti' },
+                'Mess Cileungsi': { icon: '🏠', mgr: 'Korlap: Amar' },
+                'Cibitung'      : { icon: '🏭', mgr: 'Korlap: Aples' },
+                'Cakung 2'      : { icon: '📦', mgr: 'Korlap: Ayat' }
+            };
+
+            // Static fallback jika API tidak bisa dijangkau
+            const FALLBACK = [
+                { name: 'Makobas',        address: 'Jl. Raya Bekasi — Hub Utama BAS',                maps_link: '' },
+                { name: 'Mess Cileungsi', address: 'Cileungsi, Bogor — Mess & Posko Driver',        maps_link: '' },
+                { name: 'Cibitung',       address: 'Cibitung, Bekasi — Gudang Operasional',         maps_link: '' },
+                { name: 'Cakung 2',       address: 'Cakung, Jakarta Timur — Pool & Interview',      maps_link: '' }
+            ];
+
+            function renderLocations(locations, fromFallback = false) {
+                const grid     = document.getElementById('indexLocationsGrid');
+                const subtitle = document.getElementById('locationsSubtitle');
+
+                if (!locations || locations.length === 0) {
+                    grid.innerHTML = '<div style="text-align:center;grid-column:1/-1;">Belum ada lokasi pendaftaran.</div>';
+                    return;
+                }
+
+                // Update subtitle secara dinamis sesuai jumlah lokasi
+                const count = locations.length;
+                const area  = count > 4 ? 'seluruh wilayah operasional BAS'
+                            : count === 4 ? '4 titik strategis Jabodetabek'
+                            : `${count} titik strategis Jabodetabek`;
+                if (subtitle) {
+                    subtitle.textContent = `Tersebar di ${area}. Pilih yang terdekat dari rumah Anda.`
+                        + (fromFallback ? '' : '');
+                }
+
+                grid.innerHTML = locations.map(l => {
+                    const meta = META[l.name] || { icon: '📍', mgr: 'Tim BAS' };
+                    const href = l.maps_link ? `href="${escapeHtml(l.maps_link)}" target="_blank"` : 'href="#"';
+                    return `
+                        <a ${href} class="location-info-card" style="text-decoration:none;display:block;color:inherit;">
+                            <div class="loc-icon">${meta.icon}</div>
+                            <div class="loc-name">${escapeHtml(l.name)}</div>
+                            <div class="loc-managers" style="margin-bottom:8px;">${meta.mgr}</div>
+                            <div style="font-size:0.75rem;color:var(--text-muted);opacity:0.8;">${escapeHtml(l.address || 'Alamat akan diperbarui')}</div>
+                            ${l.maps_link ? '<div style="font-size:0.72rem;margin-top:6px;color:var(--accent);">📍 Lihat di Maps →</div>' : ''}
+                        </a>
+                    `;
+                }).join('');
+            }
+
+            try {
+                const ctrl = new AbortController();
+                const timer = setTimeout(() => ctrl.abort(), 3000);
+                const res  = await fetch(API_URL, { signal: ctrl.signal });
+                clearTimeout(timer);
+                const data = await res.json();
+                if (data.locations && data.locations.length > 0) {
+                    renderLocations(data.locations, false);
+                } else {
+                    renderLocations(FALLBACK, true);
+                }
+            } catch (e) {
+                // API gagal / timeout / CORS → tampilkan data statis
+                renderLocations(FALLBACK, true);
+            }
+        })();
+
+        // ── SVG Icon Library ─────────────────────────────────
+        const SVG_ICONS = {
+            'link':           '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>',
+            'video':          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>',
+            'file-text':      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>',
+            'clipboard':      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>',
+            'message-circle': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>',
+            'phone':          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>',
+            'map-pin':        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>',
+            'users':          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
+            'globe':          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>',
+            'megaphone':      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l18-5v12L3 13v-2z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg>',
+            'briefcase':      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>',
+            'truck':          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>',
+            'package':        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="16.5" y1="9.4" x2="7.5" y2="4.21"/><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>',
+            'building':       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"/><line x1="9" y1="22" x2="9" y2="18"/><line x1="15" y1="22" x2="15" y2="18"/><line x1="9" y1="6" x2="9" y2="6.01"/><line x1="15" y1="6" x2="15" y2="6.01"/><line x1="9" y1="10" x2="9" y2="10.01"/><line x1="15" y1="10" x2="15" y2="10.01"/><line x1="9" y1="14" x2="9" y2="14.01"/><line x1="15" y1="14" x2="15" y2="14.01"/></svg>',
+            'check-circle':   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>',
+            'zap':            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>',
+            'bell':           '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>',
+            'calendar':       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>',
+            'shield':         '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>',
+            'award':          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></svg>',
+            'book-open':      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>',
+            'edit':           '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>',
+            'download':       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>',
+            'external-link':  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>',
+            'whatsapp':       '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>',
+            'instagram':      '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>',
+            'tiktok':         '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1v-3.5a6.37 6.37 0 00-.79-.05A6.34 6.34 0 003.15 15.2a6.34 6.34 0 0010.86 4.46v-7.13a8.16 8.16 0 005.58 2.18v-3.45a4.85 4.85 0 01-3.59-1.58 4.83 4.83 0 01-1.24-2.99h3.45c0 .03-.03.03-.03.03s0 0 .03 0h.37V6.69z"/></svg>',
+            'facebook':       '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>',
+            'youtube':        '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>',
+            'telegram':       '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.479.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg>',
+        };
+        const SOCIAL_ICONS = ['whatsapp','instagram','tiktok','facebook','youtube','telegram'];
+        function getIcon(iconKey, emojiIcon) {
+            if (iconKey && SVG_ICONS[iconKey]) return SVG_ICONS[iconKey];
+            return emojiIcon ? `<span style="font-size:1.3rem">${emojiIcon}</span>` : SVG_ICONS['link'];
+        }
+        function getIconClass(iconKey) {
+            return SOCIAL_ICONS.includes(iconKey) ? ` ic-${iconKey}` : '';
+        }
+        function renderLinkItem(l) {
+            return `<a href="${escapeHtml(l.url)}" target="_blank" rel="noopener" class="linktree-item">
+                <div class="linktree-icon${getIconClass(l.icon_key)}">${getIcon(l.icon_key, l.icon)}</div>
+                <div class="linktree-content">
+                    <div class="linktree-title">${escapeHtml(l.title)}</div>
+                    ${l.description ? `<div class="linktree-desc">${escapeHtml(l.description)}</div>` : ''}
+                </div>
+                <div class="linktree-arrow">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                </div>
+            </a>`;
+        }
+
+        // ── Load Linktree V2 ────────────────────────────────────
+        (async () => {
+            const LT_URL = 'api/linktree.php?action=list';
+            const chevronSvg = '<svg class="lt-group-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>';
+            try {
+                const ctrl = new AbortController();
+                const timer = setTimeout(() => ctrl.abort(), 4000);
+                const res = await fetch(LT_URL, { signal: ctrl.signal });
+                clearTimeout(timer);
+                const data = await res.json();
+                if (data.ok && data.links && data.links.length > 0) {
+                    const section = document.getElementById('linktreeSection');
+                    const container = document.getElementById('linktreeContainer');
+                    const standalone = [];
+                    const groups = {};
+                    data.links.forEach(l => {
+                        if (l.group_name) {
+                            if (!groups[l.group_name]) groups[l.group_name] = { order: l.group_order || 0, items: [] };
+                            groups[l.group_name].items.push(l);
+                        } else {
+                            standalone.push(l);
+                        }
+                    });
+                    const sortedGroups = Object.entries(groups).sort((a, b) => a[1].order - b[1].order);
+                    let html = standalone.map(renderLinkItem).join('');
+                    for (const [name, data] of sortedGroups) {
+                        html += `<div class="lt-group">
+                            <div class="lt-group-header" onclick="this.parentElement.classList.toggle('lt-collapsed')">
+                                ${chevronSvg}
+                                <span class="lt-group-title">${escapeHtml(name)}</span>
+                                <span class="lt-group-count">${data.items.length}</span>
+                            </div>
+                            <div class="lt-group-body">
+                                ${data.items.map(renderLinkItem).join('')}
+                            </div>
+                        </div>`;
+                    }
+                    section.style.display = '';
+                    container.innerHTML = html;
+                }
+            } catch (e) { /* silent */ }
+        })();
+    </script>
 </body>
 </html>

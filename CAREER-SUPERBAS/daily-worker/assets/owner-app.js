@@ -744,7 +744,6 @@ async function healthCheck(){
     const health = parseHealthResponse(text);
     if(health.ok){
       dbStatus.connected=true;
-      console.log('[BAS] Database connected ✓ version:', health.version || '?');
       return true;
     }
     throw new Error(health.message || 'Unexpected health response');
@@ -761,7 +760,6 @@ async function healthCheck(){
           const h2 = parseHealthResponse(t2);
           if(h2.ok){
             dbStatus.connected=true;
-            console.log('[BAS] Fallback ke DEFAULT_API berhasil ✓');
             return true;
           }
         }
@@ -955,12 +953,10 @@ async function loadAll(){
   let usedAutoDiscovery = false;
   if(allEmployees.length === 0){
     setMsg('Auto-discovery: scanning sheets...');
-    console.log('[BAS] Employees kosong, mencoba auto-discovery getAllData...');
     const ad = await api('getAllData');
     
     if(ad && !ad.error){
       usedAutoDiscovery = true;
-      console.log('[BAS] Auto-discovery berhasil:', ad.mappings);
       
       // Normalize employee data
       if(ad.employees && ad.employees.length > 0){
@@ -970,7 +966,6 @@ async function loadAll(){
           if(!e.opsId && e.nik) e.opsId = e.nik;
           if(!e.opsId) e.opsId = 'AUTO-'+(i+1);
         });
-        console.log('[BAS] Auto-discovered '+allEmployees.length+' employees from sheet: '+(ad.mappings?.employees?.sheet||'?'));
       }
       
       // Normalize & group attendance data by opsId
@@ -988,7 +983,6 @@ async function loadAll(){
             attMap[a.opsId].push(a);
           }
         });
-        console.log('[BAS] Auto-discovered '+normAtt.length+' attendance records from sheet: '+(ad.mappings?.attendance?.sheet||'?'));
       }
       
       // Normalize & group payslip data by opsId
@@ -1008,7 +1002,6 @@ async function loadAll(){
             payMap[p.opsId].push(p);
           }
         });
-        console.log('[BAS] Auto-discovered '+normPay.length+' payslips from sheet: '+(ad.mappings?.payslips?.sheet||'?'));
       }
       
       // If we got payslips but no employees, extract unique employees from payslips/attendance
@@ -1030,7 +1023,6 @@ async function loadAll(){
             });
           }
         });
-        console.log('[BAS] Extracted '+allEmployees.length+' employees from payslip/attendance data');
       }
 
       // Store discovery info for Settings tab
@@ -1038,7 +1030,6 @@ async function loadAll(){
       window._spreadsheetName = ad.spreadsheetName;
     } else {
       if(await tryFallbackToDefault('getAllData unavailable')) return;
-      console.log('[BAS] Auto-discovery juga gagal:', ad?.error || 'no response');
       // getAllData not deployed yet — this is expected for old deployments
     }
   }
@@ -1050,7 +1041,6 @@ async function loadAll(){
   // 4. BULK load attendance & payslips (2 calls instead of 2000!)
   if(!usedAutoDiscovery && employees.length > 0) {
     setMsg('Memuat presensi & payslip ('+employees.length+' karyawan)...');
-    console.log('[BAS] Bulk loading attendance & payslips...');
     const [allAttData, allPayData] = await Promise.all([
       api('getAllAttendance'),
       api('getAllPayslips')
@@ -1058,7 +1048,6 @@ async function loadAll(){
     
     // Normalize & group attendance by opsId
     const attArr = Array.isArray(allAttData) ? allAttData : [];
-    console.log('[BAS] Bulk attendance:', attArr.length, 'records');
     attArr.forEach(r => {
       r = normalizeAttendanceRecord(r);
       if(r.opsId) {
@@ -1069,7 +1058,6 @@ async function loadAll(){
     
     // Normalize & group payslips by opsId
     const payArr = Array.isArray(allPayData) ? allPayData : [];
-    console.log('[BAS] Bulk payslips:', payArr.length, 'records');
     payArr.forEach(r => {
       r = normalizePayslipRecord(r);
       if(r.opsId) {
@@ -1080,7 +1068,6 @@ async function loadAll(){
     
     // Fallback: if bulk endpoints not deployed yet, try per-employee (batched)
     if(attArr.length === 0 && payArr.length === 0) {
-      console.log('[BAS] Bulk endpoints kosong, fallback ke per-employee (batched)...');
       const batchSize = 10;
       for(let i = 0; i < employees.length; i += batchSize) {
         const batch = employees.slice(i, i + batchSize);
@@ -3939,21 +3926,16 @@ async function reloadData(){
 //  INIT
 // ═══════════════════════════════════════════════════════════════
 async function init(){
-  console.log('[BAS] init() started');
   // Check auth
   if(sessionStorage.getItem('bas_owner_auth')!=='true'){
-    console.log('[BAS] Auth check failed, redirecting to index.html');
     window.location.href='app.html';
     return;
   }
-  console.log('[BAS] Auth OK');
   
   // Apply role-based UI
   applyRoleUI();
-  console.log('[BAS] applyRoleUI done');
   
   buildNav();
-  console.log('[BAS] buildNav done');
   const loaderEl=document.getElementById('loader');
   const loaderMsg=loaderEl?.querySelector('p');
   loaderEl?.classList.remove('hidden');
@@ -4391,7 +4373,6 @@ window.downloadSelectedPhotos = function() {
   downloadPhotos(ids);
 };
 
-console.log('[BAS] Calling init()...');
 init();
 
 // Chart.js loads async — initialize when ready
@@ -4399,7 +4380,6 @@ window.addEventListener('load', function() {
   if (typeof Chart !== 'undefined') {
     Chart.defaults.font.family = 'Inter';
     setChartTheme();
-    console.log('[BAS] Chart.js loaded & initialized');
     // Re-render current tab to pick up charts
     if (curTab && typeof go === 'function') {
       var R={overview:typeof rOverview!=='undefined'?rOverview:null};

@@ -1,257 +1,419 @@
 <?php
 /**
- * BAS Recruitment — Daily Worker Admin API
+ * BAS Driver — Admin API v3.3 (Schema-Verified)
+ * 
+ * Known DB schema (from debug 2026-04-09):
+ *   dw_candidates: id, given_id, candidate_id, user_id, name, nik, whatsapp, email, address,
+ *               provinsi, kabupaten, kecamatan, kelurahan,
+ *               referensi, tempat_lahir, tanggal_lahir, pendidikan_terakhir, pernah_kerja_spx,
+ *               surat_sehat, paklaring, armada_type, sim_type, location_id, status,
+ *               test_drive_date, jadwal_interview, test_drive_time, korlap_notes,
+ *               is_deleted, created_at, emergency_name, emergency_phone, emergency_relation,
+ *               interview_location, photo_data, signature_data
+ *   users:      id, username, password, plain_password, name, email, phone, google_id,
+ *               picture, is_blacklisted, created_at, last_login
+ *   dw_locations:  id, name, address, maps_link
  */
-require_once __DIR__ . '/config.php';
-
-function getDWDB() {
-    return new PDO('mysql:host=' . DB_HOST . ';dbname=' . DB_NAME . ';charset=utf8mb4', DB_USER, DB_PASS, [
-        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC
-    ]);
-}
-
-// Main DB (where admins table lives)
-function getMainDB() {
-    return new PDO('mysql:host=' . DB_HOST . ';dbname=' . DB_NAME . ';charset=utf8mb4', DB_USER, DB_PASS, [
-        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC
-    ]);
-}
-
-
-// Ensure user is an admin (owner/korlap)
-if (empty($_SESSION['admin_id'])) {
-    jsonResponse(['error' => 'Unauthorized'], 403);
-}
+require_once __DIR__ . '/../config.php';
 
 $method = $_SERVER['REQUEST_METHOD'];
 
 if ($method === 'GET') {
-    $action = $_GET['action'] ?? '';
-    
-    if ($action === 'get_all') {
-        $db = getDWDB();
-        $stmt = $db->query('
-            SELECT id, given_id, nama, nik, nomor_telepon, gender, bank, norek, atas_nama, 
-                   alamat, kota, tanggal_lahir, referensi, station, ktp_path, signature_path, 
-                   status, created_at, updated_at
-            FROM candidates_dw
-            ORDER BY created_at DESC
-        ');
-        $candidates = $stmt->fetchAll();
-        
-        jsonResponse([
-            'success' => true, 
-            'candidates' => $candidates,
-            'admin_role' => $_SESSION['admin_role'] ?? 'korlap',
-            'admin_id' => $_SESSION['admin_id'] ?? 0
-        ]);
-    }
-    
-    if ($action === 'get_payrolls') {
-        $db = getDWDB();
-        $stmt = $db->query('
-            SELECT p.id, p.nik, c.nama, p.period, p.pendapatan_dasar, p.lembur, p.potongan, p.thp, p.created_at 
-            FROM payroll_dw p
-            LEFT JOIN candidates_dw c ON p.nik = c.nik
-            ORDER BY p.created_at DESC
-        ');
-        $payrolls = $stmt->fetchAll();
-        jsonResponse(['success' => true, 'payrolls' => $payrolls]);
-    }
+    $admin = requireAuth();
+    $db    = getDB();
 
-    if ($action === 'get_admins') {
-        // Owner only
-        if (($_SESSION['admin_role'] ?? '') !== 'owner') {
-            jsonResponse(['error' => 'Hanya owner yang bisa mengakses fitur ini'], 403);
-        }
-        $db = getMainDB();
-        $stmt = $db->query('SELECT id, username, name, role, location_id, created_at FROM admins ORDER BY id ASC');
-        $admins = $stmt->fetchAll();
-        jsonResponse(['success' => true, 'admins' => $admins]);
-    }
-
-    jsonResponse(['error' => 'Invalid action'], 400);
-
-} elseif ($method === 'POST') {
-    $data = json_decode(file_get_contents('php://input'), true);
-    $action = $data['action'] ?? '';
-    
-    if ($action === 'update_status') {
-        $id = intval($data['id'] ?? 0);
-        $status = $data['status'] ?? '';
-        
-        if (!$id || !$status) jsonResponse(['error' => 'Data tidak lengkap'], 400);
-
+    // ── Return dw_locations ──────────────────────────────────────────────
+    if (isset($_GET['locations'])) {
         try {
-            $db = getDWDB();
-            $stmt = $db->prepare('UPDATE candidates_dw SET status = ? WHERE id = ?');
-            $stmt->execute([$status, $id]);
-            jsonResponse(['success' => true]);
+            $stmt = $db->query('SELECT id, name, address, maps_link FROM dw_locations ORDER BY id');
+            jsonResponse(['locations' => $stmt->fetchAll()]);
         } catch (PDOException $e) {
-            jsonResponse(['error' => 'Update gagal: ' . $e->getMessage()], 500);
+            jsonResponse(['locations' => [], 'error' => $e->getMessage()]);
         }
     }
 
-    if ($action === 'update_ops_id') {
-        $id = intval($data['id'] ?? 0);
-        $opsId = trim($data['ops_id'] ?? '');
-        
-        if (!$id) jsonResponse(['error' => 'ID tidak valid'], 400);
-
+    // ── Return Audit Trail ────────────────────────────────────────────
+    if (isset($_GET['audit'])) {
+        $cid = intval($_GET['audit']);
         try {
-            $db = getDWDB();
-            $stmt = $db->prepare('UPDATE candidates_dw SET given_id = ? WHERE id = ?');
-            $stmt->execute([$opsId, $id]);
-            jsonResponse(['success' => true]);
+            $stmt = $db->prepare('SELECT admin_name, action, old_value, new_value, notes, created_at FROM dw_audit_logs WHERE candidate_id = ? ORDER BY created_at DESC');
+            $stmt->execute([$cid]);
+            jsonResponse(['audit' => $stmt->fetchAll()]);
         } catch (PDOException $e) {
-            jsonResponse(['error' => 'Update OPS ID gagal: ' . $e->getMessage()], 500);
+            jsonResponse(['audit' => []]);
         }
     }
-    
-    if ($action === 'bulk_import') {
-        $rows = $data['data'] ?? [];
-        if (empty($rows)) jsonResponse(['error' => 'Data kosong'], 400);
 
+    // ── Single Candidate Detail ───────────────────────────────────────
+    if (isset($_GET['id'])) {
         try {
-            $db = getDWDB();
             $stmt = $db->prepare("
-                INSERT INTO candidates_dw (user_id, given_id, nama, nik, nomor_telepon, gender, bank, norek, atas_nama, alamat, kota, tanggal_lahir, referensi, station, status)
-                VALUES (0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Belum Pemberkasan')
-                ON DUPLICATE KEY UPDATE
-                    given_id = IF(VALUES(given_id) != '', VALUES(given_id), candidates_dw.given_id),
-                    nama = IF(VALUES(nama) != '', VALUES(nama), candidates_dw.nama),
-                    nomor_telepon = IF(VALUES(nomor_telepon) != '', VALUES(nomor_telepon), candidates_dw.nomor_telepon),
-                    gender = IF(VALUES(gender) != '', VALUES(gender), candidates_dw.gender),
-                    bank = IF(VALUES(bank) != '', VALUES(bank), candidates_dw.bank),
-                    norek = IF(VALUES(norek) != '', VALUES(norek), candidates_dw.norek),
-                    atas_nama = IF(VALUES(atas_nama) != '', VALUES(atas_nama), candidates_dw.atas_nama),
-                    alamat = IF(VALUES(alamat) != '', VALUES(alamat), candidates_dw.alamat),
-                    kota = IF(VALUES(kota) != '', VALUES(kota), candidates_dw.kota),
-                    tanggal_lahir = IF(VALUES(tanggal_lahir) != '', VALUES(tanggal_lahir), candidates_dw.tanggal_lahir),
-                    referensi = IF(VALUES(referensi) != '', VALUES(referensi), candidates_dw.referensi),
-                    station = IF(VALUES(station) != '', VALUES(station), candidates_dw.station)
+                SELECT c.id, c.given_id, c.candidate_id, c.user_id,
+                       c.name, c.nik, c.whatsapp, c.email, c.address,
+                       c.provinsi, c.kabupaten, c.kecamatan, c.kelurahan,
+                       c.referensi, c.tempat_lahir, c.tanggal_lahir,
+                       c.pendidikan_terakhir, c.pernah_kerja_spx,
+                       c.surat_sehat, c.paklaring,
+                       c.armada_type, c.sim_type, c.location_id,
+                       c.status, c.test_drive_date, c.jadwal_interview,
+                       c.test_drive_time, c.korlap_notes,
+                       c.is_deleted, c.created_at,
+                       c.emergency_name, c.emergency_phone, c.emergency_relation,
+                       c.bank_name, c.bank_account_no, c.bank_account_name,
+                       c.interview_location,
+                       u.id          AS user_id,
+                       u.username    AS user_username,
+                       u.plain_password AS user_password,
+                       u.created_at  AS user_created_at,
+                       COALESCE(l.name,'')      AS location_name,
+                       COALESCE(l.name,'')      AS display_location,
+                       COALESCE(l.maps_link,'') AS maps_link
+                FROM dw_candidates c
+                LEFT JOIN dw_locations l ON c.location_id = l.id
+                LEFT JOIN dw_users     u ON c.user_id = u.id
+                WHERE c.id = ?
             ");
-            $count = 0;
-            foreach ($rows as $r) {
-                if (empty($r['nik'])) continue;
-                try {
-                    $stmt->execute([
-                        $r['given_id'] ?? ($r['ops_id'] ?? ''),
-                        $r['nama'] ?? '',
-                        $r['nik'],
-                        $r['nomor_telepon'] ?? ($r['no_telepon'] ?? ''),
-                        $r['gender'] ?? '',
-                        $r['bank'] ?? '',
-                        $r['norek'] ?? ($r['no_rekening'] ?? ''),
-                        $r['atas_nama'] ?? '',
-                        $r['alamat'] ?? '',
-                        $r['kota'] ?? '',
-                        $r['tanggal_lahir'] ?? '',
-                        $r['referensi'] ?? '',
-                        $r['station'] ?? ''
-                    ]);
-                    $count++;
-                } catch(Exception $e) { /* ignore formatting errors manually */ }
-            }
-            jsonResponse(['success' => true, 'imported' => $count]);
+            $stmt->execute([intval($_GET['id'])]);
+            $candidate = $stmt->fetch();
+            if (!$candidate) jsonResponse(['error' => 'Kandidat tidak ditemukan'], 404);
+
+            // dw_documents
+            try {
+                $ds = $db->prepare('SELECT id, doc_type, file_path, original_name, file_size, uploaded_at FROM dw_documents WHERE candidate_id = ?');
+                $ds->execute([$candidate['id']]);
+                $docs = $ds->fetchAll();
+            } catch (PDOException $e) { $docs = []; }
+
+            jsonResponse(['candidate' => $candidate,'documents' => $docs]);
         } catch (PDOException $e) {
-            jsonResponse(['error' => 'Bulk Import gagal: ' . $e->getMessage()], 500);
+            jsonResponse(['error' => 'Detail error: ' . $e->getMessage()], 500);
         }
     }
 
-    if ($action === 'import_payroll') {
-        $rows = $data['data'] ?? [];
-        if (empty($rows)) jsonResponse(['error' => 'Data kosong'], 400);
+    // ── List dw_candidates (MAIN) ────────────────────────────────────────
+    $where  = ['(c.is_deleted = 0 OR c.is_deleted IS NULL)'];
+    $params = [];
 
+    if (!empty($_GET['location_id'])) {
+        $where[]  = 'c.location_id = ?';
+        $params[] = intval($_GET['location_id']);
+    }
+    if (!empty($_GET['status'])) {
+        $where[]  = 'c.status = ?';
+        $params[] = trim($_GET['status']);
+    }
+    if (!empty($_GET['search'])) {
+        $s        = '%' . trim($_GET['search']) . '%';
+        $where[]  = '(c.name LIKE ? OR c.whatsapp LIKE ?)';
+        $params[] = $s;
+        $params[] = $s;
+    }
+
+    $whereSQL = 'WHERE ' . implode(' AND ', $where);
+
+    try {
+        // Explicitly list columns — EXCLUDE photo_data and signature_data (BLOB)
+        $stmt = $db->prepare("
+            SELECT c.id, c.given_id, c.candidate_id, c.user_id,
+                   c.name, c.nik, c.whatsapp, c.email, c.address,
+                   c.provinsi, c.kabupaten, c.kecamatan, c.kelurahan,
+                   c.referensi, c.tempat_lahir, c.tanggal_lahir,
+                   c.pendidikan_terakhir, c.pernah_kerja_spx,
+                   c.surat_sehat, c.paklaring,
+                   c.armada_type, c.sim_type, c.location_id,
+                   c.status, c.test_drive_date, c.jadwal_interview,
+                   c.test_drive_time, c.korlap_notes,
+                   c.is_deleted, c.created_at,
+                   c.emergency_name, c.emergency_phone, c.emergency_relation,
+                   c.bank_name, c.bank_account_no, c.bank_account_name,
+                   c.interview_location,
+                   u.id             AS user_id,
+                   u.username       AS user_username,
+                   u.plain_password AS user_password,
+                   u.created_at    AS user_created_at,
+                   COALESCE(l.name,'')      AS location_name,
+                   COALESCE(l.name,'')      AS display_location,
+                   COALESCE(l.maps_link,'') AS maps_link
+            FROM dw_candidates c
+            LEFT JOIN dw_locations l ON c.location_id = l.id
+            LEFT JOIN dw_users     u ON c.user_id = u.id
+            {$whereSQL}
+            ORDER BY c.created_at DESC
+        ");
+        $stmt->execute($params);
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (PDOException $e) {
+        jsonResponse(['error' => 'Query error: ' . $e->getMessage(),'candidates' => []], 500);
+        exit;
+    }
+
+    // Merge display helpers
+    foreach ($rows as &$r) {
+        if (empty($r['name'])  && !empty($r['user_name']))  $r['name']  = $r['user_name'];
+        if (empty($r['email']) && !empty($r['user_email'])) $r['email'] = $r['user_email'];
+        // Security: hide plain_password from non-owner
+        if ($admin['role'] !== 'owner') {
+            $r['user_password'] = null;
+        }
+    }
+    unset($r);
+
+    jsonResponse(['candidates' => $rows, 'total' => count($rows)]);
+
+} elseif ($method === 'PUT') {
+    // ── Update Candidate ──────────────────────────────────────────────
+    $admin = requireAuth();
+    $data  = json_decode(file_get_contents('php://input'), true) ?: [];
+
+    $candidateId = intval($data['candidate_id'] ?? 0);
+    if (!$candidateId) jsonResponse(['error' => 'Candidate ID required'], 400);
+
+    $db = getDB();
+
+    // All editable fields on dw_candidates table
+    $allowed = [
+        'given_id','name','nik','whatsapp','email','address',
+        'provinsi','kabupaten','kecamatan','kelurahan',
+        'referensi','tempat_lahir','tanggal_lahir',
+        'pendidikan_terakhir','pernah_kerja_spx',
+        'surat_sehat','paklaring',
+        'armada_type','sim_type','location_id',
+        'status','test_drive_date','test_drive_time',
+        'jadwal_interview','korlap_notes',
+        'emergency_name','emergency_phone','emergency_relation',
+        'bank_name','bank_account_no','bank_account_name',
+        'interview_location','is_deleted'
+    ];
+
+    // Korlap can only update these
+    $korlapOnly = ['status','test_drive_date','test_drive_time','korlap_notes'];
+
+    $isOwner = ($admin['role'] === 'owner');
+
+    // Support TWO formats:
+    // Format A (inline editor): { candidate_id, field, value }
+    // Format B (batch):         { candidate_id, fieldName1: val, fieldName2: val, ... }
+    $updates = [];
+    if (isset($data['field']) && array_key_exists('value', $data)) {
+        // Format A — single field edit from spreadsheet UI
+        $updates[$data['field']] = $data['value'];
+    } else {
+        // Format B — multiple fields
+        foreach ($data as $k => $v) {
+            if ($k !== 'candidate_id') $updates[$k] = $v;
+        }
+    }
+
+    $sets = [];
+    $vals = [];
+
+    foreach ($allowed as $field) {
+        if (!array_key_exists($field, $updates)) continue;
+        if (!$isOwner && !in_array($field, $korlapOnly)) continue;
+        $sets[] = "`{$field}` = ?";
+        $vals[] = $updates[$field];
+    }
+
+    if (empty($sets)) jsonResponse(['error' => 'No valid fields to update'], 400);
+
+    $vals[] = $candidateId;
+
+    try {
+        // Get old values for audit
+        $old = $db->prepare('SELECT * FROM dw_candidates WHERE id = ?');
+        $old->execute([$candidateId]);
+        $oldRow = $old->fetch();
+
+        $stmt = $db->prepare('UPDATE dw_candidates SET ' . implode(', ', $sets) . ' WHERE id = ?');
+        $stmt->execute($vals);
+
+        // Audit log
         try {
-            $db = getDWDB();
-            $stmt = $db->prepare("
-                INSERT INTO payroll_dw (nik, period, pendapatan_dasar, lembur, potongan, thp)
-                VALUES (?, ?, ?, ?, ?, ?)
-            ");
-            $count = 0;
-            foreach ($rows as $r) {
-                if (!empty($r['nik']) && !empty($r['period'])) {
-                    $stmt->execute([
-                        $r['nik'], $r['period'], 
-                        floatval($r['pendapatan_dasar']??0), floatval($r['lembur']??0), 
-                        floatval($r['potongan']??0), floatval($r['thp']??0)
-                    ]);
-                    $count++;
+            $changed = [];
+            foreach ($allowed as $f) {
+                if (array_key_exists($f, $updates) && ($isOwner || in_array($f, $korlapOnly))) {
+                    $changed[$f] = ['from' => ($oldRow[$f] ?? ''), 'to' => $updates[$f]];
                 }
             }
-            jsonResponse(['success' => true, 'imported' => $count]);
-        } catch (PDOException $e) {
-            jsonResponse(['error' => 'Import Payroll gagal: ' . $e->getMessage()], 500);
-        }
+            $log = $db->prepare('INSERT INTO dw_audit_logs (candidate_id, admin_name, action, old_value, new_value) VALUES (?,?,?,?,?)');
+            $log->execute([$candidateId, $admin['name'], 'update', json_encode($oldRow ? array_intersect_key($oldRow, $updates) : []), json_encode($changed)]);
+        } catch (PDOException $e) {} // dw_audit_logs might not exist
+
+        jsonResponse(['success' => true, 'updated' => count($sets)]);
+    } catch (PDOException $e) {
+        jsonResponse(['error' => 'Update error: ' . $e->getMessage()], 500);
     }
 
-    // ── Owner-only: Manage admin/korlap accounts ──
-    if ($action === 'create_admin') {
-        if (($_SESSION['admin_role'] ?? '') !== 'owner') {
-            jsonResponse(['error' => 'Hanya owner yang bisa mengakses fitur ini'], 403);
-        }
-        
-        $username = trim($data['username'] ?? '');
-        $password = $data['password'] ?? '';
-        $name = trim($data['name'] ?? '');
-        $role = $data['role'] ?? 'korlap';
-        $locationId = $data['location_id'] ?? null;
-        
-        if (!$username || !$password || !$name) {
-            jsonResponse(['error' => 'Username, password, dan nama wajib diisi'], 400);
-        }
-        if (strlen($password) < 6) {
-            jsonResponse(['error' => 'Password minimal 6 karakter'], 400);
-        }
-        if (!in_array($role, ['korlap', 'owner'])) {
-            jsonResponse(['error' => 'Role tidak valid'], 400);
-        }
-        
-        try {
-            $db = getMainDB();
-            // Check duplicate username
-            $check = $db->prepare('SELECT id FROM admins WHERE username = ?');
-            $check->execute([$username]);
-            if ($check->fetch()) {
-                jsonResponse(['error' => 'Username sudah digunakan'], 400);
-            }
-            
-            $hashed = password_hash($password, PASSWORD_DEFAULT);
-            $stmt = $db->prepare('INSERT INTO admins (username, password, name, role, location_id) VALUES (?, ?, ?, ?, ?)');
-            $stmt->execute([$username, $hashed, $name, $role, $locationId]);
-            jsonResponse(['success' => true, 'id' => $db->lastInsertId()]);
-        } catch (PDOException $e) {
-            jsonResponse(['error' => 'Gagal membuat admin: ' . $e->getMessage()], 500);
-        }
-    }
+} elseif ($method === 'POST') {
+    // ── POST actions ─────────────────────────────────────────────────
+    $admin = requireAuth();
+    $data  = json_decode(file_get_contents('php://input'), true) ?: [];
+    $action = $data['action'] ?? $_GET['action'] ?? '';
+    $db = getDB();
 
-    if ($action === 'delete_admin') {
-        if (($_SESSION['admin_role'] ?? '') !== 'owner') {
-            jsonResponse(['error' => 'Hanya owner yang bisa mengakses fitur ini'], 403);
-        }
-        
-        $id = intval($data['id'] ?? 0);
-        if (!$id) jsonResponse(['error' => 'ID tidak valid'], 400);
-        
-        // Prevent deleting yourself
-        if ($id == $_SESSION['admin_id']) {
-            jsonResponse(['error' => 'Tidak bisa menghapus akun sendiri'], 400);
-        }
-        
+    // ── Blacklist ────
+    if ($action === 'blacklist') {
+        $nik    = trim($data['nik']    ?? '');
+        $name   = trim($data['name']   ?? '');
+        $reason = trim($data['reason'] ?? '');
+        if (!$nik) jsonResponse(['error' => 'NIK required'], 400);
+
         try {
-            $db = getMainDB();
-            $stmt = $db->prepare('DELETE FROM admins WHERE id = ?');
-            $stmt->execute([$id]);
+            $stmt = $db->prepare('INSERT INTO dw_blacklists (nik, name, reason, created_by) VALUES (?,?,?,?) ON DUPLICATE KEY UPDATE reason=VALUES(reason), updated_at=NOW()');
+            $stmt->execute([$nik, $name, $reason, $admin['id']]);
             jsonResponse(['success' => true]);
         } catch (PDOException $e) {
-            jsonResponse(['error' => 'Gagal menghapus admin: ' . $e->getMessage()], 500);
+            jsonResponse(['error' => $e->getMessage()], 500);
         }
     }
-    
-    jsonResponse(['error' => 'Invalid action'], 400);
+
+    // ── Create Korlap ────
+    if ($action === 'create_korlap') {
+        if ($admin['role'] !== 'owner') jsonResponse(['error' => 'Forbidden'], 403);
+        $username = trim($data['username'] ?? '');
+        $password = $data['password'] ?? '';
+        $name     = trim($data['name'] ?? '');
+        $locId    = intval($data['location_id'] ?? 0);
+        $role     = $data['role'] ?? 'korlap';
+
+        if (!$username || !$password || !$name) jsonResponse(['error' => 'Missing fields'], 400);
+
+        try {
+            $hash = password_hash($password, PASSWORD_DEFAULT);
+            $stmt = $db->prepare('INSERT INTO dw_admins (username, password, name, role, location_id) VALUES (?,?,?,?,?)');
+            $stmt->execute([$username, $hash, $name, $role, $locId ?: null]);
+            jsonResponse(['success' => true, 'id' => $db->lastInsertId()]);
+        } catch (PDOException $e) {
+            jsonResponse(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    // ── Reset User Password ────
+    if ($action === 'reset_password') {
+        if ($admin['role'] !== 'owner') jsonResponse(['error' => 'Forbidden'], 403);
+        $candidateId = intval($data['candidate_id'] ?? 0);
+        if (!$candidateId) jsonResponse(['error' => 'Candidate ID required'], 400);
+
+        try {
+            $c = $db->prepare('SELECT user_id FROM dw_candidates WHERE id = ?');
+            $c->execute([$candidateId]);
+            $row = $c->fetch();
+            if (!$row || !$row['user_id']) jsonResponse(['error' => 'No user linked'], 400);
+
+            $newPw   = $data['new_password'] ?? 'bas' . rand(1000, 9999);
+            $hash    = password_hash($newPw, PASSWORD_DEFAULT);
+            $stmt    = $db->prepare('UPDATE dw_users SET password = ?, plain_password = ? WHERE id = ?');
+            $stmt->execute([$hash, $newPw, $row['user_id']]);
+
+            jsonResponse(['success' => true, 'new_password' => $newPw]);
+        } catch (PDOException $e) {
+            jsonResponse(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    // ── Delete Korlap ────
+    if ($action === 'delete_korlap') {
+        if ($admin['role'] !== 'owner') jsonResponse(['error' => 'Forbidden'], 403);
+        $kid = intval($data['id'] ?? 0);
+        if (!$kid) jsonResponse(['error' => 'ID required'], 400);
+
+        try {
+            $db->prepare('DELETE FROM dw_admins WHERE id = ? AND role != ?')->execute([$kid, 'owner']);
+            jsonResponse(['success' => true]);
+        } catch (PDOException $e) {
+            jsonResponse(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    // ── List Korlaps ────
+    if ($action === 'list_korlaps') {
+        try {
+            $stmt = $db->query("SELECT id, username, name, role, location_id, created_at FROM dw_admins WHERE role != 'owner' ORDER BY id");
+            jsonResponse(['korlaps' => $stmt->fetchAll()]);
+        } catch (PDOException $e) {
+            jsonResponse(['korlaps' => []]);
+        }
+    }
+
+    // ── List dw_blacklists ────
+    if ($action === 'list_blacklists') {
+        try {
+            $stmt = $db->query('SELECT id, nik, name, reason, created_by, created_at FROM dw_blacklists ORDER BY created_at DESC');
+            jsonResponse(['blacklists' => $stmt->fetchAll()]);
+        } catch (PDOException $e) {
+            jsonResponse(['blacklists' => []]);
+        }
+    }
+
+    // ── Delete Blacklist ────
+    if ($action === 'delete_blacklist') {
+        $bid = intval($data['id'] ?? 0);
+        if (!$bid) jsonResponse(['error' => 'ID required'], 400);
+        try {
+            $db->prepare('DELETE FROM dw_blacklists WHERE id = ?')->execute([$bid]);
+            jsonResponse(['success' => true]);
+        } catch (PDOException $e) {
+            jsonResponse(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    // ── Create/Update Location ────
+    if ($action === 'create_location' || $action === 'update_location') {
+        if ($admin['role'] !== 'owner') jsonResponse(['error' => 'Forbidden'], 403);
+        $lname = trim($data['name'] ?? '');
+        $laddr = trim($data['address'] ?? '');
+        $lmap  = trim($data['maps_link'] ?? '');
+        if (!$lname) jsonResponse(['error' => 'Name required'], 400);
+
+        try {
+            if ($action === 'create_location') {
+                $stmt = $db->prepare('INSERT INTO dw_locations (name, address, maps_link) VALUES (?,?,?)');
+                $stmt->execute([$lname, $laddr, $lmap]);
+                jsonResponse(['success' => true, 'id' => $db->lastInsertId()]);
+            } else {
+                $lid = intval($data['id'] ?? 0);
+                if (!$lid) jsonResponse(['error' => 'ID required'], 400);
+                $stmt = $db->prepare('UPDATE dw_locations SET name=?, address=?, maps_link=? WHERE id=?');
+                $stmt->execute([$lname, $laddr, $lmap, $lid]);
+                jsonResponse(['success' => true]);
+            }
+        } catch (PDOException $e) {
+            jsonResponse(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    // ── Delete Location ────
+    if ($action === 'delete_location') {
+        if ($admin['role'] !== 'owner') jsonResponse(['error' => 'Forbidden'], 403);
+        $lid = intval($data['id'] ?? 0);
+        if (!$lid) jsonResponse(['error' => 'ID required'], 400);
+        try {
+            $db->prepare('DELETE FROM dw_locations WHERE id = ?')->execute([$lid]);
+            jsonResponse(['success' => true]);
+        } catch (PDOException $e) {
+            jsonResponse(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    jsonResponse(['error' => 'Unknown action'], 400);
+
+} elseif ($method === 'DELETE') {
+    // ── Delete Candidate (owner only) ────────────────────────────────
+    $admin = requireAuth();
+    if ($admin['role'] !== 'owner') jsonResponse(['error' => 'Forbidden'], 403);
+
+    $data = json_decode(file_get_contents('php://input'), true) ?: [];
+    $id   = intval($data['id'] ?? $_GET['id'] ?? 0);
+    if (!$id) jsonResponse(['error' => 'ID required'], 400);
+
+    $db = getDB();
+    try {
+        $db->prepare('UPDATE dw_candidates SET is_deleted = 1 WHERE id = ?')->execute([$id]);
+        jsonResponse(['success' => true]);
+    } catch (PDOException $e) {
+        jsonResponse(['error' => $e->getMessage()], 500);
+    }
+
 } else {
     jsonResponse(['error' => 'Method not allowed'], 405);
 }

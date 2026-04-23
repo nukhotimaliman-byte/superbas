@@ -8,7 +8,7 @@ require_once __DIR__ . '/../config.php';
 $db = getDB();
 
 $queries = [
-    "CREATE TABLE IF NOT EXISTS push_subscriptions (
+    "CREATE TABLE IF NOT EXISTS drv_push_subscriptions (
         id INT AUTO_INCREMENT PRIMARY KEY,
         user_id INT NOT NULL,
         endpoint TEXT NOT NULL,
@@ -19,7 +19,7 @@ $queries = [
         INDEX idx_endpoint (endpoint(255))
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
 
-    "CREATE TABLE IF NOT EXISTS notifications (
+    "CREATE TABLE IF NOT EXISTS drv_notifications (
         id INT AUTO_INCREMENT PRIMARY KEY,
         user_id INT NOT NULL,
         type VARCHAR(50) DEFAULT 'korlap_note',
@@ -54,12 +54,12 @@ echo implode("\n", $results) . "\n\n";
 echo "=== All Tables in DB ===\n";
 echo implode(", ", $tables) . "\n\n";
 
-// Check if push_subscriptions has data
-$count = $db->query("SELECT COUNT(*) FROM push_subscriptions")->fetchColumn();
+// Check if drv_push_subscriptions has data
+$count = $db->query("SELECT COUNT(*) FROM drv_push_subscriptions")->fetchColumn();
 echo "Push subscriptions: $count\n";
 
-$count2 = $db->query("SELECT COUNT(*) FROM notifications")->fetchColumn();
-echo "Notifications: $count2\n";
+$count2 = $db->query("SELECT COUNT(*) FROM drv_notifications")->fetchColumn();
+echo "drv_notifications: $count2\n";
 
-echo "\n✅ Setup complete! Push notifications are ready.\n";
+echo "\n✅ Setup complete! Push drv_notifications are ready.\n";
 echo "You can delete this file after running it.\n";

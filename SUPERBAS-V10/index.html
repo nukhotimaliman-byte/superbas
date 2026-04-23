@@ -1,0 +1,186 @@
+<!--
+  ═══════════════════════════════════════════════════════════════
+   PT. BAROKAH AMANAH SENTOSA — Employee App (index.html)
+   Super-BAS v2.0
+  ═══════════════════════════════════════════════════════════════
+
+   STRUKTUR FILE:
+   1. <head>
+      - Meta tags & CDN imports
+      - Theme preload script
+      - External CSS: index-theme.css (dark/light theme, preloader, komponen UI)
+      - Fetch Interceptor: assets/index-interceptor.js
+      - React Bundle: assets/index-BBnjhq5d.js
+   2. <body>
+      - Preloader HTML
+      - React Root (#root)
+      - Theme Toggle Button
+      - Settings Panel HTML
+      - External Scripts: assets/index-ui.js
+        (Preloader Auto-Hide, Theme Toggle, Settings Panel,
+         Payslip PNG Enhancer, ID Card Enhancer, Logo Replacer)
+  ═══════════════════════════════════════════════════════════════
+-->
+<!DOCTYPE html>
+<html lang="id" class="notranslate">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.cdnfonts.com; font-src https://fonts.gstatic.com https://fonts.cdnfonts.com; connect-src 'self' https://script.google.com https://script.googleusercontent.com https://nominatim.openstreetmap.org https://api.bigdatacloud.net; img-src 'self' data: blob: https://drive.google.com https://*.googleusercontent.com;">
+    <meta name="google" content="notranslate" />
+    <title>PT. BAROKAH AMANAH SENTOSA</title>
+    <link rel="icon" href="assets/bas-logo.png" />
+
+    <!-- Prevent flash: apply saved theme before render -->
+    <script>
+      (function(){
+        var t = localStorage.getItem('bas-theme')
+             || localStorage.getItem('bas-theme-mode')
+             || localStorage.getItem('bas_owner_theme')
+             || 'dark';
+        if (t === 'light') document.documentElement.classList.add('light-mode');
+      })();
+    </script>
+
+    <!-- CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.cdnfonts.com/css/ethnocentric" rel="stylesheet">
+
+    <!-- Fetch Interceptor: redirect API, field normalizer, caching -->
+    <script src="./assets/index-interceptor.js"></script>
+
+    <!-- Theme & Component Styles -->
+    <link rel="stylesheet" href="./assets/index-theme.css?v=4.1">
+
+    <!-- React Bundle -->
+    <script type="module" src="./assets/index-BBnjhq5d.js"></script>
+    <link rel="stylesheet" href="./assets/index-DC0SG-Zv.css">
+  </head>
+
+  <body class="notranslate">
+    <!-- ===== PRELOADER ===== -->
+    <div id="bas-preloader">
+      <div class="pl-bg-mesh"></div>
+      <div class="pl-grid"></div>
+
+      <!-- Falling code particles (decorative) -->
+      <div class="pl-code-particle" style="left:8%;animation-duration:7s;animation-delay:0s;font-size:9px;">010110</div>
+      <div class="pl-code-particle" style="left:25%;animation-duration:9s;animation-delay:1.2s;font-size:11px;">{ }</div>
+      <div class="pl-code-particle" style="left:72%;animation-duration:8s;animation-delay:0.6s;font-size:8px;">######</div>
+      <div class="pl-code-particle" style="left:88%;animation-duration:10s;animation-delay:2s;font-size:10px;">[ ]</div>
+      <div class="pl-code-particle" style="left:45%;animation-duration:6s;animation-delay:3s;font-size:9px;">=&gt;&gt;</div>
+      <div class="pl-code-particle" style="left:60%;animation-duration:11s;animation-delay:0.3s;font-size:8px;">101001</div>
+
+      <!-- Hexagonal center piece -->
+      <div class="pl-hex-wrap">
+        <!-- Outer hexagon -->
+        <div class="pl-hex">
+          <svg viewBox="0 0 140 140">
+            <defs>
+              <linearGradient id="pl-grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#4cc9f0"/>
+                <stop offset="50%" stop-color="#7c3aed"/>
+                <stop offset="100%" stop-color="#f72585"/>
+              </linearGradient>
+              <linearGradient id="pl-grad2" x1="100%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stop-color="#f72585"/>
+                <stop offset="100%" stop-color="#4cc9f0"/>
+              </linearGradient>
+            </defs>
+            <polygon points="70,5 132,37.5 132,102.5 70,135 8,102.5 8,37.5"/>
+          </svg>
+        </div>
+        <!-- Inner hexagon -->
+        <div class="pl-hex pl-hex-inner" style="inset:30px;">
+          <svg viewBox="0 0 140 140">
+            <polygon points="70,5 132,37.5 132,102.5 70,135 8,102.5 8,37.5"/>
+          </svg>
+        </div>
+
+        <!-- Orbiting satellites -->
+        <div class="pl-orbit"><div class="pl-satellite"></div></div>
+        <div class="pl-orbit"><div class="pl-satellite"></div></div>
+
+        <!-- Core with super-bas text -->
+        <div class="pl-core">
+          <span class="pl-title">SUPER-BAS</span>
+        </div>
+      </div>
+
+      <div class="pl-company">Barokah Amanah Sentosa</div>
+
+      <!-- Progress bar -->
+      <div class="pl-progress-wrap">
+        <div class="pl-progress-bar"></div>
+      </div>
+      <div class="pl-status">Memuat Sistem</div>
+    </div>
+
+    <!-- ===== REACT ROOT ===== -->
+    <div id="root"></div>
+
+    <!-- ===== THEME TOGGLE BUTTON — iOS Pill Switch ===== -->
+    <button id="theme-toggle-btn" aria-label="Toggle Dark/Light Mode" title="Ganti Mode Tema">
+      <div class="toggle-thumb">
+        <span class="icon-sun">☀️</span>
+        <span class="icon-moon">🌙</span>
+      </div>
+    </button>
+
+    <!-- Transition Overlay -->
+    <div class="theme-transition-overlay" id="theme-overlay"></div>
+
+    <!-- ===== SETTINGS PANEL (inline tab) ===== -->
+    <div id="settings-panel">
+      <div class="settings-header">⚙️ Pengaturan</div>
+      <div class="settings-section">
+        <div class="settings-section-title">Tampilan</div>
+        <div class="settings-item" id="settings-theme-item">
+          <div class="settings-item-left">
+            <div class="settings-item-icon" style="background:rgba(99,102,241,0.12);">🎨</div>
+            <div>
+              <div class="settings-item-label">Mode Tema</div>
+              <div class="settings-item-desc" id="settings-theme-desc">Mode Gelap</div>
+            </div>
+          </div>
+          <div class="theme-switch" id="settings-theme-switch">
+            <div class="switch-knob" id="settings-switch-knob">
+              <span id="settings-switch-icon">☀️</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="settings-section">
+        <div class="settings-section-title">Akun</div>
+        <a href="https://linktr.ee/REGISTRASI_BAS" target="_blank" rel="noopener noreferrer" id="settings-linkgaji-btn" style="
+          display: flex; align-items: center; justify-content: center;
+          gap: 10px; padding: 14px; border-radius: 14px;
+          background: linear-gradient(135deg, rgba(67,97,238,0.12), rgba(247,37,133,0.12));
+          border: 1px solid rgba(67,97,238,0.25);
+          color: #4cc9f0; font-weight: 700; font-size: 14px;
+          cursor: pointer; transition: all 0.2s ease; width: 100%;
+          text-decoration: none; margin-bottom: 10px;
+        ">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+          LINK GAJI
+        </a>
+        <button id="settings-logout-btn" type="button">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          Keluar dari Akun
+        </button>
+      </div>
+      <div class="settings-footer">
+        <div class="settings-footer-text">
+          PT. BAROKAH AMANAH SENTOSA<br>
+          <span style="font-size:10px;">v2.0</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== UI SCRIPTS (preloader, theme, settings, enhancers) ===== -->
+    <script src="./assets/index-ui.js?v=4.1"></script>
+    <script src="./assets/index-photo-attendance.js?v=4.1"></script>
+
+  </body>
+</html>

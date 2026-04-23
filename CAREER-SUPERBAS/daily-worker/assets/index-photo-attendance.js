@@ -397,7 +397,6 @@
       best = canvas.toDataURL('image/jpeg', quality);
     }
 
-    console.log('[BAS] Photo compressed:', Math.round(bytes/1024) + 'KB, quality=' + quality.toFixed(2));
     return best;
   }
 

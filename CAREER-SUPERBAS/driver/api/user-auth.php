@@ -2,7 +2,7 @@
 /**
  * BAS Recruitment — Unified User Auth API
  * POST ?action=register        — Create account (NIK + username + email + password)
- * POST ?action=login            — Login (username OR NIK + password, checks admins then users)
+ * POST ?action=login            — Login (username OR NIK + password, checks drv_admins then users)
  * POST ?action=google           — Login/Register via Google ID token
  * POST ?action=google-complete  — Complete Google registration (NIK + username + password)
  * POST ?action=forgot-password  — Reset password via NIK + email
@@ -36,6 +36,10 @@ switch ($action) {
             jsonResponse(['error' => 'Semua field wajib diisi'], 400);
         }
 
+        if (!$provinsi || !$kabupaten || !$kecamatan || !$kelurahan) {
+            jsonResponse(['error' => 'Alamat lengkap wajib diisi (Provinsi, Kabupaten, Kecamatan, Kelurahan)'], 400);
+        }
+
         if (!preg_match('/^[0-9]{16}$/', $nik)) {
             jsonResponse(['error' => 'NIK harus 16 digit angka'], 400);
         }
@@ -62,35 +66,35 @@ switch ($action) {
 
         $db = getDB();
 
-        $stmt = $db->prepare('SELECT reason FROM blacklists WHERE nik = ?');
+        $stmt = $db->prepare('SELECT reason FROM drv_blacklists WHERE nik = ?');
         $stmt->execute([$nik]);
         if ($reason = $stmt->fetchColumn()) {
             jsonResponse(['error' => 'Pendaftaran Ditolak. NIK ini telah diblacklist. ' . ($reason ? 'Alasan: ' . $reason : '')], 403);
         }
 
-        $stmt = $db->prepare('SELECT id FROM users WHERE nik = ?');
+        $stmt = $db->prepare('SELECT id FROM drv_users WHERE nik = ?');
         $stmt->execute([$nik]);
         if ($stmt->fetch()) { jsonResponse(['error' => 'NIK sudah terdaftar'], 400); }
 
-        $stmt = $db->prepare('SELECT id FROM users WHERE username = ?');
+        $stmt = $db->prepare('SELECT id FROM drv_users WHERE username = ?');
         $stmt->execute([$username]);
         if ($stmt->fetch()) { jsonResponse(['error' => 'Username sudah digunakan'], 400); }
 
-        $stmt = $db->prepare('SELECT id FROM admins WHERE username = ?');
+        $stmt = $db->prepare('SELECT id FROM drv_admins WHERE username = ?');
         $stmt->execute([$username]);
         if ($stmt->fetch()) { jsonResponse(['error' => 'Username sudah digunakan'], 400); }
 
-        $stmt = $db->prepare('SELECT id FROM users WHERE email = ?');
+        $stmt = $db->prepare('SELECT id FROM drv_users WHERE email = ?');
         $stmt->execute([$email]);
         if ($stmt->fetch()) { jsonResponse(['error' => 'Email sudah terdaftar'], 400); }
 
         $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
-        $stmt = $db->prepare('INSERT INTO users (nik, username, password, plain_password, name, email, phone) VALUES (?, ?, ?, ?, ?, ?, ?)');
+        $stmt = $db->prepare('INSERT INTO drv_users (nik, username, password, plain_password, name, email, phone) VALUES (?, ?, ?, ?, ?, ?, ?)');
         $stmt->execute([$nik, $username, $hashedPassword, $password, $name, $email, $phone]);
         $userId = $db->lastInsertId();
 
         // Auto-create candidate record with address
-        $stmt = $db->prepare('INSERT INTO candidates (user_id, nik, name, whatsapp, address, provinsi, kabupaten, kecamatan, kelurahan, location_id, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+        $stmt = $db->prepare('INSERT INTO drv_candidates (user_id, nik, name, whatsapp, address, provinsi, kabupaten, kecamatan, kelurahan, location_id, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
         $stmt->execute([$userId, $nik, $name, $phone, $address, $provinsi, $kabupaten, $kecamatan, $kelurahan, null, 'Belum Pemberkasan']);
 
         $_SESSION['user_id']   = $userId;
@@ -117,8 +121,8 @@ switch ($action) {
 
         $db = getDB();
 
-        // 1. Check admins table (username only)
-        $stmt = $db->prepare('SELECT id, username, password, name, role, location_id FROM admins WHERE username = ?');
+        // 1. Check drv_admins table (username only)
+        $stmt = $db->prepare('SELECT id, username, password, name, role, location_id FROM drv_admins WHERE username = ?');
         $stmt->execute([$identifier]);
         $admin = $stmt->fetch();
 
@@ -143,7 +147,7 @@ switch ($action) {
         }
 
         // 2. Check users table (username OR NIK)
-        $stmt = $db->prepare('SELECT id, nik, username, password, name, picture, is_deleted FROM users WHERE username = ? OR nik = ?');
+        $stmt = $db->prepare('SELECT id, nik, username, password, name, picture, is_deleted FROM drv_users WHERE username = ? OR nik = ?');
         $stmt->execute([$identifier, $identifier]);
         $user = $stmt->fetch();
 
@@ -153,7 +157,7 @@ switch ($action) {
 
         if ($user) {
             // Check blacklist just in case it was blacklisted after creation
-            $stmt = $db->prepare('SELECT id FROM blacklists WHERE nik = ?');
+            $stmt = $db->prepare('SELECT id FROM drv_blacklists WHERE nik = ?');
             $stmt->execute([$user['nik']]);
             if ($stmt->fetch()) {
                 jsonResponse(['error' => 'Akses Ditolak. NIK ini telah diblacklist.'], 403);
@@ -161,7 +165,7 @@ switch ($action) {
         }
 
         if ($user && password_verify($password, $user['password'])) {
-            $db->prepare('UPDATE users SET last_login = NOW() WHERE id = ?')->execute([$user['id']]);
+            $db->prepare('UPDATE drv_users SET last_login = NOW() WHERE id = ?')->execute([$user['id']]);
 
             unset($_SESSION['admin_id'], $_SESSION['admin_name'], $_SESSION['admin_role'], $_SESSION['admin_location_id']);
 
@@ -208,7 +212,7 @@ switch ($action) {
         $db = getDB();
 
         // Find user by NIK AND email (both must match)
-        $stmt = $db->prepare('SELECT id, username FROM users WHERE nik = ? AND email = ?');
+        $stmt = $db->prepare('SELECT id, username FROM drv_users WHERE nik = ? AND email = ?');
         $stmt->execute([$nik, $email]);
         $user = $stmt->fetch();
 
@@ -218,7 +222,7 @@ switch ($action) {
 
         // Update password
         $hashedPassword = password_hash($newPassword, PASSWORD_DEFAULT);
-        $db->prepare('UPDATE users SET password = ?, plain_password = ? WHERE id = ?')->execute([$hashedPassword, $newPassword, $user['id']]);
+        $db->prepare('UPDATE drv_users SET password = ?, plain_password = ? WHERE id = ?')->execute([$hashedPassword, $newPassword, $user['id']]);
 
         jsonResponse([
             'success'  => true,
@@ -247,7 +251,7 @@ switch ($action) {
         ]);
         $response = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
+        unset($ch);
 
         if ($httpCode !== 200 || !$response) {
             jsonResponse(['error' => 'Verifikasi Google gagal'], 401);
@@ -266,12 +270,12 @@ switch ($action) {
         $db = getDB();
 
         // Existing google_id user → login
-        $stmt = $db->prepare('SELECT id, name, picture FROM users WHERE google_id = ?');
+        $stmt = $db->prepare('SELECT id, name, picture FROM drv_users WHERE google_id = ?');
         $stmt->execute([$googleId]);
         $existing = $stmt->fetch();
 
         if ($existing) {
-            $db->prepare('UPDATE users SET name = ?, email = ?, picture = ?, last_login = NOW() WHERE id = ?')
+            $db->prepare('UPDATE drv_users SET name = ?, email = ?, picture = ?, last_login = NOW() WHERE id = ?')
                ->execute([$name, $email, $picture, $existing['id']]);
 
             unset($_SESSION['admin_id'], $_SESSION['admin_name'], $_SESSION['admin_role'], $_SESSION['admin_location_id']);
@@ -287,12 +291,12 @@ switch ($action) {
         }
 
         // Existing email user → link google
-        $stmt = $db->prepare('SELECT id FROM users WHERE email = ?');
+        $stmt = $db->prepare('SELECT id FROM drv_users WHERE email = ?');
         $stmt->execute([$email]);
         $emailUser = $stmt->fetch();
 
         if ($emailUser) {
-            $db->prepare('UPDATE users SET google_id = ?, picture = ?, last_login = NOW() WHERE id = ?')
+            $db->prepare('UPDATE drv_users SET google_id = ?, picture = ?, last_login = NOW() WHERE id = ?')
                ->execute([$googleId, $picture, $emailUser['id']]);
 
             unset($_SESSION['admin_id'], $_SESSION['admin_name'], $_SESSION['admin_role'], $_SESSION['admin_location_id']);
@@ -356,31 +360,31 @@ switch ($action) {
 
         $db = getDB();
 
-        $stmt = $db->prepare('SELECT reason FROM blacklists WHERE nik = ?');
+        $stmt = $db->prepare('SELECT reason FROM drv_blacklists WHERE nik = ?');
         $stmt->execute([$nik]);
         if ($reason = $stmt->fetchColumn()) {
             jsonResponse(['error' => 'Pendaftaran Ditolak. NIK ini telah diblacklist. ' . ($reason ? 'Alasan: ' . $reason : '')], 403);
         }
 
-        $stmt = $db->prepare('SELECT id FROM users WHERE nik = ?');
+        $stmt = $db->prepare('SELECT id FROM drv_users WHERE nik = ?');
         $stmt->execute([$nik]);
         if ($stmt->fetch()) { jsonResponse(['error' => 'NIK sudah terdaftar'], 400); }
 
-        $stmt = $db->prepare('SELECT id FROM users WHERE username = ?');
+        $stmt = $db->prepare('SELECT id FROM drv_users WHERE username = ?');
         $stmt->execute([$username]);
         if ($stmt->fetch()) { jsonResponse(['error' => 'Username sudah digunakan'], 400); }
 
-        $stmt = $db->prepare('SELECT id FROM admins WHERE username = ?');
+        $stmt = $db->prepare('SELECT id FROM drv_admins WHERE username = ?');
         $stmt->execute([$username]);
         if ($stmt->fetch()) { jsonResponse(['error' => 'Username sudah digunakan'], 400); }
 
         $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
-        $stmt = $db->prepare('INSERT INTO users (nik, username, password, plain_password, name, email, phone, google_id, picture) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
+        $stmt = $db->prepare('INSERT INTO drv_users (nik, username, password, plain_password, name, email, phone, google_id, picture) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
         $stmt->execute([$nik, $username, $hashedPassword, $password, $name, $email, $phone, $googleId, $picture]);
         $userId = $db->lastInsertId();
 
         // Auto-create candidate record so user appears in admin dashboard
-        $stmt = $db->prepare('INSERT INTO candidates (user_id, nik, name, whatsapp, location_id, status) VALUES (?, ?, ?, ?, ?, ?)');
+        $stmt = $db->prepare('INSERT INTO drv_candidates (user_id, nik, name, whatsapp, location_id, status) VALUES (?, ?, ?, ?, ?, ?)');
         $stmt->execute([$userId, $nik, $name, $phone, null, 'Belum Pemberkasan']);
 
         unset($_SESSION['admin_id'], $_SESSION['admin_name'], $_SESSION['admin_role'], $_SESSION['admin_location_id']);

@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl -s -L \"https://minimax-algeng-chat-tts-us.oss-us-east-1.aliyuncs.com/ccv2%2F2026-03-28%2FMiniMax-M2.7%2F2037140170070827493%2Fc681ed1f89e214d07a24c5b08fafc625d94a9fad23f1baf68d6c84354b9c3eda..png?Expires=1774723352&OSSAccessKeyId=LTAI5tCpJNKCf5EkQHSuL9xg&Signature=QC0ezZ%2FPiKdZ7wwMGQpIsKxPwdQ%3D\" -o \"C:/Users/user/.claude/projects/c--ALIM-BAS-ALIM-BAS-CAREER/5b36708e-250e-48f8-9e2b-251dd4c0f097/tool-results/screenshot1.png\")"
+    ]
+  }
+}

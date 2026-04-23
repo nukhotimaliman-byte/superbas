@@ -13,11 +13,11 @@ $action = $_GET['action'] ?? '';
 switch ($action) {
 
     case 'analytics':
-        // Total candidates
-        $total = $db->query('SELECT COUNT(*) AS cnt FROM candidates')->fetch()['cnt'];
+        // Total drv_candidates
+        $total = $db->query('SELECT COUNT(*) AS cnt FROM drv_candidates')->fetch()['cnt'];
 
         // By status
-        $stmt = $db->query('SELECT status, COUNT(*) AS cnt FROM candidates GROUP BY status');
+        $stmt = $db->query('SELECT status, COUNT(*) AS cnt FROM drv_candidates GROUP BY status');
         $byStatus = [];
         while ($row = $stmt->fetch()) {
             $byStatus[$row['status']] = intval($row['cnt']);
@@ -26,8 +26,8 @@ switch ($action) {
         // By location
         $stmt = $db->query('
             SELECT l.name AS location_name, c.status, COUNT(*) AS cnt
-            FROM candidates c
-            LEFT JOIN locations l ON c.location_id = l.id
+            FROM drv_candidates c
+            LEFT JOIN drv_locations l ON c.location_id = l.id
             GROUP BY l.name, c.status
             ORDER BY l.name
         ');
@@ -40,7 +40,7 @@ switch ($action) {
         }
 
         // By armada type
-        $stmt = $db->query('SELECT armada_type, COUNT(*) AS cnt FROM candidates GROUP BY armada_type');
+        $stmt = $db->query('SELECT armada_type, COUNT(*) AS cnt FROM drv_candidates GROUP BY armada_type');
         $byArmada = [];
         while ($row = $stmt->fetch()) {
             $byArmada[$row['armada_type']] = intval($row['cnt']);
@@ -53,7 +53,7 @@ switch ($action) {
         $passRate = $completed > 0 ? round(($lulus / $completed) * 100, 1) : 0;
 
         // Recent registrations (last 7 days)
-        $stmt = $db->query("SELECT DATE(created_at) AS date, COUNT(*) AS cnt FROM candidates WHERE created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY) GROUP BY DATE(created_at) ORDER BY date");
+        $stmt = $db->query("SELECT DATE(created_at) AS date, COUNT(*) AS cnt FROM drv_candidates WHERE created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY) GROUP BY DATE(created_at) ORDER BY date");
         $recent = $stmt->fetchAll();
 
         jsonResponse([
@@ -85,8 +85,8 @@ switch ($action) {
         $stmt = $db->query('
             SELECT c.id, c.name, c.whatsapp, c.address, c.armada_type, c.sim_type,
                    l.name AS location_name, c.status, c.test_drive_date, c.korlap_notes, c.created_at
-            FROM candidates c
-            LEFT JOIN locations l ON c.location_id = l.id
+            FROM drv_candidates c
+            LEFT JOIN drv_locations l ON c.location_id = l.id
             ORDER BY c.created_at DESC
         ');
 

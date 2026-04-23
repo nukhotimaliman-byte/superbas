@@ -1,9 +1,9 @@
 <?php
 /**
- * BAS Recruitment — Locations API (Owner Only for Write)
- * GET  /api/locations.php — Get all locations
- * POST /api/locations.php — Create new location
- * DELETE /api/locations.php — Delete location
+ * BAS Recruitment — drv_locations API (Owner Only for Write)
+ * GET  /api/drv_locations.php — Get all drv_locations
+ * POST /api/drv_locations.php — Create new location
+ * DELETE /api/drv_locations.php — Delete location
  */
 require_once __DIR__ . '/../config.php';
 
@@ -11,8 +11,8 @@ $method = $_SERVER['REQUEST_METHOD'];
 $db = getDB();
 
 if ($method === 'GET') {
-    // Public/Admin can get locations
-    $stmt = $db->query('SELECT id, name, address, maps_link FROM locations ORDER BY id');
+    // Public/Admin can get drv_locations
+    $stmt = $db->query('SELECT id, name, address, maps_link FROM drv_locations ORDER BY id');
     jsonResponse(['locations' => $stmt->fetchAll()]);
 }
 
@@ -28,7 +28,7 @@ if ($method === 'PUT') {
         jsonResponse(['error' => 'ID lokasi wajib diisi'], 400);
     }
 
-    $stmt = $db->prepare('UPDATE locations SET maps_link = ? WHERE id = ?');
+    $stmt = $db->prepare('UPDATE drv_locations SET maps_link = ? WHERE id = ?');
     $stmt->execute([$maps_link, $id]);
     jsonResponse(['success' => true, 'message' => 'Link Maps lokasi berhasil diperbarui']);
 }
@@ -43,7 +43,7 @@ if ($method === 'POST') {
         jsonResponse(['error' => 'Nama lokasi dan alamat wajib diisi'], 400);
     }
 
-    $stmt = $db->prepare('INSERT INTO locations (name, address, maps_link) VALUES (?, ?, ?)');
+    $stmt = $db->prepare('INSERT INTO drv_locations (name, address, maps_link) VALUES (?, ?, ?)');
     $stmt->execute([$name, $address, $maps_link]);
     jsonResponse(['success' => true, 'message' => 'Lokasi berhasil ditambahkan', 'id' => $db->lastInsertId()]);
 }
@@ -53,14 +53,14 @@ if ($method === 'DELETE') {
     $id = intval($data['id'] ?? 0);
     if (!$id) jsonResponse(['error' => 'ID tidak valid'], 400);
 
-    // Check if used by candidates
-    $stmt = $db->prepare('SELECT COUNT(*) FROM candidates WHERE location_id = ?');
+    // Check if used by drv_candidates
+    $stmt = $db->prepare('SELECT COUNT(*) FROM drv_candidates WHERE location_id = ?');
     $stmt->execute([$id]);
     if ($stmt->fetchColumn() > 0) {
         jsonResponse(['error' => 'Tidak dapat menghapus lokasi karena sedang digunakan oleh kandidat'], 400);
     }
 
-    $stmt = $db->prepare('DELETE FROM locations WHERE id = ?');
+    $stmt = $db->prepare('DELETE FROM drv_locations WHERE id = ?');
     $stmt->execute([$id]);
     jsonResponse(['success' => true, 'message' => 'Lokasi berhasil dihapus']);
 }

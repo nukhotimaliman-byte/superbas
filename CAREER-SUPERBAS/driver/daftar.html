@@ -5,13 +5,19 @@
     <link rel="icon" type="image/png" href="favicon-bas.png">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Super-BAS — Dashboard</title>
-    <link rel="stylesheet" href="css/style.css?v=20260328">
-    <script src="js/theme.js?v=20260328"></script>
-    <script src="js/utils.js?v=20260329"></script>
-    <script src="js/push-manager.js?v=20260411"></script>
-    <script src="js/chat.js?v=20260412"></script>
+    <link rel="stylesheet" href="css/style.css?v=4.1">
+    <script src="js/theme.js?v=4.1"></script>
+    <script src="js/utils.js?v=4.1"></script>
+    <script src="js/push-manager.js?v=4.1"></script>
+    <script src="js/chat.js?v=4.1"></script>
 </head>
 <body class="dashboard-body">
+    <script>
+        // Fix bfcache — reload when restored from back/forward cache
+        window.addEventListener('pageshow', function(e) {
+            if (e.persisted) window.location.reload();
+        });
+    </script>
 
     <!-- Page Content -->
     <div class="page-content">
@@ -176,40 +182,32 @@
                         <div class="pb-field-row">
                             <div class="pb-field">
                                 <label class="pb-label">Jenis SIM <span style="color:var(--error);">*</span></label>
-                                <div class="pb-radio-group">
-                                    <label class="pb-radio"><input type="radio" name="sim_type" value="SIM B1 Umum" onchange="pbUpdate()"><span>SIM B1 Umum</span></label>
-                                    <label class="pb-radio"><input type="radio" name="sim_type" value="SIM B1" onchange="pbUpdate()"><span>SIM B1</span></label>
-                                    <label class="pb-radio"><input type="radio" name="sim_type" value="SIM B2 Umum" onchange="pbUpdate()"><span>SIM B2 Umum</span></label>
-                                    <label class="pb-radio"><input type="radio" name="sim_type" value="SIM B2" onchange="pbUpdate()"><span>SIM B2</span></label>
+                                <div class="pb-radio-group" id="dynRadio_sim_type">
+                                    <!-- Populated dynamically from database -->
                                 </div>
                             </div>
                         </div>
                         <div class="pb-field-row">
                             <div class="pb-field">
                                 <label class="pb-label">Posisi Dilamar <span style="color:var(--error);">*</span></label>
-                                <div class="pb-radio-group pb-radio-group--row">
-                                    <label class="pb-radio"><input type="radio" name="armada_type" value="CDD" onchange="pbUpdate()"><span>CDD</span></label>
-                                    <label class="pb-radio"><input type="radio" name="armada_type" value="Wingbox" onchange="pbUpdate()"><span>Wingbox</span></label>
-                                    <label class="pb-radio"><input type="radio" name="armada_type" value="Bigmama" onchange="pbUpdate()"><span>Big Mama</span></label>
+                                <div class="pb-radio-group pb-radio-group--row" id="dynRadio_armada_type">
+                                    <!-- Populated dynamically from database -->
                                 </div>
                             </div>
                         </div>
                         <div class="pb-field-row">
                             <div class="pb-field">
                                 <label class="pb-label">Pendidikan Terakhir</label>
-                                <div class="pb-radio-group pb-radio-group--row">
-                                    <label class="pb-radio"><input type="radio" name="last_education" value="SD" onchange="pbUpdate()"><span>SD</span></label>
-                                    <label class="pb-radio"><input type="radio" name="last_education" value="SMP" onchange="pbUpdate()"><span>SMP</span></label>
-                                    <label class="pb-radio"><input type="radio" name="last_education" value="SMA/SMK/MA" onchange="pbUpdate()"><span>SMA/SMK/MA</span></label>
+                                <div class="pb-radio-group pb-radio-group--row" id="dynRadio_pendidikan_terakhir">
+                                    <!-- Populated dynamically from database -->
                                 </div>
                             </div>
                         </div>
                         <div class="pb-field-row">
                             <div class="pb-field">
                                 <label class="pb-label">Pernah Bekerja di SPX?</label>
-                                <div class="pb-radio-group pb-radio-group--row">
-                                    <label class="pb-radio"><input type="radio" name="worked_at_spx" value="Ya" onchange="pbUpdate()"><span>Ya</span></label>
-                                    <label class="pb-radio"><input type="radio" name="worked_at_spx" value="Tidak" onchange="pbUpdate()"><span>Tidak</span></label>
+                                <div class="pb-radio-group pb-radio-group--row" id="dynRadio_pernah_kerja_spx">
+                                    <!-- Populated dynamically from database -->
                                 </div>
                             </div>
                         </div>
@@ -391,16 +389,14 @@
                     <div class="pb-field-row pb-field-row--split2" style="margin-top:16px;">
                         <div class="pb-field">
                             <label class="pb-label">Surat Keterangan Sehat</label>
-                            <div class="pb-radio-group pb-radio-group--row">
-                                <label class="pb-radio"><input type="radio" name="surat_sehat_status" value="Ada" onchange="pbUpdate()"><span>Ada</span></label>
-                                <label class="pb-radio"><input type="radio" name="surat_sehat_status" value="Tidak Ada" onchange="pbUpdate()"><span>Tidak Ada</span></label>
+                            <div class="pb-radio-group pb-radio-group--row" id="dynRadio_surat_sehat">
+                                <!-- Populated dynamically from database -->
                             </div>
                         </div>
                         <div class="pb-field">
                             <label class="pb-label">Paklaring</label>
-                            <div class="pb-radio-group pb-radio-group--row">
-                                <label class="pb-radio"><input type="radio" name="paklaring_status" value="Ada" onchange="pbUpdate()"><span>Ada</span></label>
-                                <label class="pb-radio"><input type="radio" name="paklaring_status" value="Tidak Ada" onchange="pbUpdate()"><span>Tidak Ada</span></label>
+                            <div class="pb-radio-group pb-radio-group--row" id="dynRadio_paklaring">
+                                <!-- Populated dynamically from database -->
                             </div>
                         </div>
                     </div>
@@ -548,7 +544,7 @@
             <div class="chat-container" id="chatContainer">
                 <!-- Chat Header -->
                 <div class="chat-header">
-                    <button class="chat-header-back" onclick="switchTab('tabHome')">
+                    <button class="chat-header-back" onclick="history.length > 1 ? history.back() : switchTab('tabHome')">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
                     </button>
                     <div class="chat-header-avatar">
@@ -571,29 +567,46 @@
                 </div>
 
                 <!-- Typing -->
-                <div class="chat-typing" id="chatTyping">
+                <div class="chat-typing-indicator" id="chatTyping">
                     <div class="chat-typing-dots"><span></span><span></span><span></span></div>
                     <span>Admin sedang mengetik...</span>
                 </div>
 
+                <!-- Reply Bar -->
+                <div class="chat-reply-bar" id="userReplyBar"></div>
+
                 <!-- Input Bar -->
                 <div class="chat-input-bar">
-                    <div class="chat-attach-group">
-                        <button class="chat-attach-btn" onclick="chatPickImage()" title="Kirim Foto">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
-                        </button>
-                        <button class="chat-attach-btn" onclick="chatPickFile()" title="Kirim File">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a5.64 5.64 0 01-7.98-7.98l9.19-9.19a3.76 3.76 0 015.32 5.32L9.6 17.57a1.88 1.88 0 01-2.66-2.66l8.38-8.38"/></svg>
-                        </button>
-                        <button class="chat-attach-btn" onclick="chatSendLocation()" title="Kirim Lokasi">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
-                        </button>
-                    </div>
+                    <button class="chat-attach-toggle" id="chatAttachToggle" onclick="toggleChatAttach()">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    </button>
                     <div class="chat-input-wrap">
-                        <textarea class="chat-input" id="chatInput" placeholder="Ketik pesan..." rows="1" onkeydown="chatKeyDown(event)" oninput="chatAutoResize(this)"></textarea>
+                        <textarea class="chat-input" id="chatInput" placeholder="Ketik pesan..." rows="1" onkeydown="chatKeyDown(event)" oninput="chatAutoResize(this); ChatEngine.sendTyping(chatCandidateId)"></textarea>
                     </div>
                     <button class="chat-send-btn" id="chatSendBtn" onclick="chatSendText()">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                    </button>
+                </div>
+
+                <!-- Attach Menu Popup -->
+                <div class="chat-attach-menu" id="chatAttachMenu">
+                    <button class="chat-attach-option" onclick="chatPickImage(); toggleChatAttach();">
+                        <div class="chat-attach-icon" style="background:linear-gradient(135deg,#6366F1,#8B5CF6);">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+                        </div>
+                        <span>Foto</span>
+                    </button>
+                    <button class="chat-attach-option" onclick="chatPickFile(); toggleChatAttach();">
+                        <div class="chat-attach-icon" style="background:linear-gradient(135deg,#3B82F6,#2563EB);">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                        </div>
+                        <span>File</span>
+                    </button>
+                    <button class="chat-attach-option" onclick="chatSendLocation(); toggleChatAttach();">
+                        <div class="chat-attach-icon" style="background:linear-gradient(135deg,#EF4444,#DC2626);">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                        </div>
+                        <span>Lokasi</span>
                     </button>
                 </div>
 
@@ -688,13 +701,64 @@
         </div>
     </div>
 
-    <script src="js/user-auth.js?v=2.6"></script>
+    <script src="js/user-auth.js?v=4.1"></script>
     <script>
         /* ── State ─────────────────────────────── */
         let currentUser = null;
         let currentCandidate = null;
         let allLocations = [];
         let userPhotoData = null;
+        let _userDropdownCache = {};
+
+        /* ── Dynamic Dropdown Options from Database ── */
+        const DROPDOWN_FALLBACKS = {
+            sim_type:             [{ value: 'SIM A', label: 'SIM A' }, { value: 'SIM B1', label: 'SIM B1' }, { value: 'SIM B2', label: 'SIM B2' }],
+            armada_type:          [{ value: 'CDD', label: 'CDD' }, { value: 'Wingbox', label: 'Wingbox' }, { value: 'Big Mama', label: 'Big Mama' }],
+            pendidikan_terakhir:  [{ value: 'SD', label: 'SD' }, { value: 'SMP', label: 'SMP' }, { value: 'SMA/SMK', label: 'SMA/SMK' }, { value: 'D3', label: 'D3' }],
+            pernah_kerja_spx:     [{ value: 'Ya', label: 'Ya' }, { value: 'Tidak', label: 'Tidak' }],
+            surat_sehat:          [{ value: 'Ada', label: 'Ada' }, { value: 'Tidak Ada', label: 'Tidak Ada' }],
+            paklaring:            [{ value: 'Ada', label: 'Ada' }, { value: 'Tidak Ada', label: 'Tidak Ada' }]
+        };
+
+        // Maps category name → { radioName, containerId, cssClass }
+        const DROPDOWN_RADIO_MAP = {
+            sim_type:            { name: 'sim_type',           containerId: 'dynRadio_sim_type',            css: '' },
+            armada_type:         { name: 'armada_type',        containerId: 'dynRadio_armada_type',         css: '' },
+            pendidikan_terakhir: { name: 'last_education',     containerId: 'dynRadio_pendidikan_terakhir', css: '' },
+            pernah_kerja_spx:    { name: 'worked_at_spx',     containerId: 'dynRadio_pernah_kerja_spx',    css: '' },
+            surat_sehat:         { name: 'surat_sehat_status', containerId: 'dynRadio_surat_sehat',         css: '' },
+            paklaring:           { name: 'paklaring_status',   containerId: 'dynRadio_paklaring',           css: '' }
+        };
+
+        async function loadUserDropdownOptions() {
+            try {
+                const res = await fetch('./api/settings.php?action=options');
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.ok && data.options) {
+                        _userDropdownCache = data.options;
+                    }
+                }
+            } catch (e) {
+                console.warn('Failed to load dropdown options, using fallbacks:', e);
+            }
+
+            // Populate each radio group
+            for (const [category, mapping] of Object.entries(DROPDOWN_RADIO_MAP)) {
+                const items = (_userDropdownCache[category] && _userDropdownCache[category].length > 0)
+                    ? _userDropdownCache[category]
+                    : DROPDOWN_FALLBACKS[category] || [];
+
+                const container = document.getElementById(mapping.containerId);
+                if (!container || items.length === 0) continue;
+
+                container.innerHTML = items.map(item =>
+                    `<label class="pb-radio"><input type="radio" name="${mapping.name}" value="${item.value}" onchange="pbUpdate()"><span>${item.label}</span></label>`
+                ).join('');
+            }
+        }
+
+        // Dropdown options are loaded in the init IIFE below to ensure proper timing
 
         /* ── Cascading Wilayah API (BPS Data) ──── */
         const WILAYAH_API = 'https://www.emsifa.com/api-wilayah-indonesia/api';
@@ -836,6 +900,7 @@
                 const IS_DEMO_USER = isDemoUser();
 
                 if (IS_DEMO_USER) {
+                    await loadUserDropdownOptions();
                     loadDemoData();
                     syncThemeLabel();
                     return;
@@ -846,6 +911,7 @@
                     switchTab(savedTab);
                 }
                 
+                await loadUserDropdownOptions();
                 await loadCandidateData();
                 syncThemeLabel();
             } catch (err) {
@@ -905,21 +971,16 @@
             updatePbStepper();
             calcPemberkasanProgress();
 
-            // Show demo banner
-            const banner = document.createElement('div');
-            banner.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:9999;background:linear-gradient(90deg,#6366F1,#A855F7);color:#fff;text-align:center;padding:8px 16px;font-size:0.78rem;font-weight:600;letter-spacing:0.5px;';
-            banner.innerHTML = '🔍 PREVIEW MODE — Data tidak tersimpan ke server &nbsp; <button onclick="sessionStorage.removeItem(\'bas_demo_mode\');location.href=\'login.html\'" style="background:rgba(255,255,255,0.2);border:none;color:#fff;padding:4px 12px;border-radius:6px;cursor:pointer;font-size:0.72rem;font-weight:600;margin-left:8px;">Keluar Preview</button>';
-            document.body.prepend(banner);
+
+
         }
 
         /* ── Load Candidate Data ─────────────────── */
         async function loadCandidateData() {
             try {
                 const url = './api/candidates.php?user_id=' + (currentUser ? currentUser.id : 'NO_USER');
-                console.log('Fetching:', url);
                 const res = await fetch(url);
                 const data = await res.json();
-                console.log('API response:', JSON.stringify(data));
 
                 if (!data.candidate) {
                     document.getElementById('notRegistered').classList.remove('hidden');
@@ -1854,22 +1915,53 @@
             `;
         }
 
+        /* ── History & Navigation State ──────────── */
+        let _isNavigatingHistory = false;
+        window.addEventListener('popstate', (e) => {
+            _isNavigatingHistory = true;
+            if (e.state && e.state.tab) {
+                switchTab(e.state.tab);
+            } else {
+                switchTab('tabHome');
+            }
+            setTimeout(() => { _isNavigatingHistory = false; }, 50);
+        });
+
         /* ── Tab Switching ───────────────────────── */
         function switchTab(tabId) {
+            // Push history state if not navigating from back button
+            if (!_isNavigatingHistory && history.state?.tab !== tabId) {
+                history.pushState({ tab: tabId }, '', '#' + tabId);
+            }
+
+            // Stop chat polling when leaving chat
+            const wasChat = document.getElementById('tabChat')?.classList.contains('active');
+            if (wasChat && tabId !== 'tabChat') {
+                if (typeof ChatEngine !== 'undefined') ChatEngine.stopPoll();
+            }
+
             document.querySelectorAll('.bottom-tab').forEach(b => b.classList.remove('active'));
             document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
 
-            document.querySelector(`.bottom-tab[data-tab="${tabId}"]`).classList.add('active');
-            document.getElementById(tabId).classList.add('active');
+            const tabBtn = document.querySelector(`.bottom-tab[data-tab="${tabId}"]`);
+            if (tabBtn) tabBtn.classList.add('active');
+            const tabEl = document.getElementById(tabId);
+            if (tabEl) tabEl.classList.add('active');
+
+            // Fullscreen chat mode — hide header & tab bar
+            const isChat = tabId === 'tabChat';
+            const header = document.querySelector('.header');
+            const tabBar = document.querySelector('.tab-bar-wrapper');
+            if (header) header.style.display = isChat ? 'none' : '';
+            if (tabBar) tabBar.style.display = isChat ? 'none' : '';
 
             if (tabId === 'tabIdcard') updateIdCard();
-            if (tabId === 'tabPemberkasan') {
-                initSignature();
-            }
+            if (tabId === 'tabPemberkasan') initSignature();
             if (tabId === 'tabPengaturan') syncThemeLabel();
-            if (tabId === 'tabChat') initUserChat();
-            
-            sessionStorage.setItem('activeTab', tabId);
+            if (isChat) initUserChat();
+
+            // Don't save chat as active tab (prevents blank page on reload)
+            sessionStorage.setItem('activeTab', isChat ? 'tabHome' : tabId);
         }
 
         /* ── Toggle Theme from Settings ─────────── */
@@ -2303,6 +2395,7 @@
             z-index:9999; overflow:hidden; animation:panelSlide .25s ease-out;
         }
         @keyframes panelSlide { from{opacity:0;transform:translateY(-8px)} to{opacity:1;transform:translateY(0)} }
+        @keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
         .notif-panel-header {
             display:flex; justify-content:space-between; align-items:center;
             padding:14px 16px; border-bottom:1px solid var(--border-color);
@@ -2444,6 +2537,10 @@
                     if (empty) empty.style.display = 'none';
                     ChatEngine.markRead(chatCandidateId);
                     updateChatBadge();
+                },
+                onTypingChange: (isTyping) => {
+                    const el = document.getElementById('chatTyping');
+                    if (el) el.classList.toggle('active', isTyping);
                 }
             });
 
@@ -2491,6 +2588,13 @@
         function chatAutoResize(el) {
             el.style.height = 'auto';
             el.style.height = Math.min(el.scrollHeight, 100) + 'px';
+        }
+
+        function toggleChatAttach() {
+            const btn = document.getElementById('chatAttachToggle');
+            const menu = document.getElementById('chatAttachMenu');
+            btn.classList.toggle('open');
+            menu.classList.toggle('open');
         }
 
         function chatPickImage() {
@@ -2545,6 +2649,61 @@
         setInterval(() => {
             if (chatCandidateId) updateChatBadge();
         }, 15000);
+
+        // ══════════════════════════════════════════
+        // GPS On-Demand (owner minta → user kirim)
+        // Cek flag tiap 30 detik (ringan, tanpa GPS)
+        // GPS nyala HANYA saat owner request
+        // ══════════════════════════════════════════
+        (function initGpsOnDemand() {
+            if (!navigator.geolocation) return;
+            
+            const userId = (() => {
+                try {
+                    const s = JSON.parse(sessionStorage.getItem('bas_user_session') || '{}');
+                    return s.id || s.user_id || null;
+                } catch { return null; }
+            })();
+            if (!userId) return;
+
+            async function checkTrackRequest() {
+                try {
+                    const res = await fetch('./api/candidates.php', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
+                        body: JSON.stringify({ action: 'check_track', user_id: userId })
+                    });
+                    const data = await res.json();
+                    if (data.track_requested) {
+                        // Owner minta lokasi! Ambil GPS sekali
+                        navigator.geolocation.getCurrentPosition(
+                            (pos) => {
+                                fetch('./api/candidates.php', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    credentials: 'include',
+                                    body: JSON.stringify({
+                                        action: 'update_location',
+                                        user_id: userId,
+                                        latitude: pos.coords.latitude,
+                                        longitude: pos.coords.longitude,
+                                        accuracy: pos.coords.accuracy
+                                    })
+                                }).catch(() => {});
+                            },
+                            () => {}, // silent fail jika user tolak
+                            { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+                        );
+                    }
+                } catch(e) {}
+            }
+
+            // Poll setiap 30 detik (ringan: cuma cek flag, tanpa GPS)
+            setInterval(checkTrackRequest, 30000);
+        })();
+
+
     </script>
 </body>
 </html>

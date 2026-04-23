@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Bergabung menjadi Driver Profesional Vendor BAS — Armada CDD, Wingbox, dan Bigmama. Daftar sekarang!">
+    <title>BAS Recruitment — Driver Profesional</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="js/theme.js"></script>
+    <style>
+        /* ── Landing Page Specific ───────────── */
+        .landing-hero {
+            min-height: 92vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 60px 20px;
+            position: relative;
+            overflow: hidden;
+            background-image: url('cdd.png');
+            background-size: cover;
+            background-position: center;
+        }
+
+        /* Dark overlay with aesthetic blur */
+        .landing-hero::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: rgba(10, 15, 25, 0.65);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            z-index: 0;
+            transition: background 0.3s ease;
+        }
+
+        [data-theme="light"] .landing-hero::before {
+            background: rgba(248, 250, 252, 0.75);
+        }
+
+        /* Ambient glow on top of overlay */
+        .landing-hero::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle at 30% 50%, var(--accent-glow) 0%, transparent 50%),
+                        radial-gradient(circle at 70% 80%, rgba(135,206,235,0.08) 0%, transparent 40%);
+            animation: heroGlow 8s ease-in-out infinite alternate;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        @keyframes heroGlow {
+            0%   { transform: translate(0, 0) scale(1); }
+            100% { transform: translate(-5%, 5%) scale(1.1); }
+        }
+
+        .landing-hero-content {
+            position: relative;
+            z-index: 2;
+            max-width: 800px;
+        }
+
+        .landing-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 20px;
+            background: var(--accent-light);
+            border: 1px solid var(--accent);
+            border-radius: 100px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--accent);
+            margin-bottom: 24px;
+            animation: fadeInDown 0.8s ease;
+        }
+
+        .landing-badge .pulse {
+            width: 8px;
+            height: 8px;
+            background: var(--accent);
+            border-radius: 50%;
+            animation: pulse 2s ease infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(1.5); }
+        }
+
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .landing-title {
+            font-size: 3.5rem;
+            font-weight: 900;
+            letter-spacing: -2px;
+            line-height: 1.1;
+            margin-bottom: 20px;
+            animation: fadeInUp 0.8s ease 0.1s both;
+        }
+
+        .landing-title .accent { color: var(--accent); }
+        .landing-title .line2 { display: block; }
+
+        .landing-desc {
+            font-size: 1.15rem;
+            color: var(--text-secondary);
+            line-height: 1.7;
+            max-width: 580px;
+            margin: 0 auto 36px;
+            animation: fadeInUp 0.8s ease 0.2s both;
+        }
+
+        .landing-cta {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+            flex-wrap: wrap;
+            animation: fadeInUp 0.8s ease 0.3s both;
+        }
+
+        .landing-cta .btn-primary {
+            padding: 16px 40px;
+            font-size: 1.1rem;
+            border-radius: var(--radius-lg);
+            box-shadow: 0 4px 20px var(--accent-glow);
+        }
+
+        .landing-cta .btn-primary:hover {
+            box-shadow: 0 8px 30px var(--accent-glow);
+            transform: translateY(-3px);
+        }
+
+        .landing-cta .btn-secondary {
+            padding: 16px 32px;
+            font-size: 1.1rem;
+            border-radius: var(--radius-lg);
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ── Stats Bar ───────────────────────── */
+        .stats-bar {
+            display: flex;
+            justify-content: center;
+            gap: 48px;
+            padding: 40px 20px;
+            border-top: 1px solid var(--border);
+            border-bottom: 1px solid var(--border);
+            background: var(--bg-secondary);
+            animation: fadeInUp 0.8s ease 0.5s both;
+        }
+
+        .stat-item { text-align: center; }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 900;
+            color: var(--accent);
+            line-height: 1;
+        }
+
+        .stat-label {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
+        /* ── Features Section ────────────────── */
+        .section {
+            padding: 80px 20px;
+        }
+
+        .section-header {
+            text-align: center;
+            max-width: 600px;
+            margin: 0 auto 48px;
+        }
+
+        .section-header h2 {
+            font-size: 2rem;
+            font-weight: 800;
+            letter-spacing: -1px;
+            margin-bottom: 12px;
+        }
+
+        .section-header p {
+            color: var(--text-muted);
+            font-size: 1rem;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        .feature-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 32px 24px;
+            text-align: center;
+            transition: var(--transition);
+        }
+
+        .feature-card:hover {
+            transform: translateY(-6px);
+            box-shadow: var(--shadow-lift);
+            border-color: var(--accent);
+        }
+
+        .feature-icon {
+            width: 64px;
+            height: 64px;
+            background: var(--accent-light);
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            margin: 0 auto 16px;
+        }
+
+        .feature-title {
+            font-weight: 700;
+            font-size: 1.05rem;
+            margin-bottom: 8px;
+        }
+
+        .feature-desc {
+            font-size: 0.88rem;
+            color: var(--text-muted);
+            line-height: 1.6;
+        }
+
+        /* ── Armada Showcase ─────────────────── */
+        .armada-showcase {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .armada-showcase-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-xl);
+            padding: 40px 24px;
+            text-align: center;
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .armada-showcase-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--accent);
+            transform: scaleX(0);
+            transition: transform 0.4s ease;
+        }
+
+        .armada-showcase-card:hover::before { transform: scaleX(1); }
+
+        .armada-showcase-card:hover {
+            transform: translateY(-8px);
+            box-shadow: var(--shadow-lift);
+        }
+
+        .armada-showcase-card .armada-icon { margin-bottom: 20px; }
+
+        .armada-showcase-card .armada-name {
+            font-size: 1.3rem;
+            font-weight: 800;
+            margin-bottom: 8px;
+        }
+
+        .armada-showcase-card .armada-desc {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            margin-bottom: 16px;
+        }
+
+        .armada-tag {
+            display: inline-block;
+            padding: 4px 14px;
+            background: var(--accent-light);
+            color: var(--accent);
+            border-radius: 100px;
+            font-size: 0.78rem;
+            font-weight: 600;
+        }
+
+        /* ── How It Works (Steps) ────────────── */
+        .steps-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 24px;
+            max-width: 1000px;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        .steps-grid::before {
+            content: '';
+            position: absolute;
+            top: 36px;
+            left: 12%;
+            right: 12%;
+            height: 3px;
+            background: var(--border);
+            z-index: 0;
+        }
+
+        .step-card {
+            text-align: center;
+            position: relative;
+            z-index: 1;
+        }
+
+        .step-number {
+            width: 56px;
+            height: 56px;
+            background: var(--accent);
+            color: #000;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 900;
+            font-size: 1.3rem;
+            margin: 0 auto 16px;
+            box-shadow: 0 4px 16px var(--accent-glow);
+        }
+
+        .step-title {
+            font-weight: 700;
+            font-size: 0.95rem;
+            margin-bottom: 6px;
+        }
+
+        .step-desc {
+            font-size: 0.82rem;
+            color: var(--text-muted);
+            line-height: 1.5;
+        }
+
+        /* ── Locations Section ────────────────── */
+        .locations-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .location-info-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 28px 20px;
+            text-align: center;
+            transition: var(--transition);
+        }
+
+        .location-info-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-md);
+            border-color: var(--accent);
+        }
+
+        .location-info-card .loc-icon { font-size: 2rem; margin-bottom: 12px; }
+        .location-info-card .loc-name { font-weight: 700; font-size: 1rem; margin-bottom: 4px; }
+        .location-info-card .loc-managers { font-size: 0.8rem; color: var(--text-muted); }
+
+        /* ── CTA Section ─────────────────────── */
+        .cta-section {
+            text-align: center;
+            padding: 80px 20px;
+            background: var(--bg-secondary);
+            border-top: 1px solid var(--border);
+        }
+
+        .cta-section h2 {
+            font-size: 2rem;
+            font-weight: 800;
+            margin-bottom: 12px;
+        }
+
+        .cta-section p {
+            color: var(--text-muted);
+            margin-bottom: 32px;
+            font-size: 1rem;
+        }
+
+        /* ── Footer ──────────────────────────── */
+        .landing-footer {
+            text-align: center;
+            padding: 32px 20px;
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            border-top: 1px solid var(--border);
+        }
+
+        .landing-footer a { color: var(--accent); }
+
+        /* ── Responsive ──────────────────────── */
+        @media (max-width: 768px) {
+            .landing-title { font-size: 2.2rem; letter-spacing: -1px; }
+            .landing-desc { font-size: 1rem; }
+            .stats-bar { gap: 24px; flex-wrap: wrap; }
+            .stat-value { font-size: 1.5rem; }
+            .features-grid,
+            .armada-showcase { grid-template-columns: 1fr; max-width: 400px; }
+            .steps-grid { grid-template-columns: 1fr 1fr; }
+            .steps-grid::before { display: none; }
+            .locations-grid { grid-template-columns: 1fr 1fr; }
+            .section { padding: 48px 20px; }
+            .section-header h2 { font-size: 1.5rem; }
+        }
+
+        @media (max-width: 480px) {
+            .landing-title { font-size: 1.8rem; }
+            .landing-cta { flex-direction: column; align-items: center; }
+            .landing-cta .btn-primary,
+            .landing-cta .btn-secondary { width: 100%; max-width: 300px; }
+            .locations-grid { grid-template-columns: 1fr; }
+            .steps-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ═══════════════════════════════════════ -->
+    <!-- HEADER -->
+    <!-- ═══════════════════════════════════════ -->
+    <header class="header">
+        <div class="header-inner">
+            <div class="logo">
+                <div class="logo-icon"><img src="LogoBas.png" alt="BAS Logo"></div>
+            </div>
+            <div class="header-actions">
+                <a href="login.html" class="btn btn-sm btn-primary login-btn">👤 Login</a>
+                <div class="theme-toggle" id="themeToggle" title="Toggle Dark/Light Mode">
+                    <div class="theme-toggle-knob"></div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- ═══════════════════════════════════════ -->
+    <!-- HERO SECTION -->
+    <!-- ═══════════════════════════════════════ -->
+    <section class="landing-hero">
+        <div class="landing-hero-content">
+            <div class="landing-badge">
+                <span class="pulse"></span>
+                Pendaftaran Dibuka — 2026
+            </div>
+
+            <h1 class="landing-title">
+                Bergabung Menjadi
+                <span class="line2"><span class="accent">Driver Profesional</span></span>
+                Vendor BAS
+            </h1>
+
+            <p class="landing-desc">
+                Raih karir sebagai pengemudi armada logistik profesional. Proses cepat,
+                transparan, dan langsung dari smartphone Anda.
+            </p>
+
+            <div class="landing-cta">
+                <a href="login.html#register" class="btn btn-primary" id="ctaDaftar">Daftar Sekarang</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════ -->
+    <!-- STATS BAR -->
+    <!-- ═══════════════════════════════════════ -->
+    <div class="stats-bar">
+        <div class="stat-item">
+            <div class="stat-value">4</div>
+            <div class="stat-label">Lokasi Rekrutmen</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-value">3</div>
+            <div class="stat-label">Tipe Armada</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-value">6</div>
+            <div class="stat-label">Korlap Aktif</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-value">24/7</div>
+            <div class="stat-label">Daftar Online</div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════ -->
+    <!-- FEATURES SECTION -->
+    <!-- ═══════════════════════════════════════ -->
+    <section class="section">
+        <div class="section-header">
+            <h2>Kenapa Bergabung di <span style="color:var(--accent);">BAS</span>?</h2>
+            <p>Kami menyediakan proses rekrutmen yang modern, transparan, dan efisien untuk semua calon driver.</p>
+        </div>
+
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon">📱</div>
+                <div class="feature-title">Daftar via HP</div>
+                <div class="feature-desc">Proses pendaftaran 100% online — cukup dari smartphone, tanpa perlu ke kantor.</div>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">⚡</div>
+                <div class="feature-title">Proses Cepat</div>
+                <div class="feature-desc">Upload dokumen langsung, jadwal test drive ditentukan dalam hitungan hari.</div>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">📍</div>
+                <div class="feature-title">Pilih Lokasi</div>
+                <div class="feature-desc">4 titik rekrutmen tersebar — pilih yang paling dekat dengan domisili Anda.</div>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🔍</div>
+                <div class="feature-title">Pantau Status</div>
+                <div class="feature-desc">Cek progres rekrutmen Anda kapan saja lewat nomor WhatsApp yang terdaftar.</div>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🛡️</div>
+                <div class="feature-title">Aman & Terpercaya</div>
+                <div class="feature-desc">Dokumen Anda terproteksi watermark dan disimpan di server yang aman.</div>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🚛</div>
+                <div class="feature-title">Armada Lengkap</div>
+                <div class="feature-desc">Tiga pilihan armada — CDD, Wingbox, dan Bigmama — sesuai keahlian Anda.</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════ -->
+    <!-- ARMADA SHOWCASE -->
+    <!-- ═══════════════════════════════════════ -->
+    <section class="section" id="armada" style="background:var(--bg-secondary);">
+        <div class="section-header">
+            <h2>Pilihan <span style="color:var(--accent);">Armada</span></h2>
+            <p>Pilih tipe kendaraan yang ingin Anda kemudikan sesuai pengalaman dan kualifikasi SIM.</p>
+        </div>
+
+        <div class="armada-showcase">
+            <!-- CDD -->
+            <div class="armada-showcase-card">
+                <div class="armada-icon">
+                    <svg width="80" height="56" viewBox="0 0 64 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect x="2" y="12" width="28" height="22" rx="3" fill="var(--accent)" opacity="0.3"/>
+                        <rect x="30" y="8" width="20" height="26" rx="3" fill="var(--accent)"/>
+                        <rect x="33" y="11" width="14" height="10" rx="2" fill="var(--bg-primary)" opacity="0.5"/>
+                        <circle cx="14" cy="38" r="5" fill="var(--text-primary)"/><circle cx="14" cy="38" r="2.5" fill="var(--bg-primary)"/>
+                        <circle cx="22" cy="38" r="5" fill="var(--text-primary)"/><circle cx="22" cy="38" r="2.5" fill="var(--bg-primary)"/>
+                        <circle cx="42" cy="38" r="5" fill="var(--text-primary)"/><circle cx="42" cy="38" r="2.5" fill="var(--bg-primary)"/>
+                    </svg>
+                </div>
+                <div class="armada-name">CDD</div>
+                <div class="armada-desc">Truk box medium dengan roda ganda. Cocok untuk distribusi perkotaan.</div>
+                <span class="armada-tag">SIM B1 / B2</span>
+            </div>
+
+            <!-- Wingbox -->
+            <div class="armada-showcase-card">
+                <div class="armada-icon">
+                    <svg width="88" height="56" viewBox="0 0 72 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect x="2" y="8" width="40" height="24" rx="3" fill="var(--accent)" opacity="0.3"/>
+                        <path d="M7 8 L22 2 L37 8" stroke="var(--accent)" stroke-width="2" fill="none"/>
+                        <rect x="42" y="6" width="22" height="28" rx="3" fill="var(--accent)"/>
+                        <rect x="45" y="9" width="16" height="10" rx="2" fill="var(--bg-primary)" opacity="0.5"/>
+                        <circle cx="16" cy="38" r="5" fill="var(--text-primary)"/><circle cx="16" cy="38" r="2.5" fill="var(--bg-primary)"/>
+                        <circle cx="28" cy="38" r="5" fill="var(--text-primary)"/><circle cx="28" cy="38" r="2.5" fill="var(--bg-primary)"/>
+                        <circle cx="54" cy="38" r="5" fill="var(--text-primary)"/><circle cx="54" cy="38" r="2.5" fill="var(--bg-primary)"/>
+                    </svg>
+                </div>
+                <div class="armada-name">Wingbox</div>
+                <div class="armada-desc">Truk besar dengan bukaan sayap samping. Ideal untuk muatan besar.</div>
+                <span class="armada-tag">SIM B2</span>
+            </div>
+
+            <!-- Bigmama -->
+            <div class="armada-showcase-card">
+                <div class="armada-icon">
+                    <svg width="96" height="56" viewBox="0 0 80 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect x="2" y="10" width="48" height="22" rx="3" fill="var(--accent)" opacity="0.3"/>
+                        <rect x="50" y="6" width="24" height="28" rx="3" fill="var(--accent)"/>
+                        <rect x="53" y="9" width="18" height="10" rx="2" fill="var(--bg-primary)" opacity="0.5"/>
+                        <circle cx="12" cy="38" r="5" fill="var(--text-primary)"/><circle cx="12" cy="38" r="2.5" fill="var(--bg-primary)"/>
+                        <circle cx="22" cy="38" r="5" fill="var(--text-primary)"/><circle cx="22" cy="38" r="2.5" fill="var(--bg-primary)"/>
+                        <circle cx="32" cy="38" r="5" fill="var(--text-primary)"/><circle cx="32" cy="38" r="2.5" fill="var(--bg-primary)"/>
+                        <circle cx="42" cy="38" r="5" fill="var(--text-primary)"/><circle cx="42" cy="38" r="2.5" fill="var(--bg-primary)"/>
+                        <circle cx="62" cy="38" r="5" fill="var(--text-primary)"/><circle cx="62" cy="38" r="2.5" fill="var(--bg-primary)"/>
+                    </svg>
+                </div>
+                <div class="armada-name">Bigmama</div>
+                <div class="armada-desc">Trailer heavy-duty multi-roda. Untuk pengemudi berpengalaman tinggi.</div>
+                <span class="armada-tag">SIM B2 Umum</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════ -->
+    <!-- HOW IT WORKS -->
+    <!-- ═══════════════════════════════════════ -->
+    <section class="section" id="cara-daftar">
+        <div class="section-header">
+            <h2>Cara <span style="color:var(--accent);">Mendaftar</span></h2>
+            <p>Hanya 4 langkah mudah — semuanya bisa dilakukan dari smartphone.</p>
+        </div>
+
+        <div class="steps-grid">
+            <div class="step-card">
+                <div class="step-number">1</div>
+                <div class="step-title">Isi Formulir</div>
+                <div class="step-desc">Lengkapi data pribadi, pilih armada, dan lokasi interview Anda.</div>
+            </div>
+            <div class="step-card">
+                <div class="step-number">2</div>
+                <div class="step-title">Upload Dokumen</div>
+                <div class="step-desc">Upload KTP, SIM, SKCK, Surat Sehat, dan Paklaring (maks 2MB).</div>
+            </div>
+            <div class="step-card">
+                <div class="step-number">3</div>
+                <div class="step-title">Verifikasi</div>
+                <div class="step-desc">Tim Korlap akan memeriksa dokumen dan menjadwalkan test drive.</div>
+            </div>
+            <div class="step-card">
+                <div class="step-number">4</div>
+                <div class="step-title">Test Drive</div>
+                <div class="step-desc">Datang ke lokasi yang dipilih, lakukan test drive, dan dapatkan hasilnya!</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════ -->
+    <!-- LOCATIONS -->
+    <!-- ═══════════════════════════════════════ -->
+    <section class="section" style="background:var(--bg-secondary);">
+        <div class="section-header">
+            <h2>Lokasi <span style="color:var(--accent);">Rekrutmen</span></h2>
+            <p>Tersebar di 4 titik strategis Jabodetabek. Pilih yang terdekat dari rumah Anda.</p>
+        </div>
+
+        <div class="locations-grid" id="indexLocationsGrid">
+            <div style="text-align:center;grid-column:1/-1;padding:40px;color:var(--text-muted);"><div class="spinner-sm"></div> Memuat lokasi...</div>
+        </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════ -->
+    <!-- FINAL CTA -->
+    <!-- ═══════════════════════════════════════ -->
+    <section class="cta-section">
+        <h2>Siap Bergabung?</h2>
+        <p>Daftar sekarang dan mulai perjalanan karir Anda sebagai driver profesional BAS.</p>
+        <div class="landing-cta">
+            <a href="login.html#register" class="btn btn-primary" style="padding:16px 48px;font-size:1.1rem;border-radius:var(--radius-lg);box-shadow:0 4px 20px var(--accent-glow);">
+                Mulai Pendaftaran
+            </a>
+        </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════ -->
+    <!-- FOOTER -->
+    <!-- ═══════════════════════════════════════ -->
+    <footer class="landing-footer">
+        <p>© 2026 <strong>Vendor BAS</strong> — Sistem Rekrutmen Driver. All rights reserved.</p>
+        <p style="margin-top:8px;">
+            <a href="login.html#register">Daftar</a> · 
+            <a href="login.html">Login</a>
+        </p>
+    </footer>
+
+    <script src="js/user-auth.js"></script>
+    <script>
+        // Check auth state and update header
+        (async () => {
+            const user = await checkUserAuth();
+            if (user) {
+                updateHeaderForUser(user);
+                // If logged in, "Daftar" goes directly to daftar.html
+                const ctaDaftar = document.getElementById('ctaDaftar');
+                if (ctaDaftar) ctaDaftar.href = 'daftar.html';
+            }
+        })();
+
+        // Load Dynamic Locations for Index
+        (async () => {
+            try {
+                const res = await fetch('api/locations.php');
+                const data = await res.json();
+                const grid = document.getElementById('indexLocationsGrid');
+                if (data.locations && data.locations.length > 0) {
+                    const META = {
+                        'Makobas': { icon: '🏢', mgr: 'Korlap: Alim, Ilham, Gusti' },
+                        'Mess Cileungsi': { icon: '🏠', mgr: 'Korlap: Amar' },
+                        'Cibitung': { icon: '🏭', mgr: 'Korlap: Aples' },
+                        'Cakung 2': { icon: '📦', mgr: 'Korlap: Ayat' }
+                    };
+                    
+                    grid.innerHTML = data.locations.map(l => {
+                        const meta = META[l.name] || { icon: '📍', mgr: 'Tim BAS' };
+                        return `
+                            <a href="${l.maps_link ? escapeHtml(l.maps_link) : '#'}" ${l.maps_link ? 'target="_blank"' : ''} class="location-info-card" style="text-decoration:none; display:block; color:inherit;">
+                                <div class="loc-icon">${meta.icon}</div>
+                                <div class="loc-name">${escapeHtml(l.name)}</div>
+                                <div class="loc-managers" style="margin-bottom:8px;">${meta.mgr}</div>
+                                <div style="font-size:0.75rem;color:var(--text-muted);opacity:0.8;">${escapeHtml(l.address)}</div>
+                            </a>
+                        `;
+                    }).join('');
+                } else {
+                    grid.innerHTML = '<div style="text-align:center;grid-column:1/-1;">Belum ada lokasi pendaftaran.</div>';
+                }
+            } catch (e) {
+                document.getElementById('indexLocationsGrid').innerHTML = '<div style="text-align:center;grid-column:1/-1;">Gagal memuat alamat lokasi.</div>';
+            }
+        })();
+    </script>
+</body>
+</html>

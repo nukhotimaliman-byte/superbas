@@ -10,7 +10,7 @@ $pdo = getDB();
 // ── Public endpoint: get all options (no auth needed) ──
 if ($_SERVER['REQUEST_METHOD'] === 'GET' && ($_GET['action'] ?? '') === 'options') {
     try {
-        $stmt = $pdo->query("SELECT * FROM dropdown_options ORDER BY category, sort_order, id");
+        $stmt = $pdo->query("SELECT * FROM drv_dropdown_options ORDER BY category, sort_order, id");
         $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         $grouped = [];
@@ -29,7 +29,7 @@ if (empty($_SESSION['admin_id'])) {
 }
 
 // Check role
-$stmt = $pdo->prepare("SELECT role FROM admins WHERE id = ?");
+$stmt = $pdo->prepare("SELECT role FROM drv_admins WHERE id = ?");
 $stmt->execute([$_SESSION['admin_id']]);
 $admin = $stmt->fetch(PDO::FETCH_ASSOC);
 if (!$admin || $admin['role'] !== 'owner') {
@@ -55,12 +55,12 @@ switch ($action) {
 
         // Auto sort_order: put at end if not specified
         if ($order === 0) {
-            $stmt = $pdo->prepare("SELECT COALESCE(MAX(sort_order),0)+1 FROM dropdown_options WHERE category = ?");
+            $stmt = $pdo->prepare("SELECT COALESCE(MAX(sort_order),0)+1 FROM drv_dropdown_options WHERE category = ?");
             $stmt->execute([$cat]);
             $order = $stmt->fetchColumn();
         }
 
-        $stmt = $pdo->prepare("INSERT INTO dropdown_options (category, label, value, color, sort_order) VALUES (?,?,?,?,?)");
+        $stmt = $pdo->prepare("INSERT INTO drv_dropdown_options (category, label, value, color, sort_order) VALUES (?,?,?,?,?)");
         $stmt->execute([$cat, $label, $value, $color, $order]);
 
         jsonResponse(['ok' => true, 'id' => $pdo->lastInsertId(), 'message' => 'Opsi berhasil ditambahkan']);
@@ -78,7 +78,7 @@ switch ($action) {
             jsonResponse(['ok' => false, 'error' => 'ID dan label wajib diisi']);
         }
 
-        $stmt = $pdo->prepare("UPDATE dropdown_options SET label=?, value=?, color=?, sort_order=? WHERE id=?");
+        $stmt = $pdo->prepare("UPDATE drv_dropdown_options SET label=?, value=?, color=?, sort_order=? WHERE id=?");
         $stmt->execute([$label, $value, $color, $order, $id]);
 
         jsonResponse(['ok' => true, 'message' => 'Opsi berhasil diperbarui']);
@@ -91,7 +91,7 @@ switch ($action) {
             jsonResponse(['ok' => false, 'error' => 'ID wajib']);
         }
 
-        $stmt = $pdo->prepare("DELETE FROM dropdown_options WHERE id = ?");
+        $stmt = $pdo->prepare("DELETE FROM drv_dropdown_options WHERE id = ?");
         $stmt->execute([$id]);
 
         jsonResponse(['ok' => true, 'message' => 'Opsi berhasil dihapus']);
@@ -104,7 +104,7 @@ switch ($action) {
             jsonResponse(['ok' => false, 'error' => 'Data kosong']);
         }
 
-        $stmt = $pdo->prepare("UPDATE dropdown_options SET sort_order = ? WHERE id = ?");
+        $stmt = $pdo->prepare("UPDATE drv_dropdown_options SET sort_order = ? WHERE id = ?");
         foreach ($items as $item) {
             $stmt->execute([intval($item['sort_order']), intval($item['id'])]);
         }

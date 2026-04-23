@@ -21,7 +21,7 @@ switch ($action) {
         }
 
         $db = getDB();
-        $stmt = $db->prepare('SELECT id, username, password, name, role, location_id FROM admins WHERE username = ?');
+        $stmt = $db->prepare('SELECT id, username, password, name, role, location_id FROM drv_admins WHERE username = ?');
         $stmt->execute([$username]);
         $admin = $stmt->fetch();
 

@@ -9,9 +9,9 @@ header('Content-Type: text/plain; charset=utf-8');
 $db = getDB();
 echo "=== BAS Chat — Database Setup ===\n\n";
 
-// chat_messages table
+// drv_chat_messages table
 try {
-    $db->exec("CREATE TABLE IF NOT EXISTS chat_messages (
+    $db->exec("CREATE TABLE IF NOT EXISTS drv_chat_messages (
         id            INT AUTO_INCREMENT PRIMARY KEY,
         candidate_id  INT NOT NULL,
         sender_type   ENUM('user','admin') NOT NULL,
@@ -31,14 +31,14 @@ try {
         INDEX idx_unread (candidate_id, sender_type, is_read),
         INDEX idx_poll (id, candidate_id)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
-    echo "✅ chat_messages table ready\n";
+    echo "✅ drv_chat_messages table ready\n";
 } catch (Exception $e) {
-    echo "❌ chat_messages: " . $e->getMessage() . "\n";
+    echo "❌ drv_chat_messages: " . $e->getMessage() . "\n";
 }
 
-// chat_templates table (custom templates)
+// drv_chat_templates table (custom templates)
 try {
-    $db->exec("CREATE TABLE IF NOT EXISTS chat_templates (
+    $db->exec("CREATE TABLE IF NOT EXISTS drv_chat_templates (
         id         INT AUTO_INCREMENT PRIMARY KEY,
         admin_id   INT NOT NULL,
         title      VARCHAR(100) NOT NULL,
@@ -47,10 +47,10 @@ try {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         INDEX idx_admin (admin_id)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
-    echo "✅ chat_templates table ready\n";
+    echo "✅ drv_chat_templates table ready\n";
 
     // Insert defaults if empty
-    $count = $db->query("SELECT COUNT(*) FROM chat_templates")->fetchColumn();
+    $count = $db->query("SELECT COUNT(*) FROM drv_chat_templates")->fetchColumn();
     if ($count == 0) {
         $defaults = [
             ['Jadwal Test Drive', 'Jadwal test drive Anda telah ditentukan. Silakan datang pada waktu yang telah dijadwalkan.'],
@@ -59,14 +59,14 @@ try {
             ['Konfirmasi Kehadiran', 'Apakah Anda bisa hadir pada jadwal yang telah ditentukan? Mohon konfirmasi.'],
             ['Info Lokasi', 'Berikut lokasi yang perlu Anda datangi. Silakan cek peta yang terlampir.'],
         ];
-        $stmt = $db->prepare("INSERT INTO chat_templates (admin_id, title, message, sort_order) VALUES (0, ?, ?, ?)");
+        $stmt = $db->prepare("INSERT INTO drv_chat_templates (admin_id, title, message, sort_order) VALUES (0, ?, ?, ?)");
         foreach ($defaults as $i => $t) {
             $stmt->execute([$t[0], $t[1], $i]);
         }
         echo "✅ Default templates inserted (" . count($defaults) . ")\n";
     }
 } catch (Exception $e) {
-    echo "❌ chat_templates: " . $e->getMessage() . "\n";
+    echo "❌ drv_chat_templates: " . $e->getMessage() . "\n";
 }
 
 // Create chat uploads directory
@@ -76,6 +76,38 @@ if (!is_dir($chatUploadDir)) {
     echo "✅ uploads/chat/ directory created\n";
 } else {
     echo "✅ uploads/chat/ directory exists\n";
+}
+
+// ── v4.0 Migrations ──────────────────────────────
+
+// Add reply columns to drv_chat_messages
+try {
+    $db->exec("ALTER TABLE drv_chat_messages ADD COLUMN reply_to_id INT DEFAULT NULL AFTER is_read");
+    echo "✅ reply_to_id column added\n";
+} catch (Exception $e) {
+    if (strpos($e->getMessage(), 'Duplicate') !== false) echo "✅ reply_to_id already exists\n";
+    else echo "⚠️ reply_to_id: " . $e->getMessage() . "\n";
+}
+
+try {
+    $db->exec("ALTER TABLE drv_chat_messages ADD COLUMN reply_preview TEXT DEFAULT NULL AFTER reply_to_id");
+    echo "✅ reply_preview column added\n";
+} catch (Exception $e) {
+    if (strpos($e->getMessage(), 'Duplicate') !== false) echo "✅ reply_preview already exists\n";
+    else echo "⚠️ reply_preview: " . $e->getMessage() . "\n";
+}
+
+// Typing indicator table
+try {
+    $db->exec("CREATE TABLE IF NOT EXISTS chat_typing (
+        candidate_id  INT NOT NULL,
+        sender_type   ENUM('user','admin') NOT NULL,
+        updated_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        PRIMARY KEY (candidate_id, sender_type)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+    echo "✅ chat_typing table ready\n";
+} catch (Exception $e) {
+    echo "❌ chat_typing: " . $e->getMessage() . "\n";
 }
 
 echo "\n=== Setup Complete ===\n";

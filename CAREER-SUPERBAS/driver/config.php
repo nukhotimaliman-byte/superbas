@@ -49,7 +49,7 @@ define('ALLOWED_MIME_TYPES', [
 define('WATERMARK_TEXT', 'FOR BAS RECRUITMENT ONLY');
 
 // ── Session & Security ──────────────────────────────
-define('SESSION_LIFETIME', 3600 * 8); // 8 hours
+define('SESSION_LIFETIME', 3600 * 24 * 365); // 1 year — persistent until manual logout
 
 // ── CORS & Headers ──────────────────────────────────
 // Allow localhost dev to fetch from production VPS
@@ -76,11 +76,21 @@ if (session_status() === PHP_SESSION_NONE) {
     @ini_set('session.gc_maxlifetime', SESSION_LIFETIME);
     @session_set_cookie_params([
         'lifetime' => SESSION_LIFETIME,
-        'path'     => '/',           // Covers entire domain
-        'httponly' => true,
-        'samesite' => 'Lax'
+        'path'     => '/',
+        'httponly'  => true,
+        'samesite'  => 'Lax'
     ]);
     @session_start();
+
+    // Touch session cookie on every request to keep it alive
+    if (isset($_COOKIE['BAS_DRIVER_SESS'])) {
+        setcookie('BAS_DRIVER_SESS', session_id(), [
+            'expires'  => time() + SESSION_LIFETIME,
+            'path'     => '/',
+            'httponly'  => true,
+            'samesite'  => 'Lax'
+        ]);
+    }
 }
 
 // ── PDO Connection ──────────────────────────────────

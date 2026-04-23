@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 100" width="300" height="100">
+  <defs>
+    <linearGradient id="basGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#7c3aed"/>
+      <stop offset="50%" stop-color="#6366f1"/>
+      <stop offset="100%" stop-color="#4f46e5"/>
+    </linearGradient>
+  </defs>
+  <text x="150" y="74" font-family="'Arial Black','Segoe UI Black','Impact',Helvetica,Arial,sans-serif" font-size="76" font-weight="900" fill="url(#basGrad)" text-anchor="middle" letter-spacing="14">BAS</text>
+</svg>

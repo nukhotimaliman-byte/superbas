@@ -1,8 +1,8 @@
 <?php
 /**
  * BAS Recruitment — Document Upload API
- * POST /api/documents.php — Upload document with watermark
- * GET  /api/documents.php?id=X — Serve document for preview (admin only)
+ * POST /api/drv_documents.php — Upload document with watermark
+ * GET  /api/drv_documents.php?id=X — Serve document for preview (admin only)
  */
 require_once __DIR__ . '/../config.php';
 
@@ -23,7 +23,7 @@ if ($method === 'POST') {
 
     // Verify candidate exists
     $db = getDB();
-    $stmt = $db->prepare('SELECT id FROM candidates WHERE id = ?');
+    $stmt = $db->prepare('SELECT id FROM drv_candidates WHERE id = ?');
     $stmt->execute([$candidateId]);
     if (!$stmt->fetch()) {
         jsonResponse(['error' => 'Kandidat tidak ditemukan'], 404);
@@ -56,13 +56,13 @@ if ($method === 'POST') {
 
     $finfo = finfo_open(FILEINFO_MIME_TYPE);
     $mime = finfo_file($finfo, $file['tmp_name']);
-    finfo_close($finfo);
+    unset($finfo);
     if (!in_array($mime, ALLOWED_MIME_TYPES)) {
         jsonResponse(['error' => 'Tipe file tidak valid'], 400);
     }
 
     // Check if doc type already uploaded for this candidate
-    $stmt = $db->prepare('SELECT id FROM documents WHERE candidate_id = ? AND doc_type = ?');
+    $stmt = $db->prepare('SELECT id FROM drv_documents WHERE candidate_id = ? AND doc_type = ?');
     $stmt->execute([$candidateId, $docType]);
     $existingDoc = $stmt->fetch();
 
@@ -70,30 +70,15 @@ if ($method === 'POST') {
     $filename = 'doc_' . $candidateId . '_' . str_replace(' ', '_', $docType) . '_' . time() . '.' . $ext;
     $filepath = UPLOAD_DIR . $filename;
 
-    // Apply watermark for images
-    if (in_array($ext, ['jpg', 'jpeg', 'png'])) {
-        $watermarked = applyImageWatermark($file['tmp_name'], $ext);
-        if ($watermarked) {
-            if ($ext === 'png') {
-                imagepng($watermarked, $filepath);
-            } else {
-                imagejpeg($watermarked, $filepath, 90);
-            }
-            imagedestroy($watermarked);
-        } else {
-            move_uploaded_file($file['tmp_name'], $filepath);
-        }
-    } else {
-        // PDF — just move, watermark text added via metadata is complex
-        move_uploaded_file($file['tmp_name'], $filepath);
-    }
+    // Save file directly (no watermark)
+    move_uploaded_file($file['tmp_name'], $filepath);
 
     // Save or update DB
     if ($existingDoc) {
-        $stmt = $db->prepare('UPDATE documents SET file_path = ?, original_name = ?, file_size = ?, uploaded_at = NOW() WHERE id = ?');
+        $stmt = $db->prepare('UPDATE drv_documents SET file_path = ?, original_name = ?, file_size = ?, uploaded_at = NOW() WHERE id = ?');
         $stmt->execute([$filename, $file['name'], $file['size'], $existingDoc['id']]);
     } else {
-        $stmt = $db->prepare('INSERT INTO documents (candidate_id, doc_type, file_path, original_name, file_size) VALUES (?, ?, ?, ?, ?)');
+        $stmt = $db->prepare('INSERT INTO drv_documents (candidate_id, doc_type, file_path, original_name, file_size) VALUES (?, ?, ?, ?, ?)');
         $stmt->execute([$candidateId, $docType, $filename, $file['name'], $file['size']]);
     }
 
@@ -108,7 +93,7 @@ if ($method === 'POST') {
     requireAuth();
 
     $db = getDB();
-    $stmt = $db->prepare('SELECT file_path, original_name FROM documents WHERE id = ?');
+    $stmt = $db->prepare('SELECT file_path, original_name FROM drv_documents WHERE id = ?');
     $stmt->execute([$_GET['id']]);
     $doc = $stmt->fetch();
 

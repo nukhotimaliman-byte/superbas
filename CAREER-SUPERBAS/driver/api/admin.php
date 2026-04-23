@@ -3,7 +3,7 @@
  * BAS Driver — Admin API v3.3 (Schema-Verified)
  * 
  * Known DB schema (from debug 2026-04-09):
- *   candidates: id, given_id, candidate_id, user_id, name, nik, whatsapp, email, address,
+ *   drv_candidates: id, given_id, candidate_id, user_id, name, nik, whatsapp, email, address,
  *               provinsi, kabupaten, kecamatan, kelurahan,
  *               referensi, tempat_lahir, tanggal_lahir, pendidikan_terakhir, pernah_kerja_spx,
  *               surat_sehat, paklaring, armada_type, sim_type, location_id, status,
@@ -12,7 +12,7 @@
  *               interview_location, photo_data, signature_data
  *   users:      id, username, password, plain_password, name, email, phone, google_id,
  *               picture, is_blacklisted, created_at, last_login
- *   locations:  id, name, address, maps_link
+ *   drv_locations:  id, name, address, maps_link
  */
 require_once __DIR__ . '/../config.php';
 
@@ -22,10 +22,10 @@ if ($method === 'GET') {
     $admin = requireAuth();
     $db    = getDB();
 
-    // ── Return Locations ──────────────────────────────────────────────
+    // ── Return drv_locations ──────────────────────────────────────────────
     if (isset($_GET['locations'])) {
         try {
-            $stmt = $db->query('SELECT id, name, address, maps_link FROM locations ORDER BY id');
+            $stmt = $db->query('SELECT id, name, address, maps_link FROM drv_locations ORDER BY id');
             jsonResponse(['locations' => $stmt->fetchAll()]);
         } catch (PDOException $e) {
             jsonResponse(['locations' => [], 'error' => $e->getMessage()]);
@@ -36,7 +36,7 @@ if ($method === 'GET') {
     if (isset($_GET['audit'])) {
         $cid = intval($_GET['audit']);
         try {
-            $stmt = $db->prepare('SELECT admin_name, action, old_value, new_value, notes, created_at FROM audit_logs WHERE candidate_id = ? ORDER BY created_at DESC');
+            $stmt = $db->prepare('SELECT admin_name, action, old_value, new_value, notes, created_at FROM drv_audit_logs WHERE candidate_id = ? ORDER BY created_at DESC');
             $stmt->execute([$cid]);
             jsonResponse(['audit' => $stmt->fetchAll()]);
         } catch (PDOException $e) {
@@ -68,18 +68,18 @@ if ($method === 'GET') {
                        COALESCE(l.name,'')      AS location_name,
                        COALESCE(l.name,'')      AS display_location,
                        COALESCE(l.maps_link,'') AS maps_link
-                FROM candidates c
-                LEFT JOIN locations l ON c.location_id = l.id
-                LEFT JOIN users     u ON c.user_id = u.id
+                FROM drv_candidates c
+                LEFT JOIN drv_locations l ON c.location_id = l.id
+                LEFT JOIN drv_users     u ON c.user_id = u.id
                 WHERE c.id = ?
             ");
             $stmt->execute([intval($_GET['id'])]);
             $candidate = $stmt->fetch();
             if (!$candidate) jsonResponse(['error' => 'Kandidat tidak ditemukan'], 404);
 
-            // Documents
+            // drv_documents
             try {
-                $ds = $db->prepare('SELECT id, doc_type, file_path, original_name, file_size, uploaded_at FROM documents WHERE candidate_id = ?');
+                $ds = $db->prepare('SELECT id, doc_type, file_path, original_name, file_size, uploaded_at FROM drv_documents WHERE candidate_id = ?');
                 $ds->execute([$candidate['id']]);
                 $docs = $ds->fetchAll();
             } catch (PDOException $e) { $docs = []; }
@@ -90,8 +90,8 @@ if ($method === 'GET') {
         }
     }
 
-    // ── List Candidates (MAIN) ────────────────────────────────────────
-    $where  = [];
+    // ── List drv_candidates (MAIN) ────────────────────────────────────────
+    $where  = ['(c.is_deleted = 0 OR c.is_deleted IS NULL)'];
     $params = [];
 
     if (!empty($_GET['location_id'])) {
@@ -109,7 +109,7 @@ if ($method === 'GET') {
         $params[] = $s;
     }
 
-    $whereSQL = !empty($where) ? 'WHERE ' . implode(' AND ', $where) : '';
+    $whereSQL = 'WHERE ' . implode(' AND ', $where);
 
     try {
         // Explicitly list columns — EXCLUDE photo_data and signature_data (BLOB)
@@ -134,9 +134,9 @@ if ($method === 'GET') {
                    COALESCE(l.name,'')      AS location_name,
                    COALESCE(l.name,'')      AS display_location,
                    COALESCE(l.maps_link,'') AS maps_link
-            FROM candidates c
-            LEFT JOIN locations l ON c.location_id = l.id
-            LEFT JOIN users     u ON c.user_id = u.id
+            FROM drv_candidates c
+            LEFT JOIN drv_locations l ON c.location_id = l.id
+            LEFT JOIN drv_users     u ON c.user_id = u.id
             {$whereSQL}
             ORDER BY c.created_at DESC
         ");
@@ -170,7 +170,7 @@ if ($method === 'GET') {
 
     $db = getDB();
 
-    // All editable fields on candidates table
+    // All editable fields on drv_candidates table
     $allowed = [
         'given_id','name','nik','whatsapp','email','address',
         'provinsi','kabupaten','kecamatan','kelurahan',
@@ -182,8 +182,7 @@ if ($method === 'GET') {
         'jadwal_interview','korlap_notes',
         'emergency_name','emergency_phone','emergency_relation',
         'bank_name','bank_account_no','bank_account_name',
-        'interview_location','is_deleted',
-        'user_username'
+        'interview_location','is_deleted'
     ];
 
     // Korlap can only update these
@@ -221,11 +220,11 @@ if ($method === 'GET') {
 
     try {
         // Get old values for audit
-        $old = $db->prepare('SELECT * FROM candidates WHERE id = ?');
+        $old = $db->prepare('SELECT * FROM drv_candidates WHERE id = ?');
         $old->execute([$candidateId]);
         $oldRow = $old->fetch();
 
-        $stmt = $db->prepare('UPDATE candidates SET ' . implode(', ', $sets) . ' WHERE id = ?');
+        $stmt = $db->prepare('UPDATE drv_candidates SET ' . implode(', ', $sets) . ' WHERE id = ?');
         $stmt->execute($vals);
 
         // Audit log
@@ -236,9 +235,9 @@ if ($method === 'GET') {
                     $changed[$f] = ['from' => ($oldRow[$f] ?? ''), 'to' => $updates[$f]];
                 }
             }
-            $log = $db->prepare('INSERT INTO audit_logs (candidate_id, admin_name, action, old_value, new_value) VALUES (?,?,?,?,?)');
+            $log = $db->prepare('INSERT INTO drv_audit_logs (candidate_id, admin_name, action, old_value, new_value) VALUES (?,?,?,?,?)');
             $log->execute([$candidateId, $admin['name'], 'update', json_encode($oldRow ? array_intersect_key($oldRow, $updates) : []), json_encode($changed)]);
-        } catch (PDOException $e) {} // audit_logs might not exist
+        } catch (PDOException $e) {} // drv_audit_logs might not exist
 
         jsonResponse(['success' => true, 'updated' => count($sets)]);
     } catch (PDOException $e) {
@@ -260,8 +259,8 @@ if ($method === 'GET') {
         if (!$nik) jsonResponse(['error' => 'NIK required'], 400);
 
         try {
-            $stmt = $db->prepare('INSERT INTO blacklists (nik, name, reason, created_by) VALUES (?,?,?,?) ON DUPLICATE KEY UPDATE reason=VALUES(reason), updated_at=NOW()');
-            $stmt->execute([$nik, $name, $reason, $admin['name']]);
+            $stmt = $db->prepare('INSERT INTO drv_blacklists (nik, name, reason, created_by) VALUES (?,?,?,?) ON DUPLICATE KEY UPDATE reason=VALUES(reason), updated_at=NOW()');
+            $stmt->execute([$nik, $name, $reason, $admin['id']]);
             jsonResponse(['success' => true]);
         } catch (PDOException $e) {
             jsonResponse(['error' => $e->getMessage()], 500);
@@ -281,7 +280,7 @@ if ($method === 'GET') {
 
         try {
             $hash = password_hash($password, PASSWORD_DEFAULT);
-            $stmt = $db->prepare('INSERT INTO admins (username, password, name, role, location_id) VALUES (?,?,?,?,?)');
+            $stmt = $db->prepare('INSERT INTO drv_admins (username, password, name, role, location_id) VALUES (?,?,?,?,?)');
             $stmt->execute([$username, $hash, $name, $role, $locId ?: null]);
             jsonResponse(['success' => true, 'id' => $db->lastInsertId()]);
         } catch (PDOException $e) {
@@ -296,14 +295,14 @@ if ($method === 'GET') {
         if (!$candidateId) jsonResponse(['error' => 'Candidate ID required'], 400);
 
         try {
-            $c = $db->prepare('SELECT user_id FROM candidates WHERE id = ?');
+            $c = $db->prepare('SELECT user_id FROM drv_candidates WHERE id = ?');
             $c->execute([$candidateId]);
             $row = $c->fetch();
             if (!$row || !$row['user_id']) jsonResponse(['error' => 'No user linked'], 400);
 
             $newPw   = $data['new_password'] ?? 'bas' . rand(1000, 9999);
             $hash    = password_hash($newPw, PASSWORD_DEFAULT);
-            $stmt    = $db->prepare('UPDATE users SET password = ?, plain_password = ? WHERE id = ?');
+            $stmt    = $db->prepare('UPDATE drv_users SET password = ?, plain_password = ? WHERE id = ?');
             $stmt->execute([$hash, $newPw, $row['user_id']]);
 
             jsonResponse(['success' => true, 'new_password' => $newPw]);
@@ -319,7 +318,7 @@ if ($method === 'GET') {
         if (!$kid) jsonResponse(['error' => 'ID required'], 400);
 
         try {
-            $db->prepare('DELETE FROM admins WHERE id = ? AND role != ?')->execute([$kid, 'owner']);
+            $db->prepare('DELETE FROM drv_admins WHERE id = ? AND role != ?')->execute([$kid, 'owner']);
             jsonResponse(['success' => true]);
         } catch (PDOException $e) {
             jsonResponse(['error' => $e->getMessage()], 500);
@@ -329,17 +328,17 @@ if ($method === 'GET') {
     // ── List Korlaps ────
     if ($action === 'list_korlaps') {
         try {
-            $stmt = $db->query("SELECT id, username, name, role, location_id, created_at FROM admins WHERE role != 'owner' ORDER BY id");
+            $stmt = $db->query("SELECT id, username, name, role, location_id, created_at FROM drv_admins WHERE role != 'owner' ORDER BY id");
             jsonResponse(['korlaps' => $stmt->fetchAll()]);
         } catch (PDOException $e) {
             jsonResponse(['korlaps' => []]);
         }
     }
 
-    // ── List Blacklists ────
+    // ── List drv_blacklists ────
     if ($action === 'list_blacklists') {
         try {
-            $stmt = $db->query('SELECT id, nik, name, reason, created_by, created_at FROM blacklists ORDER BY created_at DESC');
+            $stmt = $db->query('SELECT id, nik, name, reason, created_by, created_at FROM drv_blacklists ORDER BY created_at DESC');
             jsonResponse(['blacklists' => $stmt->fetchAll()]);
         } catch (PDOException $e) {
             jsonResponse(['blacklists' => []]);
@@ -351,7 +350,7 @@ if ($method === 'GET') {
         $bid = intval($data['id'] ?? 0);
         if (!$bid) jsonResponse(['error' => 'ID required'], 400);
         try {
-            $db->prepare('DELETE FROM blacklists WHERE id = ?')->execute([$bid]);
+            $db->prepare('DELETE FROM drv_blacklists WHERE id = ?')->execute([$bid]);
             jsonResponse(['success' => true]);
         } catch (PDOException $e) {
             jsonResponse(['error' => $e->getMessage()], 500);
@@ -368,13 +367,13 @@ if ($method === 'GET') {
 
         try {
             if ($action === 'create_location') {
-                $stmt = $db->prepare('INSERT INTO locations (name, address, maps_link) VALUES (?,?,?)');
+                $stmt = $db->prepare('INSERT INTO drv_locations (name, address, maps_link) VALUES (?,?,?)');
                 $stmt->execute([$lname, $laddr, $lmap]);
                 jsonResponse(['success' => true, 'id' => $db->lastInsertId()]);
             } else {
                 $lid = intval($data['id'] ?? 0);
                 if (!$lid) jsonResponse(['error' => 'ID required'], 400);
-                $stmt = $db->prepare('UPDATE locations SET name=?, address=?, maps_link=? WHERE id=?');
+                $stmt = $db->prepare('UPDATE drv_locations SET name=?, address=?, maps_link=? WHERE id=?');
                 $stmt->execute([$lname, $laddr, $lmap, $lid]);
                 jsonResponse(['success' => true]);
             }
@@ -389,7 +388,7 @@ if ($method === 'GET') {
         $lid = intval($data['id'] ?? 0);
         if (!$lid) jsonResponse(['error' => 'ID required'], 400);
         try {
-            $db->prepare('DELETE FROM locations WHERE id = ?')->execute([$lid]);
+            $db->prepare('DELETE FROM drv_locations WHERE id = ?')->execute([$lid]);
             jsonResponse(['success' => true]);
         } catch (PDOException $e) {
             jsonResponse(['error' => $e->getMessage()], 500);
@@ -409,7 +408,7 @@ if ($method === 'GET') {
 
     $db = getDB();
     try {
-        $db->prepare('UPDATE candidates SET is_deleted = 1 WHERE id = ?')->execute([$id]);
+        $db->prepare('UPDATE drv_candidates SET is_deleted = 1 WHERE id = ?')->execute([$id]);
         jsonResponse(['success' => true]);
     } catch (PDOException $e) {
         jsonResponse(['error' => $e->getMessage()], 500);

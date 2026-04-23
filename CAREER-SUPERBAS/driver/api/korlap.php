@@ -24,15 +24,15 @@ switch ($action) {
         $stmt = $db->query("
             SELECT a.id, a.username, a.name, a.role, a.location_id, a.plain_password,
                    l.name AS location_name
-            FROM admins a
-            LEFT JOIN locations l ON a.location_id = l.id
+            FROM drv_admins a
+            LEFT JOIN drv_locations l ON a.location_id = l.id
             WHERE a.role IN ('korlap','korlap_interview','korlap_td')
             ORDER BY a.id DESC
         ");
         $korlaps = $stmt->fetchAll();
 
-        // Also get locations for dropdowns
-        $locations = $db->query('SELECT id, name FROM locations ORDER BY id')->fetchAll();
+        // Also get drv_locations for dropdowns
+        $locations = $db->query('SELECT id, name FROM drv_locations ORDER BY id')->fetchAll();
 
         jsonResponse(['korlaps' => $korlaps, 'locations' => $locations]);
         break;
@@ -66,20 +66,20 @@ switch ($action) {
         }
 
         // Check unique username
-        $stmt = $db->prepare('SELECT id FROM admins WHERE username = ?');
+        $stmt = $db->prepare('SELECT id FROM drv_admins WHERE username = ?');
         $stmt->execute([$username]);
         if ($stmt->fetch()) {
             jsonResponse(['error' => 'Username sudah digunakan'], 400);
         }
 
-        $stmt = $db->prepare('SELECT id FROM users WHERE username = ?');
+        $stmt = $db->prepare('SELECT id FROM drv_users WHERE username = ?');
         $stmt->execute([$username]);
         if ($stmt->fetch()) {
             jsonResponse(['error' => 'Username sudah digunakan'], 400);
         }
 
         $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
-        $stmt = $db->prepare('INSERT INTO admins (username, password, plain_password, name, role, location_id) VALUES (?, ?, ?, ?, ?, ?)');
+        $stmt = $db->prepare('INSERT INTO drv_admins (username, password, plain_password, name, role, location_id) VALUES (?, ?, ?, ?, ?, ?)');
         $stmt->execute([$username, $hashedPassword, $password, $name, $role, $locationId ?: null]);
 
         jsonResponse(['success' => true, 'message' => 'Akun korlap berhasil dibuat', 'id' => $db->lastInsertId()], 201);
@@ -94,7 +94,7 @@ switch ($action) {
         if (!$id) jsonResponse(['error' => 'ID required'], 400);
 
         // Check exists and not owner
-        $stmt = $db->prepare('SELECT role FROM admins WHERE id = ?');
+        $stmt = $db->prepare('SELECT role FROM drv_admins WHERE id = ?');
         $stmt->execute([$id]);
         $existing = $stmt->fetch();
         if (!$existing) jsonResponse(['error' => 'Akun tidak ditemukan'], 404);
@@ -113,7 +113,7 @@ switch ($action) {
         if (isset($data['username']) && trim($data['username'])) {
             $newUsername = trim($data['username']);
             // Check unique
-            $check = $db->prepare('SELECT id FROM admins WHERE username = ? AND id != ?');
+            $check = $db->prepare('SELECT id FROM drv_admins WHERE username = ? AND id != ?');
             $check->execute([$newUsername, $id]);
             if ($check->fetch()) {
                 jsonResponse(['error' => 'Username sudah digunakan'], 400);
@@ -153,7 +153,7 @@ switch ($action) {
         }
 
         $params[] = $id;
-        $db->prepare('UPDATE admins SET ' . implode(', ', $updates) . ' WHERE id = ?')->execute($params);
+        $db->prepare('UPDATE drv_admins SET ' . implode(', ', $updates) . ' WHERE id = ?')->execute($params);
 
         jsonResponse(['success' => true, 'message' => 'Akun korlap berhasil diperbarui']);
         break;
@@ -165,13 +165,13 @@ switch ($action) {
         $id = intval($_GET['id'] ?? 0);
         if (!$id) jsonResponse(['error' => 'ID required'], 400);
 
-        $stmt = $db->prepare('SELECT role FROM admins WHERE id = ?');
+        $stmt = $db->prepare('SELECT role FROM drv_admins WHERE id = ?');
         $stmt->execute([$id]);
         $existing = $stmt->fetch();
         if (!$existing) jsonResponse(['error' => 'Akun tidak ditemukan'], 404);
         if ($existing['role'] === 'owner') jsonResponse(['error' => 'Tidak bisa menghapus akun owner'], 403);
 
-        $db->prepare('DELETE FROM admins WHERE id = ?')->execute([$id]);
+        $db->prepare('DELETE FROM drv_admins WHERE id = ?')->execute([$id]);
         jsonResponse(['success' => true, 'message' => 'Akun korlap berhasil dihapus']);
         break;
 

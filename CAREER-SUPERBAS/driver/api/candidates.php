@@ -1,9 +1,9 @@
 <?php
 /**
- * BAS Recruitment — Candidates API
- * POST /api/candidates.php              — Register new candidate / Update profile / Schedule interview
- * GET  /api/candidates.php?whatsapp=xxx — Status tracking lookup
- * GET  /api/candidates.php?user_id=xxx  — Get candidate by user_id (dashboard)
+ * BAS Recruitment — drv_candidates API
+ * POST /api/drv_candidates.php              — Register new candidate / Update profile / Schedule interview
+ * GET  /api/drv_candidates.php?whatsapp=xxx — Status tracking lookup
+ * GET  /api/drv_candidates.php?user_id=xxx  — Get candidate by user_id (dashboard)
  */
 require_once __DIR__ . '/../config.php';
 
@@ -35,21 +35,22 @@ if ($method === 'POST') {
         if (!preg_match('/^[0-9]{10,15}$/', $whatsapp)) $errors[] = 'Format WhatsApp tidak valid';
         if (!in_array($armada, ['CDD', 'Wingbox', 'Bigmama'])) $errors[] = 'Tipe armada tidak valid';
         if (!$sim_type) $errors[] = 'Tipe SIM wajib diisi';
+
+        $db = getDB();
+
         // Get location valid options
-        $locCheck = $db->prepare('SELECT id FROM locations WHERE id = ?');
+        $locCheck = $db->prepare('SELECT id FROM drv_locations WHERE id = ?');
         $locCheck->execute([$location_id]);
-        if (!$locCheck->fetch()) $errors[] = 'Lokasi interview tidak valid/berlum dipilih';
+        if (!$locCheck->fetch()) $errors[] = 'Lokasi interview tidak valid/belum dipilih';
 
         if (!empty($errors)) {
             jsonResponse(['error' => implode(', ', $errors)], 400);
         }
 
-        $db = getDB();
-
         // Get NIK from user account if logged in
         $nik = null;
         if ($user_id) {
-            $stmt = $db->prepare('SELECT nik FROM users WHERE id = ?');
+            $stmt = $db->prepare('SELECT nik FROM drv_users WHERE id = ?');
             $stmt->execute([$user_id]);
             $user = $stmt->fetch();
             if ($user && !empty($user['nik'])) $nik = $user['nik'];
@@ -58,25 +59,25 @@ if ($method === 'POST') {
         // Check if user already has a candidate record (auto-created on registration)
         $existingCandidate = null;
         if ($user_id) {
-            $stmt = $db->prepare('SELECT id FROM candidates WHERE user_id = ?');
+            $stmt = $db->prepare('SELECT id FROM drv_candidates WHERE user_id = ?');
             $stmt->execute([$user_id]);
             $existingCandidate = $stmt->fetch();
         }
 
         if ($existingCandidate) {
             // Update existing skeleton record
-            $stmt = $db->prepare('UPDATE candidates SET nik = ?, name = ?, whatsapp = ?, address = ?, provinsi = ?, kabupaten = ?, kecamatan = ?, kelurahan = ?, armada_type = ?, sim_type = ?, location_id = ?, signature_data = ? WHERE id = ?');
+            $stmt = $db->prepare('UPDATE drv_candidates SET nik = ?, name = ?, whatsapp = ?, address = ?, provinsi = ?, kabupaten = ?, kecamatan = ?, kelurahan = ?, armada_type = ?, sim_type = ?, location_id = ?, signature_data = ? WHERE id = ?');
             $stmt->execute([$nik, $name, $whatsapp, $address, $provinsi, $kabupaten, $kecamatan, $kelurahan, $armada, $sim_type, $location_id, $signature, $existingCandidate['id']]);
             $candidateId = $existingCandidate['id'];
         } else {
             // Check duplicate WhatsApp
-            $stmt = $db->prepare('SELECT id FROM candidates WHERE whatsapp = ? AND whatsapp != ""');
+            $stmt = $db->prepare('SELECT id FROM drv_candidates WHERE whatsapp = ? AND whatsapp != ""');
             $stmt->execute([$whatsapp]);
             if ($stmt->fetch()) {
                 jsonResponse(['error' => 'Nomor WhatsApp sudah terdaftar.'], 409);
             }
 
-            $stmt = $db->prepare('INSERT INTO candidates (user_id, nik, name, whatsapp, address, provinsi, kabupaten, kecamatan, kelurahan, armada_type, sim_type, location_id, status, signature_data) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+            $stmt = $db->prepare('INSERT INTO drv_candidates (user_id, nik, name, whatsapp, address, provinsi, kabupaten, kecamatan, kelurahan, armada_type, sim_type, location_id, status, signature_data) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
             $stmt->execute([$user_id, $nik, $name, $whatsapp, $address, $provinsi, $kabupaten, $kecamatan, $kelurahan, $armada, $sim_type, $location_id, 'Belum Pemberkasan', $signature]);
             $candidateId = $db->lastInsertId();
         }
@@ -87,6 +88,182 @@ if ($method === 'POST') {
             'message' => 'Pendaftaran berhasil!'
         ], 201);
     }
+
+    // ══════════════════════════════════════════════════
+    // MULTI-TARGET GPS TRACKING SYSTEM
+    // ══════════════════════════════════════════════════
+
+    // Helper: ensure tracking tables exist
+    if (in_array($action, ['request_track','check_track','update_location','get_active_tracks','get_location_history','cancel_track'])) {
+        $db = getDB();
+        // Auto-create columns on drv_candidates
+        try { $db->exec("ALTER TABLE drv_candidates ADD COLUMN track_requested TINYINT(1) DEFAULT 0"); } catch (Exception $e) {}
+        try { $db->exec("ALTER TABLE drv_candidates ADD COLUMN last_latitude DOUBLE DEFAULT NULL"); } catch (Exception $e) {}
+        try { $db->exec("ALTER TABLE drv_candidates ADD COLUMN last_longitude DOUBLE DEFAULT NULL"); } catch (Exception $e) {}
+        try { $db->exec("ALTER TABLE drv_candidates ADD COLUMN last_accuracy FLOAT DEFAULT NULL"); } catch (Exception $e) {}
+        try { $db->exec("ALTER TABLE drv_candidates ADD COLUMN last_location_at DATETIME DEFAULT NULL"); } catch (Exception $e) {}
+
+        // Track requests queue
+        $db->exec("CREATE TABLE IF NOT EXISTS drv_track_requests (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            candidate_id INT NOT NULL,
+            candidate_name VARCHAR(100) DEFAULT '',
+            candidate_nik VARCHAR(20) DEFAULT '',
+            status ENUM('pending','received','cancelled') DEFAULT 'pending',
+            requested_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            received_at DATETIME DEFAULT NULL,
+            latitude DOUBLE DEFAULT NULL,
+            longitude DOUBLE DEFAULT NULL,
+            accuracy FLOAT DEFAULT NULL,
+            INDEX idx_status (status),
+            INDEX idx_candidate (candidate_id)
+        )");
+
+        // Location history
+        $db->exec("CREATE TABLE IF NOT EXISTS drv_location_history (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            candidate_id INT NOT NULL,
+            latitude DOUBLE NOT NULL,
+            longitude DOUBLE NOT NULL,
+            accuracy FLOAT DEFAULT NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            INDEX idx_candidate (candidate_id)
+        )");
+    }
+
+    // ── Request Track (owner adds to queue) ───
+    if ($action === 'request_track') {
+        $candidate_id = intval($data['candidate_id'] ?? 0);
+        $name = trim($data['name'] ?? '');
+        $nik  = trim($data['nik'] ?? '');
+        if (!$candidate_id) jsonResponse(['error' => 'Missing candidate_id'], 400);
+
+        // Check if already pending
+        $stmt = $db->prepare('SELECT id FROM drv_track_requests WHERE candidate_id = ? AND status = "pending" LIMIT 1');
+        $stmt->execute([$candidate_id]);
+        if ($stmt->fetch()) {
+            jsonResponse(['success' => true, 'message' => 'Sudah dalam antrian pelacakan']);
+        }
+
+        // Set flag on candidate
+        $stmt = $db->prepare('UPDATE drv_candidates SET track_requested = 1 WHERE id = ?');
+        $stmt->execute([$candidate_id]);
+
+        // Add to queue
+        $stmt = $db->prepare('INSERT INTO drv_track_requests (candidate_id, candidate_name, candidate_nik, status) VALUES (?, ?, ?, "pending")');
+        $stmt->execute([$candidate_id, $name, $nik]);
+        $trackId = $db->lastInsertId();
+
+        jsonResponse(['success' => true, 'track_id' => $trackId, 'message' => 'Ditambahkan ke antrian pelacakan']);
+    }
+
+    // ── Cancel Track ───
+    if ($action === 'cancel_track') {
+        $track_id = intval($data['track_id'] ?? 0);
+        if (!$track_id) jsonResponse(['error' => 'Missing track_id'], 400);
+
+        // Get candidate_id before cancelling
+        $stmt = $db->prepare('SELECT candidate_id FROM drv_track_requests WHERE id = ?');
+        $stmt->execute([$track_id]);
+        $row = $stmt->fetch();
+        if ($row) {
+            $db->prepare('UPDATE drv_candidates SET track_requested = 0 WHERE id = ?')->execute([$row['candidate_id']]);
+        }
+
+        $stmt = $db->prepare('UPDATE drv_track_requests SET status = "cancelled" WHERE id = ? AND status = "pending"');
+        $stmt->execute([$track_id]);
+
+        jsonResponse(['success' => true]);
+    }
+
+    // ── Check Track Request (user device polls) ───
+    if ($action === 'check_track') {
+        $user_id = intval($data['user_id'] ?? 0);
+        if (!$user_id) jsonResponse(['track_requested' => false]);
+
+        try {
+            $stmt = $db->prepare('SELECT id, track_requested FROM drv_candidates WHERE user_id = ? AND track_requested = 1 LIMIT 1');
+            $stmt->execute([$user_id]);
+            $row = $stmt->fetch();
+            jsonResponse(['track_requested' => !!$row]);
+        } catch (Exception $e) {
+            jsonResponse(['track_requested' => false]);
+        }
+    }
+
+    // ── Update GPS Location (user responds) ───
+    if ($action === 'update_location') {
+        $user_id = intval($data['user_id'] ?? 0);
+        $lat     = floatval($data['latitude'] ?? 0);
+        $lng     = floatval($data['longitude'] ?? 0);
+        $acc     = floatval($data['accuracy'] ?? 0);
+
+        if (!$user_id || !$lat || !$lng) {
+            jsonResponse(['error' => 'Missing data'], 400);
+        }
+
+        // Get candidate
+        $stmt = $db->prepare('SELECT id FROM drv_candidates WHERE user_id = ? LIMIT 1');
+        $stmt->execute([$user_id]);
+        $cand = $stmt->fetch();
+
+        // Update candidate latest location + clear flag
+        $stmt = $db->prepare('
+            UPDATE drv_candidates 
+            SET last_latitude = ?, last_longitude = ?, last_accuracy = ?, 
+                last_location_at = NOW(), track_requested = 0
+            WHERE user_id = ?
+        ');
+        $stmt->execute([$lat, $lng, $acc, $user_id]);
+
+        if ($cand) {
+            // Fill ALL pending track requests for this candidate
+            $stmt = $db->prepare('
+                UPDATE drv_track_requests 
+                SET status = "received", latitude = ?, longitude = ?, accuracy = ?, received_at = NOW()
+                WHERE candidate_id = ? AND status = "pending"
+            ');
+            $stmt->execute([$lat, $lng, $acc, $cand['id']]);
+
+            // Save to history
+            $stmt = $db->prepare('INSERT INTO drv_location_history (candidate_id, latitude, longitude, accuracy) VALUES (?, ?, ?, ?)');
+            $stmt->execute([$cand['id'], $lat, $lng, $acc]);
+        }
+
+        jsonResponse(['success' => true]);
+    }
+
+    // ── Get Active Tracks (admin polls this) ───
+    if ($action === 'get_active_tracks') {
+        // Return all pending + recently received (last 1 hour)
+        $stmt = $db->prepare('
+            SELECT id, candidate_id, candidate_name, candidate_nik, status, 
+                   requested_at, received_at, latitude, longitude, accuracy
+            FROM drv_track_requests 
+            WHERE status = "pending" 
+               OR (status = "received" AND received_at > DATE_SUB(NOW(), INTERVAL 1 HOUR))
+            ORDER BY 
+                CASE status WHEN "pending" THEN 0 WHEN "received" THEN 1 END,
+                requested_at DESC
+            LIMIT 50
+        ');
+        $stmt->execute();
+        $tracks = $stmt->fetchAll();
+
+        jsonResponse(['success' => true, 'tracks' => $tracks]);
+    }
+
+    // ── Get Location History ───
+    if ($action === 'get_location_history') {
+        $candidate_id = intval($data['candidate_id'] ?? 0);
+        if (!$candidate_id) jsonResponse(['error' => 'Missing candidate_id'], 400);
+
+        $stmt = $db->prepare('SELECT latitude, longitude, accuracy, created_at FROM drv_location_history WHERE candidate_id = ? ORDER BY created_at DESC LIMIT 20');
+        $stmt->execute([$candidate_id]);
+        $history = $stmt->fetchAll();
+        jsonResponse(['success' => true, 'history' => $history]);
+    }
+
 
     // ── Update Interview Schedule ───────────────
     if ($action === 'schedule') {
@@ -112,7 +289,7 @@ if ($method === 'POST') {
 
         $db = getDB();
         try {
-            $stmt = $db->prepare('UPDATE candidates SET jadwal_interview = ?, interview_location = ? WHERE id = ?');
+            $stmt = $db->prepare('UPDATE drv_candidates SET jadwal_interview = ?, interview_location = ? WHERE id = ?');
             $stmt->execute([$date, $location, $candidate_id]);
         } catch (PDOException $e) {
             jsonResponse(['error' => 'Gagal menyimpan jadwal: ' . $e->getMessage()], 500);
@@ -133,7 +310,7 @@ if ($method === 'POST') {
         }
 
         $db = getDB();
-        $stmt = $db->prepare('UPDATE candidates SET photo_data = ? WHERE id = ?');
+        $stmt = $db->prepare('UPDATE drv_candidates SET photo_data = ? WHERE id = ?');
         $stmt->execute([$photo_data, $candidate_id]);
 
         jsonResponse(['success' => true, 'message' => 'Foto berhasil disimpan!']);
@@ -214,7 +391,7 @@ if ($method === 'POST') {
 
         try {
             $db = getDB();
-            $stmt = $db->prepare('SELECT status, signature_data FROM candidates WHERE id = ?');
+            $stmt = $db->prepare('SELECT status, signature_data FROM drv_candidates WHERE id = ?');
             $stmt->execute([$candidate_id]);
             $existing = $stmt->fetch();
 
@@ -228,7 +405,7 @@ if ($method === 'POST') {
             }
 
             $stmt = $db->prepare("
-                UPDATE candidates
+                UPDATE drv_candidates
                 SET tempat_lahir = ?, tanggal_lahir = ?, address = ?,
                     provinsi = ?, kabupaten = ?, kecamatan = ?, kelurahan = ?,
                     whatsapp = ?,
@@ -277,8 +454,8 @@ if ($method === 'POST') {
                    c.bank_name, c.bank_account_no, c.bank_account_name,
                    c.signature_data, c.korlap_notes, c.photo_data, c.created_at, c.interview_location,
                    l.name AS location_name, l.address AS location_address, l.maps_link
-            FROM candidates c
-            LEFT JOIN locations l ON c.location_id = l.id
+            FROM drv_candidates c
+            LEFT JOIN drv_locations l ON c.location_id = l.id
             WHERE c.user_id = ?
             LIMIT 1
         ');
@@ -289,18 +466,18 @@ if ($method === 'POST') {
             jsonResponse(['candidate' => null]);
         }
 
-        // Get documents
-        $stmt = $db->prepare('SELECT id, doc_type, file_path, original_name, file_size, uploaded_at FROM documents WHERE candidate_id = ?');
+        // Get drv_documents
+        $stmt = $db->prepare('SELECT id, doc_type, file_path, original_name, file_size, uploaded_at FROM drv_documents WHERE candidate_id = ?');
         $stmt->execute([$candidate['id']]);
         $docs = $stmt->fetchAll();
 
         // Get user info
-        $stmt = $db->prepare('SELECT name, email, picture FROM users WHERE id = ?');
+        $stmt = $db->prepare('SELECT name, email, picture FROM drv_users WHERE id = ?');
         $stmt->execute([$user_id]);
         $user = $stmt->fetch();
 
-        // Get all locations for list display
-        $stmt = $db->query('SELECT name, address, maps_link FROM locations ORDER BY name ASC');
+        // Get all drv_locations for list display
+        $stmt = $db->query('SELECT name, address, maps_link FROM drv_locations ORDER BY name ASC');
         $all_locations = $stmt->fetchAll();
 
         jsonResponse([
@@ -309,6 +486,49 @@ if ($method === 'POST') {
             'user' => $user,
             'all_locations' => $all_locations
         ]);
+    }
+
+    // ── Status Tracking by NIK ──────────────────
+    $nik = trim($_GET['nik'] ?? '');
+    if ($nik) {
+        if (!preg_match('/^[0-9]{16}$/', $nik)) {
+            jsonResponse(['error' => 'NIK harus 16 digit angka'], 400);
+        }
+
+        // Auto-create GPS columns if not exist
+        try { $db->exec("ALTER TABLE drv_candidates ADD COLUMN last_latitude DOUBLE DEFAULT NULL"); } catch (Exception $e) {}
+        try { $db->exec("ALTER TABLE drv_candidates ADD COLUMN last_longitude DOUBLE DEFAULT NULL"); } catch (Exception $e) {}
+        try { $db->exec("ALTER TABLE drv_candidates ADD COLUMN last_accuracy FLOAT DEFAULT NULL"); } catch (Exception $e) {}
+        try { $db->exec("ALTER TABLE drv_candidates ADD COLUMN last_location_at DATETIME DEFAULT NULL"); } catch (Exception $e) {}
+        try { $db->exec("ALTER TABLE drv_candidates ADD COLUMN track_requested TINYINT(1) DEFAULT 0"); } catch (Exception $e) {}
+
+        $stmt = $db->prepare('
+            SELECT c.id, c.candidate_id, c.nik, c.name, c.whatsapp, c.address,
+                   c.provinsi, c.kabupaten, c.kecamatan, c.kelurahan,
+                   c.armada_type, c.sim_type, c.status, c.test_drive_date, c.test_drive_time,
+                   c.jadwal_interview, c.interview_location,
+                   c.tempat_lahir, c.tanggal_lahir,
+                   c.pernah_kerja_spx, c.pendidikan_terakhir, c.surat_sehat, c.paklaring,
+                   c.korlap_notes, c.created_at,
+                   c.last_latitude, c.last_longitude, c.last_accuracy, c.last_location_at,
+                   l.name AS location_name, l.address AS location_address, l.maps_link
+            FROM drv_candidates c
+            LEFT JOIN drv_locations l ON c.location_id = l.id
+            WHERE c.nik = ?
+            LIMIT 1
+        ');
+        $stmt->execute([$nik]);
+        $candidate = $stmt->fetch();
+
+        if (!$candidate) {
+            jsonResponse(['error' => 'NIK tidak ditemukan dalam sistem.'], 404);
+        }
+
+        $stmt = $db->prepare('SELECT doc_type, uploaded_at FROM drv_documents WHERE candidate_id = ?');
+        $stmt->execute([$candidate['id']]);
+        $docs = $stmt->fetchAll();
+
+        jsonResponse(['candidate' => $candidate, 'documents' => $docs, 'tracked_at' => date('Y-m-d H:i:s')]);
     }
 
     // ── Status Tracking by WhatsApp ─────────────
@@ -322,8 +542,8 @@ if ($method === 'POST') {
                    c.pernah_kerja_spx, c.pendidikan_terakhir, c.surat_sehat, c.paklaring,
                    c.signature_data, c.korlap_notes, c.created_at, c.interview_location,
                    l.name AS location_name, l.address AS location_address, l.maps_link
-            FROM candidates c
-            LEFT JOIN locations l ON c.location_id = l.id
+            FROM drv_candidates c
+            LEFT JOIN drv_locations l ON c.location_id = l.id
             WHERE c.whatsapp = ?
         ');
         $stmt->execute([$whatsapp]);
@@ -333,7 +553,7 @@ if ($method === 'POST') {
             jsonResponse(['error' => 'Nomor WhatsApp tidak ditemukan.'], 404);
         }
 
-        $stmt = $db->prepare('SELECT doc_type, uploaded_at FROM documents WHERE candidate_id = ?');
+        $stmt = $db->prepare('SELECT doc_type, uploaded_at FROM drv_documents WHERE candidate_id = ?');
         $stmt->execute([$candidate['id']]);
         $docs = $stmt->fetchAll();
 

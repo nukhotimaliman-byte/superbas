@@ -1,113 +1,106 @@
 <?php
 /**
- * BAS Daily Worker — User Auth API (Terpisah dari Driver)
- * 
- * Menggunakan tabel users_dw sendiri, TIDAK terhubung dengan tabel Driver.
- * 
- * POST ?action=register        — Create DW account
- * POST ?action=login            — Login DW user (username OR NIK + password)
- * POST ?action=forgot-password  — Reset password via NIK + email
- * GET  ?action=check            — Check session
- * POST ?action=logout           — Logout
+ * BAS Recruitment â€” Unified User Auth API
+ * POST ?action=register        â€” Create account (NIK + username + email + password)
+ * POST ?action=login            â€” Login (username OR NIK + password, checks dw_admins then users)
+ * POST ?action=google           â€” Login/Register via Google ID token
+ * POST ?action=google-complete  â€” Complete Google registration (NIK + username + password)
+ * POST ?action=forgot-password  â€” Reset password via NIK + email
+ * GET  ?action=check            â€” Check session
+ * POST ?action=logout           â€” Logout
  */
-require_once __DIR__ . '/config.php';
+require_once __DIR__ . '/../config.php';
 
 $action = $_GET['action'] ?? $_POST['action'] ?? '';
 
-// Auto-create users_dw table if not exists
-function ensureDwUsersTable(PDO $db): void {
-    static $checked = false;
-    if ($checked) return;
-    $db->exec("CREATE TABLE IF NOT EXISTS users_dw (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        nik VARCHAR(16) NOT NULL,
-        username VARCHAR(50) NOT NULL,
-        password VARCHAR(255) NOT NULL,
-        plain_password VARCHAR(100) DEFAULT NULL,
-        name VARCHAR(100) NOT NULL,
-        email VARCHAR(100) DEFAULT NULL,
-        phone VARCHAR(20) DEFAULT NULL,
-        google_id VARCHAR(100) DEFAULT NULL,
-        picture TEXT DEFAULT NULL,
-        is_blacklisted TINYINT(1) DEFAULT 0,
-        is_deleted TINYINT(1) DEFAULT 0,
-        last_login DATETIME DEFAULT NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        UNIQUE KEY uk_nik (nik),
-        UNIQUE KEY uk_username (username)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
-    $checked = true;
-}
-
 switch ($action) {
 
-    // ═══════════════════════════════════════════
-    // REGISTER (DW-specific)
-    // ═══════════════════════════════════════════
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    // REGISTER
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
     case 'register':
         $data = json_decode(file_get_contents('php://input'), true);
         $nik      = trim($data['nik'] ?? '');
-        $username = strtoupper(trim($data['username'] ?? ''));
-        $name     = trim($data['name'] ?? $data['nama'] ?? '');
+        $username = trim($data['username'] ?? '');
+        $name     = trim($data['name'] ?? '');
         $email    = trim($data['email'] ?? '');
-        $phone    = trim($data['phone'] ?? $data['telepon'] ?? $data['wa'] ?? '');
-        $password = $data['password'] ?? $nik; // Default: NIK as password
-        $station  = trim($data['station'] ?? '');
+        $phone    = trim($data['phone'] ?? '');
+        $password = $data['password'] ?? '';
+        $address   = trim($data['address'] ?? '');
+        $provinsi  = trim($data['provinsi'] ?? '');
+        $kabupaten = trim($data['kabupaten'] ?? '');
+        $kecamatan = trim($data['kecamatan'] ?? '');
+        $kelurahan = trim($data['kelurahan'] ?? '');
 
-        if (!$nik || !$username || !$name || !$email || !$phone) {
+        if (!$nik || !$username || !$name || !$email || !$phone || !$password) {
             jsonResponse(['error' => 'Semua field wajib diisi'], 400);
         }
+
+        if (!$provinsi || !$kabupaten || !$kecamatan || !$kelurahan) {
+            jsonResponse(['error' => 'Alamat lengkap wajib diisi (Provinsi, Kabupaten, Kecamatan, Kelurahan)'], 400);
+        }
+
         if (!preg_match('/^[0-9]{16}$/', $nik)) {
             jsonResponse(['error' => 'NIK harus 16 digit angka'], 400);
         }
+
         if (strlen($username) < 3 || strlen($username) > 50) {
             jsonResponse(['error' => 'Username harus 3-50 karakter'], 400);
         }
-        if (!preg_match('/^[A-Z0-9_\-]+$/', $username)) {
-            jsonResponse(['error' => 'Username hanya boleh huruf, angka, underscore, dan strip'], 400);
+
+        if (!preg_match('/^[a-zA-Z0-9_]+$/', $username)) {
+            jsonResponse(['error' => 'Username hanya boleh huruf, angka, dan underscore'], 400);
         }
+
         if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
             jsonResponse(['error' => 'Format email tidak valid'], 400);
         }
+
+        if (strlen($password) < 6) {
+            jsonResponse(['error' => 'Password minimal 6 karakter'], 400);
+        }
+
         if (!preg_match('/^[0-9]{10,15}$/', $phone)) {
             jsonResponse(['error' => 'No. telepon harus 10-15 digit angka'], 400);
         }
 
         $db = getDB();
-        ensureDwUsersTable($db);
 
-        // Blacklist check
-        $stmt = $db->prepare('SELECT reason FROM blacklists WHERE nik = ?');
+        $stmt = $db->prepare('SELECT reason FROM dw_blacklists WHERE nik = ?');
         $stmt->execute([$nik]);
         if ($reason = $stmt->fetchColumn()) {
-            jsonResponse(['error' => 'NIK telah diblacklist.' . ($reason ? ' Alasan: ' . $reason : '')], 403);
+            jsonResponse(['error' => 'Pendaftaran Ditolak. NIK ini telah diblacklist. ' . ($reason ? 'Alasan: ' . $reason : '')], 403);
         }
 
-        // Check duplicate NIK in DW users
-        $stmt = $db->prepare('SELECT id FROM users_dw WHERE nik = ?');
+        $stmt = $db->prepare('SELECT id FROM dw_users WHERE nik = ?');
         $stmt->execute([$nik]);
-        if ($stmt->fetch()) { jsonResponse(['error' => 'NIK sudah terdaftar. Silakan login.'], 400); }
+        if ($stmt->fetch()) { jsonResponse(['error' => 'NIK sudah terdaftar'], 400); }
 
-        // Check duplicate username in DW users
-        $stmt = $db->prepare('SELECT id FROM users_dw WHERE username = ?');
+        $stmt = $db->prepare('SELECT id FROM dw_users WHERE username = ?');
         $stmt->execute([$username]);
         if ($stmt->fetch()) { jsonResponse(['error' => 'Username sudah digunakan'], 400); }
 
-        // Check duplicate email in DW users
-        if ($email) {
-            $stmt = $db->prepare('SELECT id FROM users_dw WHERE email = ?');
-            $stmt->execute([$email]);
-            if ($stmt->fetch()) { jsonResponse(['error' => 'Email sudah terdaftar'], 400); }
-        }
+        $stmt = $db->prepare('SELECT id FROM dw_admins WHERE username = ?');
+        $stmt->execute([$username]);
+        if ($stmt->fetch()) { jsonResponse(['error' => 'Username sudah digunakan'], 400); }
+
+        $stmt = $db->prepare('SELECT id FROM dw_users WHERE email = ?');
+        $stmt->execute([$email]);
+        if ($stmt->fetch()) { jsonResponse(['error' => 'Email sudah terdaftar'], 400); }
 
         $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
-        $stmt = $db->prepare('INSERT INTO users_dw (nik, username, password, plain_password, name, email, phone) VALUES (?, ?, ?, ?, ?, ?, ?)');
-        $stmt->execute([$nik, $username, $hashedPassword, $password, $name, $email, $phone]);
+        $stmt = $db->prepare('INSERT INTO dw_users (nik, username, password, plain_password, name, email, phone, address, provinsi, kabupaten, kecamatan, kelurahan) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+        $stmt->execute([$nik, $username, $hashedPassword, $password, $name, $email, $phone, $address, $provinsi, $kabupaten, $kecamatan, $kelurahan]);
         $userId = $db->lastInsertId();
 
-        // Auto-create candidate record
-        $stmt = $db->prepare('INSERT INTO candidates_dw (user_id, nik, nama, nomor_telepon, station, status) VALUES (?, ?, ?, ?, ?, ?)');
-        $stmt->execute([$userId, $nik, $name, $phone, $station, 'Belum Pemberkasan']);
+        // Auto-create candidate record with address (populate both legacy + new columns)
+        try {
+            $stmt = $db->prepare('INSERT INTO dw_candidates (user_id, nik, nama, nomor_telepon, alamat, name, whatsapp, address, provinsi, kabupaten, kecamatan, kelurahan, location_id, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+            $stmt->execute([$userId, $nik, $name, $phone, $address, $name, $phone, $address, $provinsi, $kabupaten, $kecamatan, $kelurahan, null, 'Belum Pemberkasan']);
+        } catch (PDOException $e) {
+            // Log but don't fail registration — user was already created
+            error_log('DW candidate auto-create failed: ' . $e->getMessage());
+        }
 
         $_SESSION['user_id']   = $userId;
         $_SESSION['user_name'] = $name;
@@ -115,94 +108,94 @@ switch ($action) {
 
         jsonResponse([
             'success' => true,
-            'user' => [
-                'id'      => (int) $userId,
-                'name'    => $name,
-                'nik'     => $nik,
-                'opsId'   => $username,
-                'station' => $station,
-                'role'    => 'user'
-            ]
+            'user' => ['id' => $userId, 'name' => $name, 'role' => 'user']
         ], 201);
         break;
 
-    // ═══════════════════════════════════════════
-    // LOGIN (DW-specific: username OR NIK + password)
-    // ═══════════════════════════════════════════
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    // LOGIN (username OR NIK + password)
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
     case 'login':
         $data = json_decode(file_get_contents('php://input'), true);
-        $identifier = strtoupper(trim($data['username'] ?? $data['opsId'] ?? ''));
-        $password   = $data['password'] ?? $data['nik'] ?? '';
+        $identifier = trim($data['username'] ?? '');
+        $password   = $data['password'] ?? '';
 
         if (!$identifier || !$password) {
             jsonResponse(['error' => 'Username/NIK dan password wajib diisi'], 400);
         }
 
         $db = getDB();
-        ensureDwUsersTable($db);
 
-        // Check DW users table only (NOT driver admins/users)
-        $stmt = $db->prepare('
-            SELECT u.id, u.nik, u.username, u.password, u.name, u.email, u.phone,
-                   u.picture, u.is_blacklisted, u.is_deleted,
-                   c.given_id AS ops_id, c.station, c.jabatan, c.status AS cand_status
-            FROM users_dw u
-            LEFT JOIN candidates_dw c ON c.user_id = u.id
-            WHERE (u.username = ? OR u.nik = ?)
-            LIMIT 1
-        ');
+        // 1. Check dw_admins table (username only)
+        $stmt = $db->prepare('SELECT id, username, password, name, role, location_id FROM dw_admins WHERE username = ?');
+        $stmt->execute([$identifier]);
+        $admin = $stmt->fetch();
+
+        if ($admin && password_verify($password, $admin['password'])) {
+                unset($_SESSION['user_id'], $_SESSION['user_name'], $_SESSION['user_role']);
+
+            $_SESSION['admin_id']          = $admin['id'];
+            $_SESSION['admin_name']        = $admin['name'];
+            $_SESSION['admin_role']        = $admin['role'];
+            $_SESSION['admin_location_id'] = $admin['location_id'];
+    
+            jsonResponse([
+                'success' => true,
+                'user' => [
+                    'id'          => $admin['id'],
+                    'name'        => $admin['name'],
+                    'role'        => $admin['role'],
+                    'location_id' => $admin['location_id']
+                ]
+            ]);
+            break;
+        }
+
+        // 2. Check users table (username OR NIK)
+        $stmt = $db->prepare('SELECT id, nik, username, password, name, picture, is_deleted FROM dw_users WHERE username = ? OR nik = ?');
         $stmt->execute([$identifier, $identifier]);
         $user = $stmt->fetch();
 
-        if (!$user) {
-            jsonResponse(['error' => 'Akun tidak ditemukan'], 401);
+        if ($user && $user['is_deleted']) {
+            jsonResponse(['error' => 'Akun tidak ditemukan atau telah dihapus'], 403);
         }
 
-        if ($user['is_deleted']) {
-            jsonResponse(['error' => 'Akun telah dihapus'], 403);
-        }
-
-        if ($user['is_blacklisted']) {
-            // Also check blacklist table
-            $stmt = $db->prepare('SELECT id FROM blacklists WHERE nik = ?');
+        if ($user) {
+            // Check blacklist just in case it was blacklisted after creation
+            $stmt = $db->prepare('SELECT id FROM dw_blacklists WHERE nik = ?');
             $stmt->execute([$user['nik']]);
             if ($stmt->fetch()) {
                 jsonResponse(['error' => 'Akses Ditolak. NIK ini telah diblacklist.'], 403);
             }
         }
 
-        if (!password_verify($password, $user['password']) && $user['nik'] !== $password) {
-            jsonResponse(['error' => 'Password atau NIK salah'], 401);
+        if ($user && password_verify($password, $user['password'])) {
+            $db->prepare('UPDATE dw_users SET last_login = NOW() WHERE id = ?')->execute([$user['id']]);
+
+                unset($_SESSION['admin_id'], $_SESSION['admin_name'], $_SESSION['admin_role'], $_SESSION['admin_location_id']);
+
+            $_SESSION['user_id']   = $user['id'];
+            $_SESSION['user_name'] = $user['name'];
+            $_SESSION['user_role'] = 'user';
+    
+            jsonResponse([
+                'success' => true,
+                'user' => [
+                    'id'      => $user['id'],
+                    'name'    => $user['name'],
+                    'role'    => 'user',
+                    'picture' => $user['picture']
+                ]
+            ]);
+            break;
         }
 
-        $db->prepare('UPDATE users_dw SET last_login = NOW() WHERE id = ?')->execute([$user['id']]);
-
-        $_SESSION['user_id']   = $user['id'];
-        $_SESSION['user_name'] = $user['name'];
-        $_SESSION['user_role'] = 'user';
-
-        jsonResponse([
-            'success' => true,
-            'user' => [
-                'id'       => (int) $user['id'],
-                'name'     => $user['name'],
-                'nik'      => $user['nik'],
-                'opsId'    => $user['ops_id'] ?: $user['username'],
-                'email'    => $user['email'],
-                'phone'    => $user['phone'],
-                'station'  => $user['station'] ?? '',
-                'position' => $user['jabatan'] ?? 'Daily Worker',
-                'status'   => $user['cand_status'] ?? 'Aktif',
-                'role'     => 'user',
-                'picture'  => $user['picture'],
-                'source'   => 'sql'
-            ]
-        ]);
+        jsonResponse(['error' => 'Username/NIK atau password salah'], 401);
         break;
 
-    // ═══════════════════════════════════════════
-    // FORGOT PASSWORD (DW-specific)
-    // ═══════════════════════════════════════════
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    // FORGOT PASSWORD (verify NIK + email â†’ set new password)
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
     case 'forgot-password':
         $data = json_decode(file_get_contents('php://input'), true);
         $nik         = trim($data['nik'] ?? '');
@@ -212,17 +205,19 @@ switch ($action) {
         if (!$nik || !$email || !$newPassword) {
             jsonResponse(['error' => 'NIK, email, dan password baru wajib diisi'], 400);
         }
+
         if (!preg_match('/^[0-9]{16}$/', $nik)) {
             jsonResponse(['error' => 'NIK harus 16 digit angka'], 400);
         }
+
         if (strlen($newPassword) < 6) {
             jsonResponse(['error' => 'Password baru minimal 6 karakter'], 400);
         }
 
         $db = getDB();
-        ensureDwUsersTable($db);
 
-        $stmt = $db->prepare('SELECT id, username FROM users_dw WHERE nik = ? AND email = ?');
+        // Find user by NIK AND email (both must match)
+        $stmt = $db->prepare('SELECT id, username FROM dw_users WHERE nik = ? AND email = ?');
         $stmt->execute([$nik, $email]);
         $user = $stmt->fetch();
 
@@ -230,9 +225,9 @@ switch ($action) {
             jsonResponse(['error' => 'NIK dan email tidak cocok atau tidak terdaftar'], 404);
         }
 
+        // Update password
         $hashedPassword = password_hash($newPassword, PASSWORD_DEFAULT);
-        $db->prepare('UPDATE users_dw SET password = ?, plain_password = ? WHERE id = ?')
-           ->execute([$hashedPassword, $newPassword, $user['id']]);
+        $db->prepare('UPDATE dw_users SET password = ?, plain_password = ? WHERE id = ?')->execute([$hashedPassword, $newPassword, $user['id']]);
 
         jsonResponse([
             'success'  => true,
@@ -241,11 +236,188 @@ switch ($action) {
         ]);
         break;
 
-    // ═══════════════════════════════════════════
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    // GOOGLE SIGN-IN
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    case 'google':
+        $data = json_decode(file_get_contents('php://input'), true);
+        $credential = $data['credential'] ?? '';
+
+        if (!$credential) {
+            jsonResponse(['error' => 'Token Google tidak valid'], 400);
+        }
+
+        $verifyUrl = 'https://oauth2.googleapis.com/tokeninfo?id_token=' . urlencode($credential);
+        $ch = curl_init($verifyUrl);
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT => 10,
+            CURLOPT_SSL_VERIFYPEER => true,
+        ]);
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        unset($ch);
+
+        if ($httpCode !== 200 || !$response) {
+            jsonResponse(['error' => 'Verifikasi Google gagal'], 401);
+        }
+
+        $googleUser = json_decode($response, true);
+        $googleId = $googleUser['sub'] ?? '';
+        $email    = $googleUser['email'] ?? '';
+        $name     = $googleUser['name'] ?? '';
+        $picture  = $googleUser['picture'] ?? '';
+
+        if (!$googleId || !$email) {
+            jsonResponse(['error' => 'Data Google tidak lengkap'], 400);
+        }
+
+        $db = getDB();
+
+        // Existing google_id user â†’ login
+        $stmt = $db->prepare('SELECT id, name, picture FROM dw_users WHERE google_id = ?');
+        $stmt->execute([$googleId]);
+        $existing = $stmt->fetch();
+
+        if ($existing) {
+            $db->prepare('UPDATE dw_users SET name = ?, email = ?, picture = ?, last_login = NOW() WHERE id = ?')
+               ->execute([$name, $email, $picture, $existing['id']]);
+
+                unset($_SESSION['admin_id'], $_SESSION['admin_name'], $_SESSION['admin_role'], $_SESSION['admin_location_id']);
+            $_SESSION['user_id']   = $existing['id'];
+            $_SESSION['user_name'] = $name;
+            $_SESSION['user_role'] = 'user';
+    
+            jsonResponse([
+                'success' => true,
+                'user' => ['id' => $existing['id'], 'name' => $name, 'role' => 'user', 'picture' => $picture]
+            ]);
+            break;
+        }
+
+        // Existing email user â†’ link google
+        $stmt = $db->prepare('SELECT id FROM dw_users WHERE email = ?');
+        $stmt->execute([$email]);
+        $emailUser = $stmt->fetch();
+
+        if ($emailUser) {
+            $db->prepare('UPDATE dw_users SET google_id = ?, picture = ?, last_login = NOW() WHERE id = ?')
+               ->execute([$googleId, $picture, $emailUser['id']]);
+
+                unset($_SESSION['admin_id'], $_SESSION['admin_name'], $_SESSION['admin_role'], $_SESSION['admin_location_id']);
+            $_SESSION['user_id']   = $emailUser['id'];
+            $_SESSION['user_name'] = $name;
+            $_SESSION['user_role'] = 'user';
+    
+            jsonResponse([
+                'success' => true,
+                'user' => ['id' => $emailUser['id'], 'name' => $name, 'role' => 'user', 'picture' => $picture]
+            ]);
+            break;
+        }
+
+        // New user â†’ needs NIK
+        jsonResponse([
+            'success'    => false,
+            'needsNik'   => true,
+            'googleData' => [
+                'google_id' => $googleId,
+                'email'     => $email,
+                'name'      => $name,
+                'picture'   => $picture
+            ]
+        ]);
+        break;
+
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    // GOOGLE COMPLETE REGISTRATION
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    case 'google-complete':
+        $data = json_decode(file_get_contents('php://input'), true);
+        $nik       = trim($data['nik'] ?? '');
+        $username  = trim($data['username'] ?? '');
+        $password  = $data['password'] ?? '';
+        $phone     = trim($data['phone'] ?? '');
+        $googleId  = $data['google_id'] ?? '';
+        $email     = $data['email'] ?? '';
+        $name      = $data['name'] ?? '';
+        $picture   = $data['picture'] ?? '';
+
+        if (!$nik || !$username || !$password || !$phone || !$googleId || !$email) {
+            jsonResponse(['error' => 'Semua field wajib diisi'], 400);
+        }
+
+        if (!preg_match('/^[0-9]{16}$/', $nik)) {
+            jsonResponse(['error' => 'NIK harus 16 digit angka'], 400);
+        }
+
+        if (!preg_match('/^[a-zA-Z0-9_]{3,50}$/', $username)) {
+            jsonResponse(['error' => 'Username harus 3-50 karakter (huruf, angka, _)'], 400);
+        }
+
+        if (strlen($password) < 6) {
+            jsonResponse(['error' => 'Password minimal 6 karakter'], 400);
+        }
+
+        if (!preg_match('/^[0-9]{10,15}$/', $phone)) {
+            jsonResponse(['error' => 'No. telepon harus 10-15 digit angka'], 400);
+        }
+
+        $db = getDB();
+
+        $stmt = $db->prepare('SELECT reason FROM dw_blacklists WHERE nik = ?');
+        $stmt->execute([$nik]);
+        if ($reason = $stmt->fetchColumn()) {
+            jsonResponse(['error' => 'Pendaftaran Ditolak. NIK ini telah diblacklist. ' . ($reason ? 'Alasan: ' . $reason : '')], 403);
+        }
+
+        $stmt = $db->prepare('SELECT id FROM dw_users WHERE nik = ?');
+        $stmt->execute([$nik]);
+        if ($stmt->fetch()) { jsonResponse(['error' => 'NIK sudah terdaftar'], 400); }
+
+        $stmt = $db->prepare('SELECT id FROM dw_users WHERE username = ?');
+        $stmt->execute([$username]);
+        if ($stmt->fetch()) { jsonResponse(['error' => 'Username sudah digunakan'], 400); }
+
+        $stmt = $db->prepare('SELECT id FROM dw_admins WHERE username = ?');
+        $stmt->execute([$username]);
+        if ($stmt->fetch()) { jsonResponse(['error' => 'Username sudah digunakan'], 400); }
+
+        $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
+        $stmt = $db->prepare('INSERT INTO dw_users (nik, username, password, plain_password, name, email, phone, google_id, picture) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
+        $stmt->execute([$nik, $username, $hashedPassword, $password, $name, $email, $phone, $googleId, $picture]);
+        $userId = $db->lastInsertId();
+
+        // Auto-create candidate record so user appears in admin dashboard
+        $stmt = $db->prepare('INSERT INTO dw_candidates (user_id, nik, nama, nomor_telepon, location_id, status) VALUES (?, ?, ?, ?, ?, ?)');
+        $stmt->execute([$userId, $nik, $name, $phone, null, 'Belum Pemberkasan']);
+
+        unset($_SESSION['admin_id'], $_SESSION['admin_name'], $_SESSION['admin_role'], $_SESSION['admin_location_id']);
+        $_SESSION['user_id']   = $userId;
+        $_SESSION['user_name'] = $name;
+        $_SESSION['user_role'] = 'user';
+
+        jsonResponse([
+            'success' => true,
+            'user' => ['id' => $userId, 'name' => $name, 'role' => 'user', 'picture' => $picture]
+        ], 201);
+        break;
+
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
     // CHECK SESSION
-    // ═══════════════════════════════════════════
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
     case 'check':
-        if (!empty($_SESSION['user_id'])) {
+        if (!empty($_SESSION['admin_id'])) {
+            jsonResponse([
+                'authenticated' => true,
+                'user' => [
+                    'id'          => $_SESSION['admin_id'],
+                    'name'        => $_SESSION['admin_name'],
+                    'role'        => $_SESSION['admin_role'],
+                    'location_id' => $_SESSION['admin_location_id'] ?? null
+                ]
+            ]);
+        } elseif (!empty($_SESSION['user_id'])) {
             jsonResponse([
                 'authenticated' => true,
                 'user' => [
@@ -259,9 +431,9 @@ switch ($action) {
         }
         break;
 
-    // ═══════════════════════════════════════════
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
     // LOGOUT
-    // ═══════════════════════════════════════════
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
     case 'logout':
         session_destroy();
         jsonResponse(['success' => true]);

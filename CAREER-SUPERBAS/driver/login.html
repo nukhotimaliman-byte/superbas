@@ -6,10 +6,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Login ke BAS Recruitment — Masuk atau buat akun untuk mendaftar sebagai driver profesional.">
     <title>Super-BAS — Login</title>
-    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/style.css?v=4.1">
     <script src="https://accounts.google.com/gsi/client" async defer></script>
-    <script src="js/theme.js"></script>
-    <script src="js/push-manager.js"></script>
+    <script src="js/theme.js?v=4.1"></script>
+    <script src="js/push-manager.js?v=4.1"></script>
     <style>
         /* ── Page Layout ─────────────────────── */
         .login-page {
@@ -306,31 +306,31 @@
                         <div style="display:flex;flex-direction:column;gap:12px;">
                             <div>
                                 <label class="form-label" style="font-size:.76rem;color:var(--text-muted);">Provinsi</label>
-                                <select class="form-select" id="regProvinsi" onchange="regLoadKab(this.value)">
+                                <select class="form-select" id="regProvinsi" onchange="regLoadKab(this.value)" required>
                                     <option value="">— Pilih Provinsi —</option>
                                 </select>
                             </div>
                             <div id="wrapKab" class="addr-step" style="display:none;">
                                 <label class="form-label" style="font-size:.76rem;color:var(--text-muted);">Kabupaten / Kota</label>
-                                <select class="form-select" id="regKabupaten" onchange="regLoadKec(this.value)" disabled>
+                                <select class="form-select" id="regKabupaten" onchange="regLoadKec(this.value)" disabled required>
                                     <option value="">— Pilih Kab/Kota —</option>
                                 </select>
                             </div>
                             <div id="wrapKec" class="addr-step" style="display:none;">
                                 <label class="form-label" style="font-size:.76rem;color:var(--text-muted);">Kecamatan</label>
-                                <select class="form-select" id="regKecamatan" onchange="regLoadKel(this.value)" disabled>
+                                <select class="form-select" id="regKecamatan" onchange="regLoadKel(this.value)" disabled required>
                                     <option value="">— Pilih Kecamatan —</option>
                                 </select>
                             </div>
                             <div id="wrapKel" class="addr-step" style="display:none;">
                                 <label class="form-label" style="font-size:.76rem;color:var(--text-muted);">Kelurahan / Desa</label>
-                                <select class="form-select" id="regKelurahan" disabled>
+                                <select class="form-select" id="regKelurahan" disabled required>
                                     <option value="">— Pilih Kelurahan —</option>
                                 </select>
                             </div>
                             <div id="wrapAddrDetail" class="addr-step" style="display:none;">
                                 <label class="form-label" style="font-size:.76rem;color:var(--text-muted);">Detail Alamat (RT/RW, Jalan, No. Rumah)</label>
-                                <input type="text" class="form-input" id="regAddressDetail" placeholder="Contoh: Jl. Merpati No. 5, RT 01/RW 02">
+                                <input type="text" class="form-input" id="regAddressDetail" placeholder="Contoh: Jl. Merpati No. 5, RT 01/RW 02" required>
                             </div>
                         </div>
                     </div>
@@ -436,7 +436,7 @@
     <!-- ═══════════════════════════════════════ -->
     <!-- SCRIPTS                                -->
     <!-- ═══════════════════════════════════════ -->
-    <script src="js/user-auth.js?v=2.7"></script>
+    <script src="js/user-auth.js?v=4.1"></script>
     <script>
         let pendingGoogleData = null;
 
@@ -533,6 +533,15 @@
             if (!/^[0-9]{16}$/.test(nik))   { showError('NIK harus 16 digit angka'); return; }
             if (!/^[0-9]{10,15}$/.test(phone)) { showError('No. telepon harus 10-15 digit angka'); return; }
             if (password !== confirm)        { showError('Password dan konfirmasi tidak cocok'); return; }
+
+            // Validate address fields are filled
+            const prov = document.getElementById('regProvinsi').value;
+            const kab  = document.getElementById('regKabupaten').value;
+            const kec  = document.getElementById('regKecamatan').value;
+            const kel  = document.getElementById('regKelurahan').value;
+            const addrDetail = document.getElementById('regAddressDetail')?.value?.trim() || '';
+            if (!prov || !kab || !kec || !kel) { showError('Alamat lengkap wajib diisi (Provinsi, Kabupaten, Kecamatan, Kelurahan)'); return; }
+            if (!addrDetail) { showError('Detail alamat (RT/RW, Jalan, No. Rumah) wajib diisi'); return; }
 
             // Build address from cascading dropdowns
             const addr = buildRegAddress();

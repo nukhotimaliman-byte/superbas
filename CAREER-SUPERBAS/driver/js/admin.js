@@ -1,5 +1,5 @@
 /**
- * BAS Recruitment â€” Admin Dashboard Logic (Unified)
+ * BAS Recruitment — Admin Dashboard Logic (Unified)
  * Sidebar navigation, Charts, Candidate management, ML integration
  */
 
@@ -8,6 +8,51 @@ let currentAdmin = null;
 let allCandidates = [];
 let analyticsData = null;
 let chartInstances = {};
+
+// ── Silent Re-Authentication ─────────────────────
+// When session expires, try to re-authenticate using cached credentials
+async function silentReAuth() {
+    try {
+        const cached = localStorage.getItem('bas_admin_cache');
+        if (!cached) return false;
+        const user = JSON.parse(cached);
+        // Try to re-verify session (touch cookie)
+        const res = await fetch(`${API_BASE}/user-auth.php?action=check`, {
+            credentials: 'same-origin',
+            cache: 'no-store'
+        });
+        const data = await res.json();
+        if (data.authenticated && data.user) {
+            currentAdmin = data.user;
+            return true;
+        }
+        return false;
+    } catch {
+        return false;
+    }
+}
+
+// ── Auto Refresh Interval ─────────────────────────
+// Periodically reload data to prevent stale/empty tables
+let _autoRefreshTimer = null;
+function startAutoRefresh(intervalMs = 5 * 60 * 1000) {
+    if (_autoRefreshTimer) clearInterval(_autoRefreshTimer);
+    _autoRefreshTimer = setInterval(async () => {
+        if (document.hidden) return; // Don't refresh when tab is hidden
+        console.info('[BAS] Auto-refreshing data...');
+        try { await loadCandidates(); } catch {}
+        try { await loadAnalytics(); } catch {}
+    }, intervalMs);
+}
+
+// Also refresh when tab becomes visible after being hidden
+document.addEventListener('visibilitychange', () => {
+    if (!document.hidden && currentAdmin) {
+        console.info('[BAS] Tab visible — refreshing data...');
+        loadCandidates().catch(() => {});
+        loadAnalytics().catch(() => {});
+    }
+});
 
 // ── Pagination State ─────────────────────────────
 let currentPage   = 1;
@@ -89,11 +134,11 @@ function triggerUndo() {
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'z', ctrlKey: true, bubbles: true }));
 }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ══════════════════════════════════════════════
 // TOAST — provided by js/utils.js
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ══════════════════════════════════════════════
 // INIT
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ══════════════════════════════════════════════
 document.addEventListener('DOMContentLoaded', async () => {
     // 1. Check demo session first (sessionStorage — set by user-auth.js handleLogin)
     try {
@@ -162,9 +207,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 });
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ══════════════════════════════════════════════
 // DASHBOARD INIT
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ══════════════════════════════════════════════
 async function initDashboard() {
     // Set user info
     const topAvatar = document.getElementById('topbarAvatar');
@@ -258,11 +303,14 @@ async function initDashboard() {
 
     // Init cell selection / fill-down / undo keyboard shortcuts
     initCellSelection();
+
+    // Start auto-refresh (every 5 minutes) to keep data fresh
+    startAutoRefresh();
 }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ══════════════════════════════════════════════
 // SIDEBAR NAVIGATION
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ══════════════════════════════════════════════
 function switchPage(pageId) {
     document.querySelectorAll('.dash-page').forEach(p => p.classList.remove('active'));
     document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
@@ -288,6 +336,20 @@ function switchPage(pageId) {
     if (pageId === 'settings') loadSettingsPage();
 }
 
+// ── Settings Page Init: auto-load tracking queue + dropdown settings ──
+// NOTE: there used to be a duplicate of this function further down (in the dropdown settings section).
+// They have been merged here into a single function.
+async function loadSettingsPage() {
+    // Auto-load active tracking queue
+    pollActiveTracks().then(() => {}).catch(() => {});
+    startTrackingPoller();
+    // Load dropdown options and render settings cards
+    await loadDropdownOptions();
+    renderSettingsCards();
+    // Refresh linktree items
+    loadLinktreeItems();
+}
+
 function closeSidebar() {
     document.getElementById('sidebar').classList.remove('open');
     const overlay = document.querySelector('.sidebar-overlay');
@@ -305,9 +367,9 @@ function getOrCreateOverlay() {
     return overlay;
 }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ══════════════════════════════════════════════
 // LOAD ANALYTICS (Owner API)
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ══════════════════════════════════════════════
 async function loadAnalytics() {
     try {
         let data;
@@ -347,9 +409,9 @@ async function loadAnalytics() {
     }
 }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ══════════════════════════════════════════════
 // LOAD CANDIDATES
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ══════════════════════════════════════════════
 async function loadLocationFilter() {
     try {
         let locations;
@@ -469,8 +531,29 @@ async function loadCandidates() {
             candidates = _getDemoCandidates();
         } else {
             const res = await fetch(url, { credentials: 'same-origin' });
-            const data = await res.json();
-            candidates = data.candidates || [];
+            // Handle session expiry — re-authenticate silently
+            if (res.status === 401) {
+                console.warn('[BAS] Session expired during loadCandidates, attempting silent re-auth...');
+                const reauth = await silentReAuth();
+                if (reauth) {
+                    // Retry once after re-auth
+                    const res2 = await fetch(url, { credentials: 'same-origin' });
+                    if (res2.status === 401) {
+                        showToast('Sesi habis. Silakan login ulang.', 'error');
+                        setTimeout(() => { localStorage.removeItem('bas_admin_cache'); window.location.href = 'login.html'; }, 1500);
+                        return;
+                    }
+                    const data2 = await res2.json();
+                    candidates = data2.candidates || [];
+                } else {
+                    showToast('Sesi habis. Silakan login ulang.', 'error');
+                    setTimeout(() => { localStorage.removeItem('bas_admin_cache'); window.location.href = 'login.html'; }, 1500);
+                    return;
+                }
+            } else {
+                const data = await res.json();
+                candidates = data.candidates || [];
+            }
         }
 
         if (locIds.length > 0)   candidates = candidates.filter(c => locIds.includes(String(c.location_id)));
@@ -659,7 +742,7 @@ function renderCandidateTable() {
                 ${ce('nik',               c.nik || '-')}
                 ${ce('whatsapp',          c.whatsapp || '-')}
                 <td>${c.email || '-'}</td>
-                ${ce('sim_type',          c.sim_type || '-')}
+                ${cs('sim_type',          c.sim_type || '-')}
                 ${cs('armada_type',       c.armada_type || '-')}
                 ${cs('status',            '<span class="badge ' + getStatusBadgeClass(c.status) + '">' + c.status + '</span>')}
                 ${ce('tempat_lahir',      c.tempat_lahir || '-')}
@@ -669,7 +752,7 @@ function renderCandidateTable() {
                 ${ce('kecamatan',         c.kecamatan || '-')}
                 ${ce('kelurahan',         c.kelurahan || '-')}
                 ${ce('address',           '<span title="' + escapeHtml(c.address || '') + '">' + addrShort + '</span>')}
-                ${ce('pendidikan_terakhir', c.pendidikan_terakhir || '-')}
+                ${cs('pendidikan_terakhir', c.pendidikan_terakhir || '-')}
                 ${cs('pernah_kerja_spx',  c.pernah_kerja_spx || '-')}
                 ${cs('surat_sehat',       c.surat_sehat || '-')}
                 ${cs('paklaring',         c.paklaring || '-')}
@@ -881,7 +964,10 @@ function startCandEditSelect(td) {
     select.className = 'inline-edit-select';
 
     let options = [];
-    if (field === 'armada_type') {
+    if (field === 'sim_type') {
+        const dbOpts = (_dropdownCache['sim_type'] || []).map(o => [o.value, o.label]);
+        options = dbOpts.length ? [['', '—'], ...dbOpts] : [['', '—'], ['SIM A', 'SIM A'], ['SIM B1', 'SIM B1'], ['SIM B2', 'SIM B2']];
+    } else if (field === 'armada_type') {
         const dbOpts = (_dropdownCache['armada_type'] || []).map(o => [o.value, o.label]);
         options = [['', '—'], ...dbOpts];
     } else if (field === 'status') {
@@ -892,6 +978,9 @@ function startCandEditSelect(td) {
     } else if (field === 'surat_sehat' || field === 'paklaring') {
         const dbOpts = (_dropdownCache[field] || []).map(o => [o.value, o.label]);
         options = dbOpts.length ? [['', '—'], ...dbOpts] : [['', '—'], ['Ada', 'Ada'], ['Tidak Ada', 'Tidak Ada']];
+    } else if (field === 'pendidikan_terakhir') {
+        const dbOpts = (_dropdownCache['pendidikan_terakhir'] || []).map(o => [o.value, o.label]);
+        options = dbOpts.length ? [['', '—'], ...dbOpts] : [['', '—'], ['SD', 'SD'], ['SMP', 'SMP'], ['SMA/SMK', 'SMA/SMK'], ['D3', 'D3']];
     } else if (field === 'location_id') {
         options = [];
         document.querySelectorAll('#mfListLocation input[type="checkbox"]').forEach(cb => {
@@ -1855,7 +1944,9 @@ async function openCandidate(id) {
                 ${docs.map(d => `
                     <div class="card" style="padding:12px;cursor:pointer;" onclick="previewDoc(${d.id}, '${d.file_path}')">
                         <div class="flex gap-1" style="align-items:center;">
-                            <span style="font-size:1.5rem;">${getDocIcon(d.file_path)}</span>
+                            <div style="width:40px;height:40px;border-radius:8px;overflow:hidden;background:rgba(255,255,255,0.05);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                                ${docThumb(d.file_path)}
+                            </div>
                             <div>
                                 <div style="font-weight:600;font-size:0.85rem;">${d.doc_type}</div>
                                 <div style="font-size:0.75rem;color:var(--text-muted);">${formatFileSize(d.file_size)}</div>
@@ -2029,16 +2120,23 @@ function animateCounter(id, target) {
 }
 
 function getStatusBadgeClass(status) {
-    const map = { 'Belum Pemberkasan': 'badge-default', 'Sudah Pemberkasan': 'badge-pemberkasan', 'Menunggu Test Drive': 'badge-menunggu', 'Jadwal Test Drive': 'badge-jadwal', 'Hadir': 'badge-lulus', 'Tidak Hadir': 'badge-gagal', 'Lulus': 'badge-lulus', 'Tidak Lulus': 'badge-gagal' };
+    const map = { 'Belum Pemberkasan': 'badge-default', 'Sudah Pemberkasan': 'badge-pemberkasan', 'Menunggu Test Drive': 'badge-menunggu', 'Jadwal Test Drive': 'badge-jadwal', 'Hadir': 'badge-lulus', 'Tidak Hadir': 'badge-gagal', 'Lulus': 'badge-lulus', 'Tidak Lulus': 'badge-gagal', 'Proses Follow Up': 'badge-menunggu', 'Sudah Follow Up': 'badge-pemberkasan', 'Undang WI': 'badge-jadwal' };
     return map[status] || 'badge-default';
 }
 
 function getStatusColor(status) {
-    const map = { 'Belum Pemberkasan': '#9CA3AF', 'Sudah Pemberkasan': '#F59E0B', 'Menunggu Test Drive': '#8B5CF6', 'Jadwal Test Drive': '#3B82F6', 'Hadir': '#06B6D4', 'Tidak Hadir': '#F97316', 'Lulus': '#10B981', 'Tidak Lulus': '#EF4444' };
+    const map = { 'Belum Pemberkasan': '#9CA3AF', 'Sudah Pemberkasan': '#F59E0B', 'Menunggu Test Drive': '#8B5CF6', 'Jadwal Test Drive': '#3B82F6', 'Hadir': '#06B6D4', 'Tidak Hadir': '#F97316', 'Lulus': '#10B981', 'Tidak Lulus': '#EF4444', 'Proses Follow Up': '#A855F7', 'Sudah Follow Up': '#14B8A6', 'Undang WI': '#0EA5E9' };
     return map[status] || '#9CA3AF';
 }
 
 function getDocIcon(path) { const ext = (path || '').split('.').pop().toLowerCase(); return ['jpg','jpeg','png'].includes(ext) ? 'IMG' : ext === 'pdf' ? 'PDF' : 'FILE'; }
+function docThumb(path) {
+    const ext = (path || '').split('.').pop().toLowerCase();
+    if (['jpg','jpeg','png'].includes(ext)) {
+        return '<img src="/driver/' + path + '" style="width:100%;height:100%;object-fit:cover;" onerror="this.outerHTML=\'<span style=font-size:1rem;font-weight:700;color:gray>IMG</span>\'">';
+    }
+    return '<span style="font-size:1rem;font-weight:700;color:var(--text-muted);">' + getDocIcon(path) + '</span>';
+}
 function formatDate(d) { return d ? new Date(d).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-'; }
 function formatDateTime(d) { return d ? new Date(d).toLocaleString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-'; }
 function formatFileSize(b) { if (!b) return '-'; if (b < 1024) return b + ' B'; if (b < 1048576) return (b / 1024).toFixed(1) + ' KB'; return (b / 1048576).toFixed(1) + ' MB'; }
@@ -2051,27 +2149,27 @@ function formatWaNumber(num) {
 
 function debounce(fn, ms) { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ══════════════════════════════════════════════
 // ROLE-BASED STATUS OPTIONS
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-let ALL_STATUSES = ['Belum Pemberkasan','Sudah Pemberkasan','Menunggu Test Drive','Jadwal Test Drive','Hadir','Tidak Hadir','Lulus','Tidak Lulus'];
+// ══════════════════════════════════════════════
+let ALL_STATUSES = ['Belum Pemberkasan','Sudah Pemberkasan','Menunggu Test Drive','Jadwal Test Drive','Hadir','Tidak Hadir','Proses Follow Up','Sudah Follow Up','Undang WI','Lulus','Tidak Lulus'];
 
 function getStatusOptions(currentStatus) {
     const role = currentAdmin?.role;
     if (role === 'owner') return ALL_STATUSES;
     if (role === 'korlap_interview') {
-        return ['Belum Pemberkasan','Sudah Pemberkasan','Menunggu Test Drive','Jadwal Test Drive'];
+        return ['Belum Pemberkasan','Sudah Pemberkasan','Menunggu Test Drive','Jadwal Test Drive','Proses Follow Up','Sudah Follow Up','Undang WI'];
     }
     if (role === 'korlap_td') {
-        return ['Jadwal Test Drive','Hadir','Tidak Hadir','Lulus','Tidak Lulus'];
+        return ['Jadwal Test Drive','Hadir','Tidak Hadir','Proses Follow Up','Sudah Follow Up','Undang WI','Lulus','Tidak Lulus'];
     }
-    // default korlap (legacy) â€” all
+    // default korlap (legacy) — all
     return ALL_STATUSES;
 }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ══════════════════════════════════════════════
 // KORLAP MANAGEMENT (Owner Only)
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ══════════════════════════════════════════════
 let korlapLocations = [];
 
 function toggleCreateKorlap() {
@@ -3476,6 +3574,7 @@ function openSinglePush(userId, name) {
     document.getElementById('pushTitle').value = 'Catatan dari Korlap';
     document.getElementById('pushMessage').value = '';
     document.getElementById('pushModal').style.display = 'flex';
+    loadModalTemplates('pushTemplatePicker');
     document.getElementById('pushMessage').focus();
 }
 
@@ -3507,6 +3606,7 @@ function openBulkPushModal() {
     document.getElementById('pushTitle').value = 'Catatan dari Korlap';
     document.getElementById('pushMessage').value = '';
     document.getElementById('pushModal').style.display = 'flex';
+    loadModalTemplates('pushTemplatePicker');
     document.getElementById('pushMessage').focus();
 }
 
@@ -3592,6 +3692,10 @@ async function loadDropdownOptions() {
             }
             // Update bulk status select in admin.html
             updateBulkStatusSelect();
+            // Update Status filter checkboxes dynamically
+            updateStatusFilterCheckboxes();
+            // Update Armada filter checkboxes dynamically
+            updateArmadaFilterCheckboxes();
         }
     } catch(e) {
         console.warn('Failed to load dropdown options:', e);
@@ -3611,11 +3715,30 @@ function updateBulkStatusSelect() {
     });
 }
 
-// Settings page renderer
-async function loadSettingsPage() {
-    await loadDropdownOptions();
-    renderSettingsCards();
+function updateStatusFilterCheckboxes() {
+    const list = document.getElementById('mfListStatus');
+    if (!list) return;
+    // Preserve currently checked values
+    const checked = new Set(Array.from(list.querySelectorAll('input:checked')).map(cb => cb.value));
+    list.innerHTML = ALL_STATUSES.map(s =>
+        `<label class="mf-item"><input type="checkbox" value="${s}" onchange="onMultiFilterChange('Status')"${checked.has(s) ? ' checked' : ''}> ${s}</label>`
+    ).join('');
 }
+
+function updateArmadaFilterCheckboxes() {
+    const list = document.getElementById('mfListArmada');
+    if (!list) return;
+    const armadaItems = _dropdownCache['armada_type'] || [];
+    if (armadaItems.length === 0) return; // Keep empty if no data
+    const checked = new Set(Array.from(list.querySelectorAll('input:checked')).map(cb => cb.value));
+    list.innerHTML = armadaItems.map(item =>
+        `<label class="mf-item"><input type="checkbox" value="${item.value}" onchange="onMultiFilterChange('Armada')"${checked.has(item.value) ? ' checked' : ''}> ${item.label}</label>`
+    ).join('');
+}
+
+// Settings page renderer (merged into the function defined earlier — this is now just the cards renderer caller)
+// The main loadSettingsPage() is defined near initDashboard() and includes both
+// tracking queue init + dropdown options loading.
 
 function renderSettingsCards() {
     const container = document.getElementById('settingsContainer');
@@ -3748,6 +3871,308 @@ async function deleteOption(id, label) {
 // Load dropdown options on init
 loadDropdownOptions();
 
+// ═══════════════════════════════════════════════════════
+// LINKTREE MANAGEMENT V2 — SVG Icons + Grouping
+// ═══════════════════════════════════════════════════════
+let _linktreeCache = [];
+
+const LT_SVG_ICONS = {
+    'link':           '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>',
+    'video':          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>',
+    'clipboard':      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>',
+    'message-circle': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>',
+    'phone':          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.88.35 1.73.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c1.08.35 1.93.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg>',
+    'map-pin':        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>',
+    'globe':          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>',
+    'megaphone':      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l18-5v12L3 13v-2z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg>',
+    'briefcase':      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>',
+    'truck':          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>',
+    'package':        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="16.5" y1="9.4" x2="7.5" y2="4.21"/><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>',
+    'building':       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"/><line x1="9" y1="22" x2="9" y2="18"/><line x1="15" y1="22" x2="15" y2="18"/></svg>',
+    'check-circle':   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>',
+    'zap':            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>',
+    'bell':           '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>',
+    'calendar':       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>',
+    'shield':         '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>',
+    'award':          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></svg>',
+    'download':       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>',
+    'external-link':  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>',
+    'whatsapp':       '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>',
+    'instagram':      '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>',
+    'tiktok':         '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1v-3.5a6.37 6.37 0 00-.79-.05A6.34 6.34 0 003.15 15.2a6.34 6.34 0 0010.86 4.46v-7.13a8.16 8.16 0 005.58 2.18v-3.45a4.85 4.85 0 01-3.59-1.58 4.83 4.83 0 01-1.24-2.99h3.45c0 .03-.03.03-.03.03s0 0 .03 0h.37V6.69z"/></svg>',
+    'facebook':       '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>',
+    'youtube':        '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>',
+    'telegram':       '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.479.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg>',
+};
+const LT_SOCIAL = ['whatsapp','instagram','tiktok','facebook','youtube','telegram'];
+
+function ltGetIconSvg(key) { return LT_SVG_ICONS[key] || LT_SVG_ICONS['link']; }
+function ltGetIconClass(key) { return LT_SOCIAL.includes(key) ? ` ic-${key}` : ''; }
+
+function buildIconPicker() {
+    const picker = document.getElementById('ltIconPicker');
+    if (!picker) return;
+    picker.innerHTML = Object.keys(LT_SVG_ICONS).map(key =>
+        `<div class="lt-icon-opt${ltGetIconClass(key)}" data-icon="${key}" title="${key}">${LT_SVG_ICONS[key]}</div>`
+    ).join('');
+}
+buildIconPicker();
+
+document.addEventListener('click', function(e) {
+    const opt = e.target.closest('.lt-icon-opt');
+    if (opt && opt.closest('#ltIconPicker')) {
+        document.querySelectorAll('#ltIconPicker .lt-icon-opt').forEach(el => el.classList.remove('selected'));
+        opt.classList.add('selected');
+    }
+});
+
+const LT_AUTH_HEADERS = { 'Content-Type': 'application/json', 'X-Admin-Token': 'bas-owner-2026' };
+
+async function loadLinktreeItems() {
+    const list = document.getElementById('linktreeList');
+    try {
+        const res = await fetch(`${API_BASE}/linktree.php?action=all`, {
+            credentials: 'include',
+            headers: { 'X-Admin-Token': 'bas-owner-2026' }
+        });
+        const data = await res.json();
+        if (data.ok && data.links) {
+            _linktreeCache = data.links;
+            renderLinktreeList();
+        } else if (data.error === 'Unauthorized' || data.error === 'Forbidden') {
+            // Fallback to public list
+            try {
+                const res2 = await fetch(`${API_BASE}/linktree.php?action=list`);
+                const data2 = await res2.json();
+                if (data2.ok && data2.links) { _linktreeCache = data2.links; renderLinktreeList(); }
+            } catch(e2) {
+                if (list) list.innerHTML = '<div class="settings-card-empty">Belum ada link. Klik "Tambah Link" untuk menambahkan.</div>';
+            }
+        } else {
+            _linktreeCache = [];
+            renderLinktreeList();
+        }
+    } catch(e) {
+        console.warn('Failed to load linktree:', e);
+        if (list) list.innerHTML = '<div class="settings-card-empty">Belum ada link. Klik "Tambah Link" untuk menambahkan.</div>';
+    }
+}
+
+function renderLinktreeList() {
+    const list = document.getElementById('linktreeList');
+    const count = document.getElementById('linktreeCount');
+    if (!list) return;
+    const active = _linktreeCache.filter(l => l.is_active == 1).length;
+    if (count) count.textContent = `${active} aktif / ${_linktreeCache.length} total`;
+    if (_linktreeCache.length === 0) {
+        list.innerHTML = '<div class="settings-card-empty">Belum ada link. Klik "Tambah Link" untuk menambahkan.</div>';
+        return;
+    }
+    const standalone = []; const groups = {};
+    _linktreeCache.forEach(item => {
+        if (item.group_name) {
+            if (!groups[item.group_name]) groups[item.group_name] = [];
+            groups[item.group_name].push(item);
+        } else { standalone.push(item); }
+    });
+    let html = '';
+    standalone.forEach(item => { html += renderLtAdminItem(item); });
+    for (const [gName, items] of Object.entries(groups)) {
+        const allActive = items.every(i => i.is_active == 1);
+        const toggleIcon = allActive ? '👁️' : '🚫';
+        const toggleTitle = allActive ? 'Sembunyikan semua' : 'Tampilkan semua';
+        html += `<div class="lt-group-header">
+            <div class="lt-group-title">📁 ${escapeHtml(gName)} <span class="lt-group-count">(${items.length})</span></div>
+            <div class="lt-group-actions">
+                <button onclick="toggleLinktreeGroup('${escapeHtml(gName)}')" title="${toggleTitle}" class="lt-grp-btn">${toggleIcon}</button>
+                <button onclick="renameLinktreeGroup('${escapeHtml(gName)}')" title="Rename grup" class="lt-grp-btn">✏️</button>
+                <button onclick="deleteLinktreeGroup('${escapeHtml(gName)}')" title="Hapus grup" class="lt-grp-btn btn-del">🗑️</button>
+            </div>
+        </div>`;
+        items.forEach(item => { html += renderLtAdminItem(item); });
+    }
+    list.innerHTML = html;
+}
+
+function renderLtAdminItem(item) {
+    const isActive = item.is_active == 1;
+    const inactiveClass = isActive ? '' : ' lt-inactive';
+    const iconKey = item.icon_key || 'link';
+    return `<div class="lt-item${inactiveClass}" data-id="${item.id}">
+        <span class="lt-item-icon" style="display:flex;align-items:center;justify-content:center;width:28px;height:28px;color:var(--accent);">${ltGetIconSvg(iconKey)}</span>
+        <div class="lt-item-info">
+            <div class="lt-item-title">${escapeHtml(item.title)}</div>
+            <div class="lt-item-url">${escapeHtml(item.url)}</div>
+            ${item.description ? `<div class="lt-item-desc">${escapeHtml(item.description)}</div>` : ''}
+        </div>
+        <label class="lt-toggle" title="${isActive ? 'Aktif' : 'Nonaktif'}">
+            <input type="checkbox" ${isActive ? 'checked' : ''} onchange="toggleLinktreeItem(${item.id})">
+            <span class="lt-toggle-slider"></span>
+        </label>
+        <div class="lt-item-actions">
+            <button onclick="editLinktreeItem(${item.id})" title="Edit">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            </button>
+            <button class="btn-del" onclick="deleteLinktreeItem(${item.id})" title="Hapus">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+            </button>
+        </div>
+    </div>`;
+}
+
+function openLinktreeModal(editItem) {
+    const modal = document.getElementById('linktreeModal');
+    const title = document.getElementById('linktreeModalTitle');
+    document.getElementById('ltEditId').value = editItem ? editItem.id : '';
+    document.getElementById('ltTitle').value = editItem ? editItem.title : '';
+    document.getElementById('ltUrl').value = editItem ? editItem.url : '';
+    document.getElementById('ltDesc').value = editItem ? (editItem.description || '') : '';
+    document.getElementById('ltGroupName').value = editItem ? (editItem.group_name || '') : '';
+    document.getElementById('ltGroupOrder').value = editItem ? (editItem.group_order || 0) : 0;
+    const suggestions = document.getElementById('ltGroupSuggestions');
+    const existingGroups = [...new Set(_linktreeCache.filter(l => l.group_name).map(l => l.group_name))];
+    suggestions.innerHTML = existingGroups.map(g => `<option value="${escapeHtml(g)}">`).join('');
+    const selectedKey = editItem ? (editItem.icon_key || 'link') : 'link';
+    document.querySelectorAll('#ltIconPicker .lt-icon-opt').forEach(el => {
+        el.classList.toggle('selected', el.dataset.icon === selectedKey);
+    });
+    title.textContent = editItem ? '✏️ Edit Link' : '🔗 Tambah Link Baru';
+    modal.style.display = 'flex';
+    document.getElementById('ltTitle').focus();
+}
+
+function closeLinktreeModal() {
+    document.getElementById('linktreeModal').style.display = 'none';
+}
+
+function editLinktreeItem(id) {
+    const item = _linktreeCache.find(l => l.id == id);
+    if (item) openLinktreeModal(item);
+}
+
+async function saveLinktreeItem() {
+    const id = document.getElementById('ltEditId').value;
+    const titleVal = document.getElementById('ltTitle').value.trim();
+    const url = document.getElementById('ltUrl').value.trim();
+    const desc = document.getElementById('ltDesc').value.trim();
+    const groupName = document.getElementById('ltGroupName').value.trim();
+    const groupOrder = parseInt(document.getElementById('ltGroupOrder').value) || 0;
+    const selectedIcon = document.querySelector('#ltIconPicker .lt-icon-opt.selected');
+    const iconKey = selectedIcon ? selectedIcon.dataset.icon : 'link';
+    if (!titleVal || !url) { showToast('Judul dan URL wajib diisi', 'error'); return; }
+    const btn = document.getElementById('ltSaveBtn');
+    btn.disabled = true;
+    try {
+        const action = id ? 'update' : 'add';
+        const body = { title: titleVal, url, icon: '🔗', icon_key: iconKey, description: desc, group_name: groupName || null, group_order: groupOrder };
+        if (id) body.id = parseInt(id);
+        const res = await fetch(`${API_BASE}/linktree.php?action=${action}`, {
+            method: 'POST', headers: LT_AUTH_HEADERS,
+            credentials: 'include', body: JSON.stringify(body)
+        });
+        const data = await res.json();
+        if (data.ok) { showToast(data.message || 'Berhasil!'); closeLinktreeModal(); await loadLinktreeItems(); }
+        else { showToast(data.error || 'Gagal menyimpan', 'error'); }
+    } catch(e) { showToast('Error: ' + e.message, 'error'); }
+    finally { btn.disabled = false; }
+}
+
+async function deleteLinktreeItem(id) {
+    const item = _linktreeCache.find(l => l.id == id);
+    if (!confirm(`Hapus link "${item ? item.title : ''}"?\n\nLink ini akan dihapus dari beranda.`)) return;
+    try {
+        const res = await fetch(`${API_BASE}/linktree.php?action=delete`, {
+            method: 'POST', headers: LT_AUTH_HEADERS,
+            credentials: 'include', body: JSON.stringify({ id })
+        });
+        const data = await res.json();
+        if (data.ok) { showToast(data.message || 'Berhasil dihapus'); await loadLinktreeItems(); }
+        else { showToast(data.error || 'Gagal menghapus', 'error'); }
+    } catch(e) { showToast('Error: ' + e.message, 'error'); }
+}
+
+async function toggleLinktreeItem(id) {
+    try {
+        const res = await fetch(`${API_BASE}/linktree.php?action=toggle`, {
+            method: 'POST', headers: LT_AUTH_HEADERS,
+            credentials: 'include', body: JSON.stringify({ id })
+        });
+        const data = await res.json();
+        if (data.ok) { showToast(data.message || 'Status diperbarui'); await loadLinktreeItems(); }
+        else { showToast(data.error || 'Gagal update', 'error'); }
+    } catch(e) { showToast('Error: ' + e.message, 'error'); }
+}
+
+// ── Group Management ──
+async function addLinktreeGroup() {
+    const name = prompt('Nama grup baru:');
+    if (!name || !name.trim()) return;
+    const order = parseInt(prompt('Urutan grup (angka, default 0):', '0')) || 0;
+    // Create group by adding a placeholder link
+    try {
+        const res = await fetch(`${API_BASE}/linktree.php?action=add`, {
+            method: 'POST', headers: LT_AUTH_HEADERS,
+            credentials: 'include',
+            body: JSON.stringify({
+                title: 'Link Baru', url: '#', icon: '🔗', icon_key: 'link',
+                description: '', group_name: name.trim(), group_order: order
+            })
+        });
+        const data = await res.json();
+        if (data.ok) { showToast(`Grup "${name.trim()}" dibuat!`); await loadLinktreeItems(); }
+        else { showToast(data.error || 'Gagal membuat grup', 'error'); }
+    } catch(e) { showToast('Error: ' + e.message, 'error'); }
+}
+
+async function renameLinktreeGroup(oldName) {
+    const newName = prompt(`Rename grup "${oldName}" menjadi:`, oldName);
+    if (!newName || !newName.trim() || newName.trim() === oldName) return;
+    try {
+        const res = await fetch(`${API_BASE}/linktree.php?action=rename-group`, {
+            method: 'POST', headers: LT_AUTH_HEADERS,
+            credentials: 'include',
+            body: JSON.stringify({ old_name: oldName, new_name: newName.trim() })
+        });
+        const data = await res.json();
+        if (data.ok) { showToast(data.message || 'Grup berhasil direname'); await loadLinktreeItems(); }
+        else { showToast(data.error || 'Gagal rename grup', 'error'); }
+    } catch(e) { showToast('Error: ' + e.message, 'error'); }
+}
+
+async function deleteLinktreeGroup(name) {
+    if (!confirm(`Hapus grup "${name}"?\n\nSemua link di dalamnya akan jadi standalone (tidak dihapus).`)) return;
+    try {
+        const res = await fetch(`${API_BASE}/linktree.php?action=delete-group`, {
+            method: 'POST', headers: LT_AUTH_HEADERS,
+            credentials: 'include',
+            body: JSON.stringify({ group_name: name })
+        });
+        const data = await res.json();
+        if (data.ok) { showToast(data.message || 'Grup dihapus'); await loadLinktreeItems(); }
+        else { showToast(data.error || 'Gagal hapus grup', 'error'); }
+    } catch(e) { showToast('Error: ' + e.message, 'error'); }
+}
+
+async function toggleLinktreeGroup(groupName) {
+    const items = _linktreeCache.filter(l => l.group_name === groupName);
+    const allActive = items.every(i => i.is_active == 1);
+    const action = allActive ? 'hide' : 'show';
+    if (!confirm(`${allActive ? 'Sembunyikan' : 'Tampilkan'} semua ${items.length} link di grup "${groupName}"?`)) return;
+    try {
+        for (const item of items) {
+            if ((allActive && item.is_active == 1) || (!allActive && item.is_active == 0)) {
+                await fetch(`${API_BASE}/linktree.php?action=toggle`, {
+                    method: 'POST', headers: LT_AUTH_HEADERS,
+                    credentials: 'include', body: JSON.stringify({ id: item.id })
+                });
+            }
+        }
+        showToast(`Grup "${groupName}" ${allActive ? 'disembunyikan' : 'ditampilkan'}`);
+        await loadLinktreeItems();
+    } catch(e) { showToast('Error: ' + e.message, 'error'); }
+}
+
+loadLinktreeItems();
 /* ═══════════════════════════════════════════
    ADMIN CHAT
    ═══════════════════════════════════════════ */
@@ -3773,22 +4198,67 @@ function closeAdminChat() {
     ChatEngine.stopPoll();
 }
 
+// ── Demo Data (fallback when API unavailable) ──
+const _demoChatData = {
+    conversations: [
+        { candidate_id:1, candidate_name:'Achmad Farhan', whatsapp:'081234567890', status:'proses_pemberkasan', sim_type:'SIM A', provinsi:'Banten', kabupaten:'Kota Tangerang', kecamatan:'Cipondoh', armada_type:'Mobil', location_name:'Tangerang', unread_count:2, last_message:'Siap min, sudah saya siapkan semua dokumennya', last_msg_time:'2026-04-12 19:10:00', last_sender_type:'user' },
+        { candidate_id:2, candidate_name:'Budi Santoso', whatsapp:'081234567891', status:'lolos', sim_type:'SIM C', provinsi:'Jawa Barat', kabupaten:'Kota Bekasi', kecamatan:'Bekasi Selatan', armada_type:'Motor', location_name:'Bekasi', unread_count:1, last_message:'Baik terima kasih admin 🙏', last_msg_time:'2026-04-12 18:45:00', last_sender_type:'user' },
+        { candidate_id:3, candidate_name:'Citra Dewi', whatsapp:'081234567892', status:'jadwal_test_drive', sim_type:'SIM A', provinsi:'DKI Jakarta', kabupaten:'Jakarta Selatan', kecamatan:'Kebayoran Baru', armada_type:'Mobil', location_name:'Jakarta', unread_count:0, last_message:'Mantap! Sampai jumpa di lokasi test drive 👍', last_msg_time:'2026-04-12 17:30:00', last_sender_type:'admin' },
+        { candidate_id:4, candidate_name:'Deni Prasetyo', whatsapp:'081234567893', status:'baru', sim_type:'SIM A', provinsi:'Jawa Barat', kabupaten:'Kota Bogor', kecamatan:'Bogor Tengah', armada_type:'Mobil', location_name:'Bogor', unread_count:0, last_message:'Saya mau daftar jadi driver', last_msg_time:'2026-04-11 14:20:00', last_sender_type:'user' },
+        { candidate_id:5, candidate_name:'Eka Rahmawati', whatsapp:'081234567894', status:'proses_pemberkasan', sim_type:'SIM C', provinsi:'Banten', kabupaten:'Kota Tangerang Selatan', kecamatan:'Serpong', armada_type:'Motor', location_name:'Tangerang Selatan', unread_count:0, last_message:'Foto KTP sudah saya upload min', last_msg_time:'2026-04-11 10:15:00', last_sender_type:'user' },
+    ],
+    threads: {
+        1: [
+            { id:1, sender_type:'user', sender_name:'Achmad Farhan', message_type:'text', message:'Selamat siang admin, saya mau tanya jadwal test drive', created_at:'2026-04-12 18:50:00', is_read:1 },
+            { id:2, sender_type:'admin', sender_name:'Admin', message_type:'text', message:'Selamat siang! Jadwal test drive bisa dipilih di dashboard ya 📋', created_at:'2026-04-12 18:52:00', is_read:1 },
+            { id:3, sender_type:'user', sender_name:'Achmad Farhan', message_type:'text', message:'Oh iya min, untuk lokasi Tangerang kapan ya?', created_at:'2026-04-12 18:55:00', is_read:1 },
+            { id:4, sender_type:'admin', sender_name:'Admin', message_type:'text', message:'Untuk Tangerang dijadwalkan tanggal 15 April ya. Pastikan SIM dan KTP dibawa!', created_at:'2026-04-12 18:57:00', is_read:1 },
+            { id:5, sender_type:'user', sender_name:'Achmad Farhan', message_type:'text', message:'Baik terima kasih admin 🙏', created_at:'2026-04-12 19:00:00', is_read:1 },
+            { id:6, sender_type:'admin', sender_name:'Admin', message_type:'text', message:'Sama-sama! Jangan lupa siapkan SIM dan KTP ya', created_at:'2026-04-12 19:05:00', is_read:1 },
+            { id:7, sender_type:'user', sender_name:'Achmad Farhan', message_type:'text', message:'Siap min, sudah saya siapkan semua dokumennya', created_at:'2026-04-12 19:10:00', is_read:0 },
+        ],
+        2: [
+            { id:10, sender_type:'user', sender_name:'Budi Santoso', message_type:'text', message:'Min, saya mau konfirmasi jadwal interview', created_at:'2026-04-12 17:30:00', is_read:1 },
+            { id:11, sender_type:'admin', sender_name:'Admin', message_type:'text', message:'Jadwal interview Anda tanggal 16 April pukul 09.00 WIB di kantor cabang Bekasi', created_at:'2026-04-12 17:35:00', is_read:1 },
+            { id:12, sender_type:'user', sender_name:'Budi Santoso', message_type:'text', message:'Baik terima kasih admin 🙏', created_at:'2026-04-12 18:45:00', is_read:0 },
+        ],
+        3: [
+            { id:20, sender_type:'user', sender_name:'Citra Dewi', message_type:'text', message:'Admin, test drive saya berhasil 🎉', created_at:'2026-04-12 15:20:00', is_read:1 },
+            { id:21, sender_type:'admin', sender_name:'Admin', message_type:'text', message:'Selamat! Hasil test drive Anda sangat baik 🌟', created_at:'2026-04-12 15:25:00', is_read:1 },
+            { id:22, sender_type:'admin', sender_name:'Admin', message_type:'text', message:'Selanjutnya silakan lengkapi berkas di dashboard ya', created_at:'2026-04-12 15:26:00', is_read:1 },
+            { id:23, sender_type:'user', sender_name:'Citra Dewi', message_type:'text', message:'Siap admin! Terima kasih banyak', created_at:'2026-04-12 15:30:00', is_read:1 },
+            { id:24, sender_type:'admin', sender_name:'Admin', message_type:'text', message:'Mantap! Sampai jumpa di lokasi test drive 👍', created_at:'2026-04-12 17:30:00', is_read:1 },
+        ]
+    }
+};
+let _usingDemoChat = false;
+
 // ── Load Conversations ──────────────────
 async function loadAdminConversations(search) {
     document.getElementById('adminChatListView').style.display = '';
     document.getElementById('adminChatThreadView').style.display = 'none';
-    ChatEngine.stopPoll();
+    document.getElementById('adminChatPanelHeader').style.display = '';
+    if (typeof ChatEngine !== 'undefined') ChatEngine.stopPoll();
 
     try {
         let url = '/driver/api/chat.php?action=conversations';
         if (search) url += '&search=' + encodeURIComponent(search);
         const res = await fetch(url, { credentials: 'include' });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
         const data = await res.json();
         adminChatConversations = data.conversations || [];
+        _usingDemoChat = false;
         renderAdminChatList(adminChatConversations);
     } catch(e) {
-        document.getElementById('adminChatList').innerHTML =
-            '<div style="text-align:center;padding:30px;opacity:0.5;">Gagal memuat</div>';
+        console.warn('Chat API unavailable, loading demo data');
+        _usingDemoChat = true;
+        let convos = _demoChatData.conversations;
+        if (search) {
+            const s = search.toLowerCase();
+            convos = convos.filter(c => c.candidate_name.toLowerCase().includes(s));
+        }
+        adminChatConversations = convos;
+        renderAdminChatList(convos);
     }
 }
 
@@ -3833,9 +4303,37 @@ async function openAdminChatThread(candidateId, name) {
     adminChatCandidateId = candidateId;
     document.getElementById('adminChatListView').style.display = 'none';
     document.getElementById('adminChatThreadView').style.display = 'flex';
+    document.getElementById('adminChatPanelHeader').style.display = 'none';
     document.getElementById('adminChatName').textContent = name || 'Kandidat #' + candidateId;
     document.getElementById('adminChatStatus').textContent = 'Memuat...';
     document.getElementById('adminChatMessages').innerHTML = '';
+
+    // Populate detail card from conversation data
+    const convo = adminChatConversations.find(c => c.candidate_id == candidateId);
+    if (convo) {
+        populateChatDetail(convo);
+        // Auto-open detail on first view
+        document.getElementById('chatDetailCard').classList.add('open');
+        document.getElementById('chatDetailToggle').classList.add('active');
+    }
+
+    // Demo mode — render static messages
+    if (_usingDemoChat) {
+        const msgs = _demoChatData.threads[candidateId] || [];
+        const area = document.getElementById('adminChatMessages');
+        const dblSvg = '<svg width="16" height="14" viewBox="0 0 28 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 6 8 17 4 13"/><polyline points="24 6 14 17 11 14"/></svg>';
+        const checkSvg = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>';
+        area.innerHTML = msgs.map(m => {
+            const isMine = m.sender_type === 'admin';
+            const side = isMine ? 'mine' : 'theirs';
+            const time = m.created_at ? m.created_at.substring(11,16) : '';
+            const readIcon = isMine ? '<span class="chat-read' + (m.is_read ? ' read' : '') + '">' + (m.is_read ? dblSvg : checkSvg) + '</span>' : '';
+            return '<div class="chat-bubble chat-bubble--' + side + '"><div class="chat-text">' + (m.message||'').replace(/\n/g,'<br>') + '</div><div class="chat-meta"><span class="chat-time">' + time + '</span>' + readIcon + '</div></div>';
+        }).join('');
+        requestAnimationFrame(() => area.scrollTop = area.scrollHeight);
+        document.getElementById('adminChatStatus').textContent = 'Online (Demo)';
+        return;
+    }
 
     ChatEngine.init({
         candidateId: candidateId,
@@ -3843,6 +4341,10 @@ async function openAdminChatThread(candidateId, name) {
         container: document.getElementById('adminChatThreadView'),
         onNewMessages: () => {
             ChatEngine.markRead(candidateId);
+        },
+        onTypingChange: (isTyping) => {
+            const el = document.getElementById('adminTypingIndicator');
+            if (el) el.classList.toggle('active', isTyping);
         }
     });
 
@@ -3864,7 +4366,43 @@ function adminChatBack() {
     ChatEngine.stopPoll();
     adminChatCandidateId = null;
     document.getElementById('adminTemplatesPanel').classList.remove('open');
+    document.getElementById('chatDetailCard').classList.remove('open');
+    document.getElementById('chatDetailToggle').classList.remove('active');
     loadAdminConversations();
+}
+
+// ── Toggle Detail Card ──────────────────
+function toggleChatDetail() {
+    const card = document.getElementById('chatDetailCard');
+    const btn = document.getElementById('chatDetailToggle');
+    card.classList.toggle('open');
+    btn.classList.toggle('active');
+}
+
+function _getStatusBadge(status) {
+    const map = {
+        'baru': ['Baru', 'status-baru'],
+        'proses_pemberkasan': ['Proses Berkas', 'status-proses'],
+        'sudah_pemberkasan': ['Berkas Lengkap', 'status-proses'],
+        'menunggu_test_drive': ['Menunggu TD', 'status-jadwal'],
+        'jadwal_test_drive': ['Jadwal TD', 'status-jadwal'],
+        'jadwal_interview': ['Jadwal Interview', 'status-jadwal'],
+        'lolos': ['Lolos', 'status-lolos'],
+        'gagal': ['Gagal', 'status-gagal'],
+        'lulus': ['Lulus', 'status-lolos'],
+        'tidal_lulus': ['Tidak Lulus', 'status-gagal'],
+    };
+    const [label, cls] = map[status] || [status || '-', 'status-baru'];
+    return `<span class="chat-detail-badge ${cls}">${label}</span>`;
+}
+
+function populateChatDetail(convo) {
+    document.getElementById('chatDetailStatus').innerHTML = _getStatusBadge(convo.status);
+    document.getElementById('chatDetailSim').textContent = convo.sim_type || '-';
+    document.getElementById('chatDetailArmada').textContent = convo.armada_type || '-';
+
+    const parts = [convo.kecamatan, convo.kabupaten, convo.provinsi].filter(Boolean);
+    document.getElementById('chatDetailAddress').textContent = parts.length ? parts.join(', ') : '-';
 }
 
 // ── Send Message ────────────────────────
@@ -3928,34 +4466,66 @@ async function adminSendLocation() {
 }
 
 // ── Templates ───────────────────────────
+const _demoTemplates = [
+    { id:1, title:'Sapaan Awal', message:'Halo! Selamat datang di BAS Recruitment. Ada yang bisa kami bantu?' },
+    { id:2, title:'Reminder Test Drive', message:'Halo {nama}, jangan lupa jadwal test drive Anda besok ya. Siapkan SIM dan KTP. Terima kasih!' },
+    { id:3, title:'Pemberkasan Lengkap', message:'Selamat! Berkas Anda sudah lengkap. Tim kami akan segera memproses data Anda.' },
+    { id:4, title:'Jadwal Interview', message:'Jadwal interview Anda: {tanggal} pukul {jam} WIB di {lokasi}. Harap datang 15 menit sebelumnya.' },
+];
+
 async function toggleAdminTemplates() {
     const panel = document.getElementById('adminTemplatesPanel');
     panel.classList.toggle('open');
 
     if (panel.classList.contains('open')) {
+        const list = document.getElementById('adminTemplatesList');
+        let templates = [];
         try {
             const res = await fetch('/driver/api/chat.php?action=templates', { credentials: 'include' });
+            if (!res.ok) throw new Error('API error');
             const data = await res.json();
-            const templates = data.templates || [];
-            const list = document.getElementById('adminTemplatesList');
-            list.innerHTML = templates.map(t =>
-                `<div class="chat-template-item" onclick="useTemplate('${ChatEngine.escHtml(t.message).replace(/'/g,"\\'")}')">
-                    <div class="chat-template-title">${ChatEngine.escHtml(t.title)}</div>
-                    <div class="chat-template-preview">${ChatEngine.escHtml(t.message)}</div>
-                </div>`
-            ).join('');
-        } catch(e) {}
+            templates = data.templates || [];
+        } catch(e) {
+            templates = _demoTemplates;
+        }
+
+        if (!templates.length) {
+            list.innerHTML = '<div class="tpl-quick-empty">Belum ada template</div>';
+        } else {
+            list.innerHTML = templates.map(t => {
+                const esc = typeof ChatEngine !== 'undefined' ? ChatEngine.escHtml : (s => s.replace(/[<>&"']/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;'}[c])));
+                return `<div class="tpl-quick-item" onclick="useTemplate(\`${esc(t.message).replace(/`/g,'\\`')}\`)">
+                    <div class="tpl-quick-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg></div>
+                    <div class="tpl-quick-body">
+                        <div class="tpl-quick-title">${esc(t.title)}</div>
+                        <div class="tpl-quick-preview">${esc(t.message)}</div>
+                    </div>
+                </div>`;
+            }).join('');
+        }
     }
 }
 
 function useTemplate(msg) {
+    // Smart variable replacement
+    const convo = adminChatConversations.find(c => c.candidate_id == adminChatCandidateId);
+    if (convo) {
+        msg = msg.replace(/\{nama\}/gi, convo.candidate_name || '')
+                 .replace(/\{armada\}/gi, convo.armada_type || '')
+                 .replace(/\{lokasi\}/gi, [convo.kecamatan, convo.kabupaten].filter(Boolean).join(', ') || '')
+                 .replace(/\{status\}/gi, convo.status || '')
+                 .replace(/\{whatsapp\}/gi, convo.whatsapp || '')
+                 .replace(/\{tanggal\}/gi, new Date().toLocaleDateString('id-ID', {day:'numeric',month:'long',year:'numeric'}));
+    }
     document.getElementById('adminChatInput').value = msg;
     document.getElementById('adminTemplatesPanel').classList.remove('open');
     document.getElementById('adminChatInput').focus();
+    adminChatAutoResize(document.getElementById('adminChatInput'));
 }
 
 // ── Template Manager ────────────────────
 function openTemplateManager() {
+    document.getElementById('adminTemplatesPanel').classList.remove('open');
     document.getElementById('templateManagerModal').style.display = 'flex';
     loadTemplateManager();
 }
@@ -3965,21 +4535,42 @@ function closeTemplateManager() {
 }
 
 async function loadTemplateManager() {
+    let templates = [];
     try {
         const res = await fetch('/driver/api/chat.php?action=templates', { credentials: 'include' });
+        if (!res.ok) throw new Error('API error');
         const data = await res.json();
-        const templates = data.templates || [];
-        const list = document.getElementById('templateManagerList');
-        list.innerHTML = templates.map(t =>
-            `<div style="display:flex;align-items:center;gap:8px;padding:10px;border:1px solid var(--border);border-radius:8px;margin-bottom:6px;">
-                <div style="flex:1;min-width:0;">
-                    <div style="font-weight:700;font-size:0.82rem;">${ChatEngine.escHtml(t.title)}</div>
-                    <div style="font-size:0.72rem;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${ChatEngine.escHtml(t.message)}</div>
-                </div>
-                <button onclick="deleteTemplate(${t.id})" style="background:none;border:none;color:var(--error);cursor:pointer;font-size:0.75rem;white-space:nowrap;">Hapus</button>
-            </div>`
-        ).join('') || '<div style="text-align:center;padding:20px;opacity:0.5;font-size:0.85rem;">Belum ada template</div>';
-    } catch(e) {}
+        templates = data.templates || [];
+    } catch(e) {
+        templates = _demoTemplates;
+    }
+
+    const list = document.getElementById('templateManagerList');
+    if (!templates.length) {
+        list.innerHTML = `<div class="tpl-manager-empty">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
+            <div>Belum ada template</div>
+            <div style="font-size:0.72rem;margin-top:4px;">Buat template pertama Anda di bawah</div>
+        </div>`;
+        return;
+    }
+
+    const esc = typeof ChatEngine !== 'undefined' ? ChatEngine.escHtml : (s => s.replace(/[<>&"']/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;'}[c])));
+    list.innerHTML = templates.map((t, i) => {
+        const initials = t.title.split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase();
+        return `<div class="tpl-manager-item">
+            <div class="tpl-manager-item-icon">${initials}</div>
+            <div class="tpl-manager-item-body">
+                <div class="tpl-manager-item-title">${esc(t.title)}</div>
+                <div class="tpl-manager-item-msg">${esc(t.message)}</div>
+            </div>
+            <div class="tpl-manager-item-actions">
+                <button class="tpl-action-btn delete" onclick="deleteTemplate(${t.id})" title="Hapus">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+                </button>
+            </div>
+        </div>`;
+    }).join('');
 }
 
 async function saveNewTemplate() {
@@ -3988,29 +4579,83 @@ async function saveNewTemplate() {
     if (!title || !message) return showToast('Judul dan isi wajib diisi', 'error');
 
     try {
-        await fetch('/driver/api/chat.php?action=save_template', {
+        const res = await fetch('/driver/api/chat.php?action=save_template', {
             method: 'POST', credentials: 'include',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({ title, message })
         });
+        if (!res.ok) throw new Error('API error');
         document.getElementById('newTemplateTitle').value = '';
         document.getElementById('newTemplateMessage').value = '';
         loadTemplateManager();
-        showToast('Template disimpan');
+        showToast('Template berhasil disimpan ✓');
     } catch(e) {
-        showToast('Gagal menyimpan', 'error');
+        // Demo mode — simulate save
+        _demoTemplates.push({ id: Date.now(), title, message });
+        document.getElementById('newTemplateTitle').value = '';
+        document.getElementById('newTemplateMessage').value = '';
+        loadTemplateManager();
+        showToast('Template berhasil disimpan ✓ (Demo)');
     }
 }
 
 async function deleteTemplate(id) {
+    if (!confirm('Hapus template ini?')) return;
     try {
-        await fetch('/driver/api/chat.php?action=delete_template', {
+        const res = await fetch('/driver/api/chat.php?action=delete_template', {
             method: 'POST', credentials: 'include',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({ id })
         });
+        if (!res.ok) throw new Error('API error');
         loadTemplateManager();
-    } catch(e) {}
+        showToast('Template dihapus');
+    } catch(e) {
+        const idx = _demoTemplates.findIndex(t => t.id === id);
+        if (idx >= 0) _demoTemplates.splice(idx, 1);
+        loadTemplateManager();
+        showToast('Template dihapus (Demo)');
+    }
+}
+
+// ── Template Picker for modals ──────────
+async function loadModalTemplates(selectId) {
+    const select = document.getElementById(selectId);
+    if (!select) return;
+    // Keep first option
+    select.innerHTML = '<option value="">— Pilih template (opsional) —</option>';
+
+    let templates = [];
+    try {
+        const res = await fetch('/driver/api/chat.php?action=templates', { credentials: 'include' });
+        if (!res.ok) throw new Error('');
+        const data = await res.json();
+        templates = data.templates || [];
+    } catch(e) {
+        templates = _demoTemplates;
+    }
+
+    templates.forEach((t, i) => {
+        const opt = document.createElement('option');
+        opt.value = i;
+        opt.textContent = t.title;
+        opt.dataset.title = t.title;
+        opt.dataset.message = t.message;
+        select.appendChild(opt);
+    });
+}
+
+function applyMsgTemplate(selectEl, titleId, messageId) {
+    const opt = selectEl.selectedOptions[0];
+    if (!opt || !opt.dataset.message) return;
+    if (titleId) {
+        const titleInput = document.getElementById(titleId);
+        if (titleInput) titleInput.value = opt.dataset.title || '';
+    }
+    if (messageId) {
+        const msgInput = document.getElementById(messageId);
+        if (msgInput) msgInput.value = opt.dataset.message || '';
+    }
 }
 
 // ── Blast Chat from bulk action ─────────
@@ -4018,21 +4663,63 @@ function getSelectedCandidateIds() {
     return Array.from(document.querySelectorAll('.cand-checkbox:checked')).map(cb => parseInt(cb.value));
 }
 
+let _blastCandidateIds = [];
+
 function blastChatMessage() {
     const selected = getSelectedCandidateIds();
     if (!selected.length) return showToast('Pilih kandidat dulu', 'error');
 
-    const msg = prompt('Ketik pesan untuk ' + selected.length + ' kandidat:');
-    if (!msg) return;
+    _blastCandidateIds = selected;
 
-    fetch('/driver/api/chat.php?action=blast', {
-        method: 'POST', credentials: 'include',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ candidate_ids: selected, message: msg })
-    }).then(r => r.json()).then(data => {
-        if (data.ok) showToast(`Pesan terkirim ke ${data.sent} kandidat`);
-        else showToast(data.error || 'Gagal', 'error');
-    }).catch(() => showToast('Gagal mengirim', 'error'));
+    // Collect names
+    const names = selected.map(cid => {
+        const c = allCandidates.find(x => x.id === cid);
+        return c ? c.name : '#' + cid;
+    });
+
+    document.getElementById('blastRecipientInfo').textContent =
+        selected.length + ' penerima: ' +
+        (names.length <= 3 ? names.join(', ') : names.slice(0,3).join(', ') + ' +' + (names.length-3) + ' lainnya');
+
+    document.getElementById('blastMessage').value = '';
+    document.getElementById('blastChatModal').style.display = 'flex';
+    loadModalTemplates('blastTemplatePicker');
+    document.getElementById('blastMessage').focus();
+}
+
+function closeBlastModal() {
+    document.getElementById('blastChatModal').style.display = 'none';
+    _blastCandidateIds = [];
+}
+
+async function sendBlastChat() {
+    const message = document.getElementById('blastMessage').value.trim();
+    if (!message) return showToast('Pesan tidak boleh kosong', 'error');
+    if (!_blastCandidateIds.length) return showToast('Tidak ada penerima', 'error');
+
+    const btn = document.getElementById('blastSendBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="spin"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg> Mengirim...';
+
+    try {
+        const res = await fetch('/driver/api/chat.php?action=blast', {
+            method: 'POST', credentials: 'include',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ candidate_ids: _blastCandidateIds, message })
+        });
+        const data = await res.json();
+        if (data.ok) {
+            showToast(`Pesan terkirim ke ${data.sent} kandidat ✓`);
+            closeBlastModal();
+        } else {
+            showToast(data.error || 'Gagal', 'error');
+        }
+    } catch(e) {
+        showToast('Gagal mengirim: ' + e.message, 'error');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg> Kirim ke Semua';
+    }
 }
 
 // ── Admin Chat Badge ────────────────────
@@ -4057,4 +4744,500 @@ setTimeout(updateAdminChatBadge, 2000);
 function openChatForCandidate(candidateId, name) {
     openAdminChat();
     setTimeout(() => openAdminChatThread(candidateId, name), 300);
+}
+
+// ══════════════════════════════════════════════
+// NIK TRACKER — Owner/Korlap melacak kandidat
+// ══════════════════════════════════════════════
+const TRACKER_CACHE_KEY = 'bas_admin_tracker_cache';
+
+// Init: load cache on page load
+(function initAdminTracker() {
+    try {
+        const cache = JSON.parse(localStorage.getItem(TRACKER_CACHE_KEY));
+        if (cache && cache.nik && cache.data) {
+            const inp = document.getElementById('trackerNikInput');
+            if (inp) inp.value = cache.nik;
+            renderTrackerResult(cache.data, cache.timestamp);
+        }
+    } catch(e) {}
+})();
+
+async function doTrackNik() {
+    const input = document.getElementById('trackerNikInput');
+    const nik = (input?.value || '').replace(/\D/g, '');
+
+    if (nik.length !== 16) {
+        showTrackerError('NIK harus 16 digit angka.');
+        return;
+    }
+
+    document.getElementById('trackerLoading').style.display = '';
+    document.getElementById('trackerResult').style.display = 'none';
+    document.getElementById('trackerError').style.display = 'none';
+    document.getElementById('trackerBtn').disabled = true;
+
+    try {
+        const res = await fetch(`${API_BASE}/candidates.php?nik=${encodeURIComponent(nik)}`, { credentials: 'include' });
+        const data = await res.json();
+
+        if (data.error) {
+            showTrackerError(data.error);
+            return;
+        }
+
+        const now = Date.now();
+        localStorage.setItem(TRACKER_CACHE_KEY, JSON.stringify({ nik, data, timestamp: now }));
+        _lastTrackedCandidateId = data.candidate?.id || null;
+        _lastTrackedNik = nik;
+        renderTrackerResult(data, now);
+
+    } catch(e) {
+        showTrackerError('Gagal terhubung ke server.');
+    } finally {
+        document.getElementById('trackerLoading').style.display = 'none';
+        document.getElementById('trackerBtn').disabled = false;
+    }
+}
+
+let _lastTrackedCandidateId = null;
+let _lastTrackedNik = null;
+let _trackingCenterInterval = null;
+let _refreshedNiks = new Set(); // prevent infinite doTrackNik loop
+
+async function requestLiveLocation() {
+    if (!_lastTrackedCandidateId || !_lastTrackedNik) return;
+
+    const btn = document.getElementById('requestLocationBtn');
+    const c = JSON.parse(localStorage.getItem(TRACKER_CACHE_KEY) || '{}');
+    const name = c?.data?.candidate?.name || '';
+
+    try {
+        const res = await fetch(`${API_BASE}/candidates.php`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ 
+                action: 'request_track', 
+                candidate_id: _lastTrackedCandidateId,
+                name: name,
+                nik: _lastTrackedNik
+            })
+        });
+        const data = await res.json();
+        if (btn) {
+            btn.innerHTML = '✅ Ditambahkan ke antrian';
+            btn.style.background = 'linear-gradient(135deg,#059669,#10b981)';
+            setTimeout(() => {
+                btn.innerHTML = '📡 Minta Lokasi Sekarang';
+                btn.style.background = 'linear-gradient(135deg,#6366F1,#8B5CF6)';
+            }, 2000);
+        }
+        showToast?.(data.message || 'Ditambahkan ke antrian', 'success');
+    } catch(e) {
+        if (btn) btn.innerHTML = '⚠️ Gagal mengirim';
+        return;
+    }
+
+    // Start Tracking Center if not active
+    showTrackingCenter();
+    startTrackingPoller();
+}
+
+function showTrackingCenter() {
+    const section = document.getElementById('trackingQueueSection');
+    if (section) section.style.display = '';
+}
+
+function startTrackingPoller() {
+    if (_trackingCenterInterval) return;
+    pollActiveTracks();
+    _trackingCenterInterval = setInterval(pollActiveTracks, 5000);
+}
+
+async function pollActiveTracks() {
+    try {
+        const res = await fetch(`${API_BASE}/candidates.php`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ action: 'get_active_tracks' })
+        });
+        const data = await res.json();
+        if (data.tracks) {
+            renderTrackingCenter(data.tracks);
+
+            // Auto-refresh main tracker ONCE per received track (prevent infinite loop)
+            data.tracks.forEach(t => {
+                if (t.status === 'received' && t.candidate_nik === _lastTrackedNik && !_refreshedNiks.has(t.id + '')) {
+                    _refreshedNiks.add(t.id + '');
+                    doTrackNik();
+                    showToast?.('📍 Lokasi ' + (t.candidate_name || t.candidate_nik) + ' diterima!', 'success');
+                }
+            });
+
+            // Stop polling if no more pending (with grace period)
+            const hasPending = data.tracks.some(t => t.status === 'pending');
+            if (!hasPending && _trackingCenterInterval) {
+                setTimeout(() => {
+                    if (_trackingCenterInterval && !document.querySelector('[data-status="pending"]')) {
+                        clearInterval(_trackingCenterInterval);
+                        _trackingCenterInterval = null;
+                    }
+                }, 30000);
+            }
+        }
+    } catch(e) {}
+}
+
+function renderTrackingCenter(tracks) {
+    const tbody = document.getElementById('trackingQueueBody');
+    const badge = document.getElementById('trackingQueueBadge');
+    const section = document.getElementById('trackingQueueSection');
+    if (!tbody) return;
+
+    const pending = tracks.filter(t => t.status === 'pending').length;
+    const received = tracks.filter(t => t.status === 'received').length;
+    if (badge) badge.textContent = `${pending} menunggu · ${received} diterima`;
+
+    if (tracks.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--text-muted);">Belum ada permintaan pelacakan</td></tr>';
+        if (section) section.style.display = 'none';
+        return;
+    }
+
+    if (section) section.style.display = '';
+
+    let html = '';
+    tracks.forEach((t, i) => {
+        const isPending = t.status === 'pending';
+        const reqTime = new Date(t.requested_at);
+        const reqStr = reqTime.toLocaleString('id-ID', {day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
+
+        // Elapsed time for pending
+        let statusHtml = '';
+        if (isPending) {
+            const elapsed = Math.floor((Date.now() - reqTime.getTime()) / 1000);
+            const mins = Math.floor(elapsed / 60);
+            const secs = elapsed % 60;
+            const timeStr = mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
+            statusHtml = `<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:8px;font-size:.75rem;font-weight:600;background:rgba(245,158,11,.12);color:#f59e0b;">
+                <span style="width:6px;height:6px;border-radius:50%;background:#f59e0b;animation:pulse 2s infinite;"></span>
+                Menunggu (${timeStr})
+            </span>`;
+        } else {
+            const recTime = new Date(t.received_at).toLocaleString('id-ID', {hour:'2-digit',minute:'2-digit'});
+            statusHtml = `<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:8px;font-size:.75rem;font-weight:600;background:rgba(16,185,129,.12);color:#10b981;">
+                <span style="width:6px;height:6px;border-radius:50%;background:#10b981;"></span>
+                Diterima (${recTime})
+            </span>`;
+        }
+
+        // Coordinates
+        let coordHtml = '<span style="color:var(--text-muted);font-size:.8rem;">—</span>';
+        if (t.latitude && t.longitude) {
+            const mapsUrl = `https://www.google.com/maps?q=${t.latitude},${t.longitude}`;
+            coordHtml = `<a href="${mapsUrl}" target="_blank" rel="noopener" style="font-family:monospace;font-size:.78rem;color:var(--accent);text-decoration:none;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">${t.latitude}, ${t.longitude}</a>
+            ${t.accuracy ? '<div style="font-size:.68rem;color:var(--text-muted);">±' + Math.round(t.accuracy) + 'm</div>' : ''}`;
+        }
+
+        // Action
+        let actionHtml = '';
+        if (isPending) {
+            actionHtml = `<button onclick="cancelSingleTrack(${t.id})" style="padding:4px 10px;background:none;border:1px solid var(--border-color);border-radius:6px;color:var(--text-muted);font-size:.75rem;cursor:pointer;transition:all .15s;" onmouseover="this.style.borderColor='#ef4444';this.style.color='#ef4444'" onmouseout="this.style.borderColor='var(--border-color)';this.style.color='var(--text-muted)'">Batalkan</button>`;
+        } else if (t.latitude) {
+            const mapsUrl = `https://www.google.com/maps?q=${t.latitude},${t.longitude}`;
+            actionHtml = `<a href="${mapsUrl}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;background:linear-gradient(135deg,#EA4335,#34A853);color:#fff;border-radius:6px;text-decoration:none;font-size:.75rem;font-weight:600;transition:opacity .2s;" onmouseover="this.style.opacity='.85'" onmouseout="this.style.opacity='1'">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                Maps
+            </a>`;
+        }
+
+        const rowBg = isPending ? 'background:rgba(245,158,11,.04);' : 'background:rgba(16,185,129,.04);';
+        html += `<tr data-status="${t.status}" style="transition:background .15s;${rowBg}">
+            <td style="text-align:center;font-size:.82rem;color:var(--text-muted);">${i + 1}</td>
+            <td style="font-weight:600;font-size:.85rem;">${t.candidate_name || '-'}</td>
+            <td style="font-family:monospace;font-size:.82rem;">${t.candidate_nik}</td>
+            <td>${statusHtml}</td>
+            <td style="font-size:.82rem;color:var(--text-muted);">${reqStr}</td>
+            <td>${coordHtml}</td>
+            <td style="text-align:center;">${actionHtml}</td>
+        </tr>`;
+    });
+    tbody.innerHTML = html;
+}
+
+async function cancelSingleTrack(trackId) {
+    try {
+        await fetch(`${API_BASE}/candidates.php`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ action: 'cancel_track', track_id: trackId })
+        });
+        pollActiveTracks(); // refresh
+    } catch(e) {}
+}
+
+function cancelTrackRequest() {
+    // Only reset the button UI — DON'T kill the whole poller
+    // (other tracks may still be pending)
+    const btn = document.getElementById('requestLocationBtn');
+    if (btn) {
+        btn.disabled = false;
+        btn.style.background = 'linear-gradient(135deg,#6366F1,#8B5CF6)';
+        btn.innerHTML = '📡 Minta Lokasi Sekarang';
+    }
+}
+
+async function loadLocationHistory(candidateId) {
+    try {
+        const res = await fetch(`${API_BASE}/candidates.php`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ action: 'get_location_history', candidate_id: candidateId })
+        });
+        const data = await res.json();
+        if (data.history && data.history.length > 0) {
+            renderLocationHistory(data.history);
+        }
+    } catch(e) {}
+}
+
+function renderLocationHistory(history) {
+    const container = document.getElementById('locationHistoryContainer');
+    if (!container) return;
+
+    let html = `<div style="font-size:.75rem;color:var(--text-muted);font-weight:600;margin-bottom:8px;">📋 RIWAYAT LOKASI (${history.length})</div>`;
+    html += '<div style="max-height:200px;overflow-y:auto;scrollbar-width:thin;">';
+
+    history.forEach((loc, i) => {
+        const time = new Date(loc.created_at).toLocaleString('id-ID', {day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
+        const acc = loc.accuracy ? `±${Math.round(loc.accuracy)}m` : '';
+        const mapsUrl = `https://www.google.com/maps?q=${loc.latitude},${loc.longitude}`;
+        const isFirst = i === 0;
+
+        html += `<a href="${mapsUrl}" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;text-decoration:none;transition:background .2s;${isFirst ? 'background:rgba(99,102,241,.1);' : ''}" onmouseover="this.style.background='var(--bg-tertiary)'" onmouseout="this.style.background='${isFirst ? 'rgba(99,102,241,.1)' : 'transparent'}'">
+            <div style="width:8px;height:8px;border-radius:50%;background:${isFirst ? '#10b981' : 'var(--border-color)'};flex-shrink:0;"></div>
+            <div style="flex:1;min-width:0;">
+                <div style="font-family:monospace;font-size:.78rem;color:${isFirst ? 'var(--accent)' : 'var(--text-primary)'};">${loc.latitude}, ${loc.longitude}</div>
+                <div style="font-size:.7rem;color:var(--text-muted);">${time} ${acc ? '· ' + acc : ''}</div>
+            </div>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+        </a>`;
+    });
+
+    html += '</div>';
+    container.innerHTML = html;
+    container.style.display = '';
+}
+
+function showTrackerError(msg) {
+    document.getElementById('trackerLoading').style.display = 'none';
+    document.getElementById('trackerResult').style.display = 'none';
+    const el = document.getElementById('trackerError');
+    el.style.display = '';
+    el.innerHTML = `<div style="color:#ef4444;font-size:.9rem;">⚠️ ${msg}</div>`;
+    document.getElementById('trackerBtn').disabled = false;
+}
+
+function renderTrackerResult(data, timestamp) {
+    const c = data.candidate;
+    if (!c) return;
+
+    const docs = data.documents || [];
+
+    // Status pipeline
+    const stages = [
+        { label: 'Pendaftaran', icon: '📝' },
+        { label: 'Pemberkasan', icon: '📁' },
+        { label: 'Interview',   icon: '🗣️' },
+        { label: 'Test Drive',  icon: '🚛' },
+        { label: 'Diterima',    icon: '✅' }
+    ];
+
+    const status = (c.status || '').toLowerCase();
+    let activeIdx = 0;
+    if (status.includes('blacklist') || status.includes('ditolak') || status.includes('gagal') || status.includes('tidak')) {
+        activeIdx = -1;
+    } else if (status.includes('diterima') || status.includes('aktif') || status.includes('lolos')) {
+        activeIdx = 4;
+    } else if (status.includes('test') || status.includes('drive')) {
+        activeIdx = 3;
+    } else if (status.includes('interview') || status.includes('jadwal')) {
+        activeIdx = 2;
+    } else if (status.includes('berkas') || status.includes('lengkap') || status.includes('proses')) {
+        activeIdx = 1;
+    }
+
+    let statusColor = 'var(--accent)';
+    let statusBg = 'rgba(59,130,246,0.12)';
+    if (activeIdx === -1) { statusColor = '#ef4444'; statusBg = 'rgba(239,68,68,0.12)'; }
+    else if (activeIdx >= 4) { statusColor = '#10b981'; statusBg = 'rgba(16,185,129,0.12)'; }
+
+    // Timeline
+    let timeline = '<div style="display:flex;align-items:flex-start;gap:0;padding:20px 24px 16px;">';
+    stages.forEach((s, i) => {
+        const done = activeIdx >= 0 && i <= activeIdx;
+        const cur = i === activeIdx;
+        const dotBg = done ? 'var(--accent)' : 'transparent';
+        const dotBorder = done ? 'var(--accent)' : 'var(--border-color)';
+        const lineBg = (activeIdx >= 0 && i < activeIdx) ? 'var(--accent)' : 'var(--border-color)';
+        const txtCol = done ? 'var(--text-primary)' : 'var(--text-muted)';
+        const fw = cur ? '700' : '400';
+        const sz = cur ? 30 : 22;
+
+        timeline += `<div style="flex:1;text-align:center;">
+            <div style="width:${sz}px;height:${sz}px;border-radius:50%;background:${dotBg};border:2.5px solid ${dotBorder};margin:0 auto;display:flex;align-items:center;justify-content:center;transition:all .3s;${cur ? 'box-shadow:0 0 0 4px ' + statusBg : ''}">
+                ${done ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>' : ''}
+            </div>
+            <div style="font-size:.72rem;margin-top:6px;color:${txtCol};font-weight:${fw};line-height:1.3;">${s.icon}<br>${s.label}</div>
+        </div>`;
+        if (i < stages.length - 1) {
+            timeline += `<div style="flex:0.6;height:2.5px;background:${lineBg};margin-top:${cur ? 14 : 10}px;border-radius:2px;transition:all .3s;"></div>`;
+        }
+    });
+    timeline += '</div>';
+
+    // Info grid — enhanced with full address + WA link + Maps
+    const waNum = c.whatsapp ? String(c.whatsapp).replace(/\D/g,'') : '';
+    const waLink = waNum ? `<a href="https://wa.me/${waNum.startsWith('0') ? '62' + waNum.substring(1) : waNum}" target="_blank" style="color:var(--accent);text-decoration:none;font-weight:600;">${escapeHtml(c.whatsapp)} 📱</a>` : null;
+
+    // Build full address string
+    const addrParts = [c.address, c.kelurahan, c.kecamatan, c.kabupaten, c.provinsi].filter(Boolean);
+    const fullAddr = addrParts.join(', ');
+    const mapsUrl = fullAddr ? `https://www.google.com/maps/search/${encodeURIComponent(fullAddr)}` : '';
+
+    const rows = [
+        ['Nama', c.name],
+        ['NIK', c.nik],
+        ['Status', c.status, statusColor, statusBg],
+        ['Armada', c.armada_type],
+        ['SIM', c.sim_type],
+        ['WhatsApp', waLink, null, null, true],
+        ['Lokasi Interview', c.location_name || c.interview_location],
+        ['Jadwal Interview', c.jadwal_interview],
+        ['Test Drive', c.test_drive_date],
+        ['Tempat Lahir', c.tempat_lahir],
+        ['Tanggal Lahir', c.tanggal_lahir],
+        ['Pendidikan', c.pendidikan_terakhir],
+        ['Dokumen', docs.length ? docs.length + ' file terupload' : 'Belum ada'],
+        ['Terdaftar', c.created_at ? new Date(c.created_at).toLocaleDateString('id-ID', {day:'numeric',month:'long',year:'numeric'}) : null]
+    ].filter(r => r[1]);
+
+    let info = '<div style="padding:0 24px 20px;display:grid;grid-template-columns:1fr 1fr;gap:0;">';
+    rows.forEach(([label, value, color, bg, isHtml]) => {
+        const valStyle = color
+            ? `background:${bg};color:${color};padding:3px 10px;border-radius:8px;font-weight:600;font-size:.8rem;display:inline-block;`
+            : 'color:var(--text-primary);';
+        const display = isHtml ? value : escapeHtml(String(value));
+        info += `<div style="padding:10px 0;border-bottom:1px solid var(--border-color);">
+            <div style="font-size:.75rem;color:var(--text-muted);margin-bottom:2px;">${label}</div>
+            <div style="font-size:.88rem;${valStyle}">${display}</div>
+        </div>`;
+    });
+    info += '</div>';
+
+    // Full Address Card with Maps button — GPS or address fallback
+    let addrCard = '';
+    const hasGps = c.last_latitude && c.last_longitude;
+    const gpsUrl = hasGps ? `https://www.google.com/maps?q=${c.last_latitude},${c.last_longitude}` : '';
+    const lastSeen = c.last_location_at ? new Date(c.last_location_at).toLocaleString('id-ID', {day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}) : null;
+    const accMeters = c.last_accuracy ? Math.round(c.last_accuracy) : null;
+
+    // "Minta Lokasi" button + cancel
+    let requestBtn = `<div style="margin:0 24px 12px;">
+        <div style="display:flex;gap:8px;">
+            <button id="requestLocationBtn" onclick="requestLiveLocation()"
+                style="flex:1;padding:12px 20px;background:linear-gradient(135deg,#6366F1,#8B5CF6);color:#fff;border:none;border-radius:10px;font-size:.88rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:all .2s;box-shadow:0 2px 10px rgba(99,102,241,.3);"
+                onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">
+                📡 Minta Lokasi Sekarang
+            </button>
+            <button onclick="cancelTrackRequest()" title="Batalkan"
+                style="padding:12px 14px;background:var(--bg-secondary);color:var(--text-muted);border:1px solid var(--border-color);border-radius:10px;font-size:.88rem;cursor:pointer;transition:all .2s;"
+                onmouseover="this.style.borderColor='#ef4444';this.style.color='#ef4444'" onmouseout="this.style.borderColor='var(--border-color)';this.style.color='var(--text-muted)'">
+                ✕
+            </button>
+        </div>
+        <div style="font-size:.7rem;color:var(--text-muted);text-align:center;margin-top:4px;">User harus sedang membuka halaman pendaftaran · Menunggu tanpa batas waktu</div>
+    </div>`;
+
+    if (hasGps || fullAddr) {
+        addrCard += `<div style="margin:0 24px 16px;padding:14px 16px;background:var(--bg-secondary);border-radius:12px;border:1px solid var(--border-color);">`;
+
+        // GPS Live Location
+        if (hasGps) {
+            addrCard += `
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+                <div style="width:10px;height:10px;border-radius:50%;background:#10b981;box-shadow:0 0 6px #10b981;animation:pulse 2s infinite;"></div>
+                <div style="font-size:.75rem;color:var(--text-muted);font-weight:600;">📡 LOKASI TERAKHIR (GPS)</div>
+            </div>
+            <div style="font-size:.88rem;color:var(--text-primary);margin-bottom:4px;">
+                <div style="font-family:monospace;font-size:.82rem;color:var(--accent);">${c.last_latitude}, ${c.last_longitude}</div>
+                ${lastSeen ? '<div style="font-size:.75rem;color:var(--text-muted);margin-top:4px;">🕒 Terakhir online: ' + lastSeen + '</div>' : ''}
+                ${accMeters ? '<div style="font-size:.75rem;color:var(--text-muted);">📏 Akurasi: ±' + accMeters + ' meter</div>' : ''}
+            </div>
+            <a href="${gpsUrl}" target="_blank" rel="noopener"
+               style="display:inline-flex;align-items:center;gap:6px;margin-top:10px;padding:10px 20px;background:linear-gradient(135deg,#EA4335,#FBBC05,#34A853,#4285F4);color:#fff;border-radius:10px;text-decoration:none;font-size:.88rem;font-weight:700;transition:opacity .2s;box-shadow:0 2px 8px rgba(0,0,0,.15);"
+               onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                Buka Lokasi di Google Maps
+            </a>`;
+        }
+
+        // Address info
+        if (fullAddr) {
+            addrCard += `
+            <div style="${hasGps ? 'margin-top:16px;padding-top:12px;border-top:1px solid var(--border-color);' : ''}">
+                <div style="font-size:.75rem;color:var(--text-muted);margin-bottom:6px;font-weight:600;">📍 ALAMAT TERDAFTAR</div>
+                <div style="font-size:.85rem;color:var(--text-primary);line-height:1.6;">
+                    ${c.address ? '<div>' + escapeHtml(c.address) + '</div>' : ''}
+                    ${c.kelurahan ? '<span style="font-size:.78rem;color:var(--text-muted);">Kel. </span>' + escapeHtml(c.kelurahan) : ''}
+                    ${c.kecamatan ? '<span style="font-size:.78rem;color:var(--text-muted);margin-left:4px;">Kec. </span>' + escapeHtml(c.kecamatan) : ''}
+                    ${c.kabupaten ? '<div><span style="font-size:.78rem;color:var(--text-muted);">Kab/Kota </span>' + escapeHtml(c.kabupaten) + '</div>' : ''}
+                    ${c.provinsi ? '<div><span style="font-size:.78rem;color:var(--text-muted);">Prov. </span>' + escapeHtml(c.provinsi) + '</div>' : ''}
+                </div>
+                ${!hasGps ? `<a href="${mapsUrl}" target="_blank" rel="noopener"
+                   style="display:inline-flex;align-items:center;gap:6px;margin-top:8px;padding:8px 16px;background:linear-gradient(135deg,#4285F4,#34A853);color:#fff;border-radius:8px;text-decoration:none;font-size:.82rem;font-weight:600;"
+                   onmouseover="this.style.opacity='.85'" onmouseout="this.style.opacity='1'">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                    Cari di Google Maps
+                </a>` : ''}
+            </div>`;
+        }
+
+        addrCard += '</div>';
+    }
+
+    // Location History container
+    let historyCard = `<div id="locationHistoryContainer" style="display:none;margin:0 24px 16px;padding:14px 16px;background:var(--bg-secondary);border-radius:12px;border:1px solid var(--border-color);"></div>`;
+
+    // Korlap notes
+    let notes = '';
+    if (c.korlap_notes) {
+        notes = `<div style="margin:0 24px 20px;padding:12px 16px;background:var(--bg-secondary);border-radius:10px;border-left:3px solid var(--accent);">
+            <div style="font-size:.75rem;color:var(--text-muted);margin-bottom:4px;font-weight:600;">📋 CATATAN KORLAP</div>
+            <div style="font-size:.88rem;color:var(--text-primary);line-height:1.5;">${escapeHtml(c.korlap_notes)}</div>
+        </div>`;
+    }
+
+    const el = document.getElementById('trackerResult');
+    el.innerHTML = timeline + info + requestBtn + addrCard + historyCard + notes;
+    el.style.display = '';
+    document.getElementById('trackerError').style.display = 'none';
+    document.getElementById('trackerLoading').style.display = 'none';
+
+    // Auto-load location history if GPS data exists
+    if (hasGps && _lastTrackedCandidateId) {
+        loadLocationHistory(_lastTrackedCandidateId);
+    }
+
+    // Cache hint
+    const hint = document.getElementById('trackerCacheHint');
+    const time = document.getElementById('trackerCacheTime');
+    if (hint && timestamp) {
+        hint.style.display = '';
+        time.textContent = new Date(timestamp).toLocaleTimeString('id-ID');
+    }
 }

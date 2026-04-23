@@ -11,6 +11,8 @@ const ChatEngine = (() => {
     let _typingTimer = null;
     let _container = null;
     let _onNewMessages = null;
+    let _replyTo = null; // { id, sender_name, message, message_type }
+    let _onTypingChange = null;
 
     /* ── SVG Icons (clean stroke) ──────────────── */
     const ICONS = {
@@ -42,6 +44,7 @@ const ChatEngine = (() => {
             ? document.getElementById(config.container)
             : config.container;
         _onNewMessages = config.onNewMessages;
+        _onTypingChange = config.onTypingChange || null;
     }
 
     /* ── Long Polling ──────────────────────────── */
@@ -70,9 +73,16 @@ const ChatEngine = (() => {
                     const data = JSON.parse(this.responseText);
                     if (data.messages && data.messages.length > 0) {
                         _lastMsgId = data.messages[data.messages.length - 1].id;
+                        // Filter out messages already rendered (optimistic)
+                        const chatArea = _container?.querySelector('.chat-messages');
+                        const newMsgs = chatArea ? data.messages.filter(m => 
+                            !chatArea.querySelector(`[data-id="${m.id}"]`)
+                        ) : data.messages;
                         if (_onNewMessages) _onNewMessages(data.messages);
-                        renderMessages(data.messages, true);
+                        if (newMsgs.length > 0) renderMessages(newMsgs, true);
                     }
+                    // Handle typing indicator from poll
+                    if (_onTypingChange) _onTypingChange(!!data.typing);
                 } catch(e) {}
             }
             if (_polling) setTimeout(doPoll, 300);
@@ -87,12 +97,48 @@ const ChatEngine = (() => {
 
     /* ── Send Text ─────────────────────────────── */
     async function sendText(candidateId, text) {
+        // Capture and clear reply state
+        const replyData = _replyTo;
+        _replyTo = null;
+
+        // Optimistic render — show bubble immediately
+        const tempId = 'tmp_' + Date.now();
+        const optimisticMsg = {
+            id: tempId,
+            candidate_id: candidateId,
+            sender_type: _config.role === 'admin' ? 'admin' : 'user',
+            sender_name: '',
+            message_type: 'text',
+            message: text,
+            is_read: 0,
+            created_at: new Date().toISOString().replace('T', ' ').substring(0, 19),
+            reply_to_id: replyData?.id || null,
+            reply_preview: replyData ? JSON.stringify(replyData) : null
+        };
+        renderMessages([optimisticMsg], true);
+        // Hide reply bar
+        const replyBar = _container?.querySelector('.chat-reply-bar');
+        if (replyBar) replyBar.style.display = 'none';
+
+        const body = { candidate_id: candidateId, message: text };
+        if (replyData?.id) body.reply_to_id = replyData.id;
+
         const res = await fetch(`${API}?action=send`, {
             method: 'POST', credentials: 'include',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ candidate_id: candidateId, message: text })
+            body: JSON.stringify(body)
         });
-        return res.json();
+        const data = await res.json();
+
+        // Replace temp bubble with real ID so poll won't duplicate
+        if (data.ok && data.id) {
+            const tempBubble = _container?.querySelector(`[data-id="${tempId}"]`);
+            if (tempBubble) {
+                tempBubble.setAttribute('data-id', data.id);
+            }
+            if (data.id > _lastMsgId) _lastMsgId = data.id;
+        }
+        return data;
     }
 
     /* ── Send File ─────────────────────────────── */
@@ -186,6 +232,21 @@ const ChatEngine = (() => {
             ? (msg.is_read == 1 ? `<span class="chat-read read">${ICONS.doubleCheck}</span>` : `<span class="chat-read">${ICONS.check}</span>`)
             : '';
 
+        // Reply quote block
+        let replyBlock = '';
+        if (msg.reply_preview || msg.reply_to_id) {
+            try {
+                const rp = typeof msg.reply_preview === 'string' ? JSON.parse(msg.reply_preview) : msg.reply_preview;
+                if (rp) {
+                    const rpType = rp.message_type === 'image' ? '📷 Foto' : (rp.message_type === 'file' ? '📎 File' : escHtml(rp.message || ''));
+                    replyBlock = `<div class="chat-reply-quote" onclick="ChatEngine.scrollToMsg(${rp.id})">
+                        <div class="chat-reply-name">${escHtml(rp.sender_name || '')}</div>
+                        <div class="chat-reply-text">${rpType}</div>
+                    </div>`;
+                }
+            } catch(e) {}
+        }
+
         let content = '';
 
         switch (msg.message_type) {
@@ -213,7 +274,6 @@ const ChatEngine = (() => {
             case 'location':
                 const lat = msg.latitude, lng = msg.longitude;
                 const mapUrl = `https://www.google.com/maps?q=${lat},${lng}`;
-                const staticMap = `https://maps.googleapis.com/maps/api/staticmap?center=${lat},${lng}&zoom=15&size=280x150&markers=color:red|${lat},${lng}&key=`;
                 content = `
                     <a href="${mapUrl}" target="_blank" class="chat-location-card">
                         <div class="chat-location-preview">
@@ -232,14 +292,21 @@ const ChatEngine = (() => {
         const senderLabel = !isMine && _config.role === 'admin'
             ? '' : (!isMine ? `<div class="chat-sender">${escHtml(msg.sender_name)}</div>` : '');
 
+        // Reply action button
+        const replyBtn = `<button class="chat-reply-btn" onclick="ChatEngine.setReply(${msg.id}, '${escHtml(msg.sender_name).replace(/'/g, '\\&#39;')}', '${escHtml((msg.message||'').substring(0,80)).replace(/'/g, '\\&#39;')}', '${msg.message_type}')" title="Balas">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 00-4-4H4"/></svg>
+        </button>`;
+
         return `
             <div class="chat-bubble chat-bubble--${side}" data-id="${msg.id}">
                 ${senderLabel}
+                ${replyBlock}
                 ${content}
                 <div class="chat-meta">
                     <span class="chat-time">${time}</span>
                     ${readIcon}
                 </div>
+                ${replyBtn}
             </div>`;
     }
 
@@ -291,6 +358,55 @@ const ChatEngine = (() => {
     function setLastMsgId(id) { _lastMsgId = id; }
     function getLastMsgId() { return _lastMsgId; }
 
+    /* ── Reply State ───────────────────────────── */
+    function setReply(id, senderName, message, msgType) {
+        _replyTo = { id, sender_name: senderName, message, message_type: msgType };
+        // Show reply bar in UI
+        const bar = _container?.querySelector('.chat-reply-bar');
+        if (bar) {
+            const typeLabel = msgType === 'image' ? '📷 Foto' : (msgType === 'file' ? '📎 File' : message);
+            bar.innerHTML = `<div class="chat-reply-bar-content">
+                <div class="chat-reply-bar-name">${escHtml(senderName)}</div>
+                <div class="chat-reply-bar-text">${escHtml(typeLabel)}</div>
+            </div>
+            <button class="chat-reply-bar-close" onclick="ChatEngine.clearReply()">✕</button>`;
+            bar.style.display = 'flex';
+        }
+        // Focus input
+        const input = _container?.querySelector('textarea, input[type="text"]');
+        if (input) input.focus();
+    }
+
+    function clearReply() {
+        _replyTo = null;
+        const bar = _container?.querySelector('.chat-reply-bar');
+        if (bar) bar.style.display = 'none';
+    }
+
+    function getReplyTo() { return _replyTo; }
+
+    /* ── Scroll to Message ─────────────────────── */
+    function scrollToMsg(msgId) {
+        const el = _container?.querySelector(`[data-id="${msgId}"]`);
+        if (el) {
+            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            el.classList.add('chat-bubble--highlight');
+            setTimeout(() => el.classList.remove('chat-bubble--highlight'), 1500);
+        }
+    }
+
+    /* ── Typing Indicator ──────────────────────── */
+    function sendTyping(candidateId) {
+        clearTimeout(_typingTimer);
+        _typingTimer = setTimeout(() => {
+            fetch(`${API}?action=typing`, {
+                method: 'POST', credentials: 'include',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ candidate_id: candidateId })
+            }).catch(() => {});
+        }, 300); // Debounce 300ms
+    }
+
     /* ── Public API ────────────────────────────── */
     return {
         ICONS, init, startPoll, stopPoll,
@@ -299,6 +415,8 @@ const ChatEngine = (() => {
         renderMessages, renderBubble, openImage,
         escHtml, formatTime, formatSize,
         setLastMsgId, getLastMsgId,
+        setReply, clearReply, getReplyTo, scrollToMsg,
+        sendTyping,
         setCandidateId(id) { _config.candidateId = id; },
     };
 })();

@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Dashboard Admin BAS Recruitment — Kelola kandidat, analytics, dan AI insights.">
+    <title>BAS Recruitment — Dashboard</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/dashboard.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="js/theme.js"></script>
+    <script src="js/utils.js"></script>
+</head>
+<body class="dash-body">
+
+    <!-- ═══════════════════════════════════════ -->
+    <!-- SIDEBAR                                -->
+    <!-- ═══════════════════════════════════════ -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <img src="LogoBas.png" alt="BAS" class="sidebar-logo">
+            <button class="sidebar-close" id="sidebarClose">✕</button>
+        </div>
+
+        <nav class="sidebar-nav">
+            <a class="nav-item active" data-page="overview" onclick="switchPage('overview')">
+                <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+                <span>Dashboard</span>
+            </a>
+            <a class="nav-item" data-page="candidates" onclick="switchPage('candidates')">
+                <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                <span>Kandidat</span>
+            </a>
+            <a class="nav-item" data-page="analytics" onclick="switchPage('analytics')">
+                <svg viewBox="0 0 24 24"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg>
+                <span>Analytics</span>
+            </a>
+            <a class="nav-item" data-page="aiInsights" onclick="switchPage('aiInsights')">
+                <svg viewBox="0 0 24 24"><path d="M12 2a4 4 0 0 0-4 4c0 2 2 3 2 6h4c0-3 2-4 2-6a4 4 0 0 0-4-4z"/><line x1="10" y1="22" x2="14" y2="22"/><line x1="9" y1="16" x2="15" y2="16"/><line x1="10" y1="19" x2="14" y2="19"/></svg>
+                <span>AI Insights</span>
+            </a>
+            <a class="nav-item nav-owner-only" data-page="korlapMgmt" onclick="switchPage('korlapMgmt')" style="display:none;">
+                <svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
+                <span>Akses Korlap</span>
+            </a>
+            <a class="nav-item nav-owner-only" data-page="locations" onclick="switchPage('locations')" style="display:none;">
+                <svg viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                <span>Lokasi</span>
+            </a>
+            <a class="nav-item nav-privileged" data-page="blacklist" onclick="switchPage('blacklist')" style="display:none;">
+                <svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                <span>Blacklist</span>
+            </a>
+        </nav>
+
+        <div class="sidebar-footer">
+            <div class="sidebar-bottom-row">
+                <button class="sidebar-icon-btn" id="themeToggle" title="Toggle Dark/Light">
+                    <svg id="themeIconSun" viewBox="0 0 24 24" width="18" height="18"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+                    <svg id="themeIconMoon" viewBox="0 0 24 24" width="18" height="18" style="display:none"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+                </button>
+                <button class="sidebar-logout" id="logoutBtn" title="Keluar">
+                    <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                </button>
+            </div>
+        </div>
+    </aside>
+
+    <!-- ═══════════════════════════════════════ -->
+    <!-- MAIN CONTENT                           -->
+    <!-- ═══════════════════════════════════════ -->
+    <main class="dash-main" id="dashMain">
+
+        <!-- Top Bar -->
+        <header class="dash-topbar">
+            <div class="topbar-left">
+                <button class="hamburger" id="hamburgerBtn">
+                    <svg viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+                </button>
+                <div>
+                    <h1 class="topbar-greeting" id="greetingText">Selamat siang</h1>
+                    <p class="topbar-sub" id="greetingSub">Ringkasan rekrutmen hari ini</p>
+                </div>
+            </div>
+        </header>
+
+        <!-- ═══ PAGE: OVERVIEW ═══════════════ -->
+        <section class="dash-page active" id="page-overview">
+
+            <!-- KPI Cards -->
+            <div class="kpi-row">
+                <div class="kpi-card kpi-blue">
+                    <div class="kpi-icon-wrap"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+                    <div class="kpi-data">
+                        <div class="kpi-value" id="kpiTotal">0</div>
+                        <div class="kpi-label">Total Pendaftar</div>
+                    </div>
+                    <div class="kpi-trend" id="kpiTotalTrend">—</div>
+                </div>
+                <div class="kpi-card kpi-green">
+                    <div class="kpi-icon-wrap"><svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
+                    <div class="kpi-data">
+                        <div class="kpi-value" id="kpiLulus">0</div>
+                        <div class="kpi-label">Lulus</div>
+                    </div>
+                    <div class="kpi-trend kpi-trend-up" id="kpiLulusTrend">—</div>
+                </div>
+                <div class="kpi-card kpi-red">
+                    <div class="kpi-icon-wrap"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg></div>
+                    <div class="kpi-data">
+                        <div class="kpi-value" id="kpiGagal">0</div>
+                        <div class="kpi-label">Tidak Lulus</div>
+                    </div>
+                    <div class="kpi-trend kpi-trend-down" id="kpiGagalTrend">—</div>
+                </div>
+                <div class="kpi-card kpi-yellow">
+                    <div class="kpi-icon-wrap"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+                    <div class="kpi-data">
+                        <div class="kpi-value" id="kpiProses">0</div>
+                        <div class="kpi-label">Dalam Proses</div>
+                    </div>
+                    <div class="kpi-trend" id="kpiProsesTrend">—</div>
+                </div>
+                <div class="kpi-card kpi-purple">
+                    <div class="kpi-icon-wrap"><svg viewBox="0 0 24 24"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg></div>
+                    <div class="kpi-data">
+                        <div class="kpi-value" id="kpiPassRate">0%</div>
+                        <div class="kpi-label">Pass Rate</div>
+                    </div>
+                    <div class="kpi-trend" id="kpiPassRateTrend">—</div>
+                </div>
+            </div>
+
+            <!-- Status Pipeline -->
+            <div class="status-pipeline" id="statusPipeline">
+                <div class="pipeline-bar" id="pipelineBar"></div>
+                <div class="pipeline-legend" id="pipelineLegend"></div>
+            </div>
+
+            <!-- Charts Row -->
+            <div class="charts-row">
+                <div class="chart-box chart-wide">
+                    <div class="chart-header">
+                        <h3>Performa per Lokasi</h3>
+                    </div>
+                    <div class="chart-canvas-wrap"><canvas id="locationChart"></canvas></div>
+                </div>
+                <div class="chart-box">
+                    <div class="chart-header">
+                        <h3>Status Kandidat</h3>
+                    </div>
+                    <div class="chart-canvas-wrap"><canvas id="statusChart"></canvas></div>
+                </div>
+            </div>
+
+            <!-- Aktual per Status -->
+            <div class="charts-row">
+                <div class="chart-box" style="flex:1;">
+                    <div class="chart-header">
+                        <h3>Aktual per Status</h3>
+                    </div>
+                    <div class="chart-canvas-wrap chart-tall"><canvas id="statusBarChart"></canvas></div>
+                </div>
+            </div>
+
+            <!-- AI Quick Insights + Recent -->
+            <div class="charts-row">
+                <div class="chart-box">
+                    <div class="chart-header">
+                        <h3>AI Insights</h3>
+                        <span class="badge badge-ai">ML Engine</span>
+                    </div>
+                    <div id="aiQuickInsights" class="ai-insights-list">
+                        <div class="spinner-sm"></div>
+                    </div>
+                </div>
+                <div class="chart-box">
+                    <div class="chart-header">
+                        <h3>📅 Trend Pendaftaran (7 Hari)</h3>
+                    </div>
+                    <div class="chart-canvas-wrap"><canvas id="trendChart"></canvas></div>
+                </div>
+            </div>
+
+            <!-- Recent Candidates -->
+            <div class="chart-box">
+                <div class="chart-header">
+                    <h3>🕐 Kandidat Terbaru</h3>
+                    <button class="btn-link" onclick="switchPage('candidates')">Lihat Semua →</button>
+                </div>
+                <div class="table-wrap">
+                    <table class="dash-table">
+                        <thead>
+                            <tr>
+                                <th>Nama</th>
+                                <th>Armada</th>
+                                <th>Lokasi</th>
+                                <th>Status</th>
+                                <th>AI Score</th>
+                                <th>Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="recentTableBody">
+                            <tr><td colspan="6" class="table-empty">Memuat...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- ═══ PAGE: CANDIDATES ═════════════ -->
+        <section class="dash-page" id="page-candidates">
+            <div class="page-header">
+                <h2>Daftar Kandidat</h2>
+                <div class="page-header-actions">
+                    <span class="candidate-count" id="candidateCount">0 kandidat</span>
+                    <span id="undoRedoIndicator" style="display:none;font-size:0.75rem;color:#F59E0B;font-weight:600;background:rgba(245,158,11,0.1);padding:3px 10px;border-radius:20px;cursor:pointer;" title="Klik atau Ctrl+Z untuk undo" onclick="triggerUndo()"></span>
+                    <button class="btn btn-sm" style="background:#10B981;color:#fff;" onclick="downloadTemplate()">Template</button>
+                    <button class="btn btn-sm" style="background:#3B82F6;color:#fff;" onclick="document.getElementById('importFileInput').click()">Import</button>
+                    <button class="btn btn-sm btn-primary" id="exportExcelBtn" onclick="exportFiltered()" title="Export data yang sedang ditampilkan (sesuai filter aktif)">Export Filtered</button>
+                    <button class="btn btn-sm" style="background:#7C3AED;color:#fff;" onclick="exportAll()" title="Export semua data">Export Semua</button>
+                    <input type="file" id="importFileInput" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleImportFile(event)">
+                </div>
+            </div>
+
+            <!-- Filters -->
+            <div class="filter-row">
+                <!-- Lokasi Multi-Filter -->
+                <div class="multi-filter-wrap" id="mfWrapLocation">
+                    <button class="multi-filter-btn" id="mfBtnLocation" onclick="toggleMultiFilter('Location')">
+                        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                        <span id="mfLabelLocation">Semua Lokasi</span>
+                        <svg class="mf-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+                    </button>
+                    <div class="multi-filter-panel" id="mfPanelLocation">
+                        <div class="mf-panel-header">
+                            <span class="mf-panel-title">Lokasi</span>
+                            <label class="mf-select-all"><input type="checkbox" onchange="selectAllMultiFilter('Location', this.checked)"> Semua</label>
+                            <button class="mf-clear-btn" onclick="clearMultiFilter('Location')">Reset</button>
+                        </div>
+                        <div id="mfListLocation"><!-- populated by JS --></div>
+                    </div>
+                </div>
+
+                <!-- Status Multi-Filter -->
+                <div class="multi-filter-wrap" id="mfWrapStatus">
+                    <button class="multi-filter-btn" id="mfBtnStatus" onclick="toggleMultiFilter('Status')">
+                        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                        <span id="mfLabelStatus">Semua Status</span>
+                        <svg class="mf-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+                    </button>
+                    <div class="multi-filter-panel" id="mfPanelStatus">
+                        <div class="mf-panel-header">
+                            <span class="mf-panel-title">Status</span>
+                            <label class="mf-select-all"><input type="checkbox" onchange="selectAllMultiFilter('Status', this.checked)"> Semua</label>
+                            <button class="mf-clear-btn" onclick="clearMultiFilter('Status')">Reset</button>
+                        </div>
+                        <div id="mfListStatus">
+                            <label class="mf-item"><input type="checkbox" value="Belum Pemberkasan" onchange="onMultiFilterChange('Status')"> Belum Pemberkasan</label>
+                            <label class="mf-item"><input type="checkbox" value="Sudah Pemberkasan" onchange="onMultiFilterChange('Status')"> Sudah Pemberkasan</label>
+                            <label class="mf-item"><input type="checkbox" value="Menunggu Test Drive" onchange="onMultiFilterChange('Status')"> Menunggu Test Drive</label>
+                            <label class="mf-item"><input type="checkbox" value="Jadwal Test Drive" onchange="onMultiFilterChange('Status')"> Jadwal Test Drive</label>
+                            <label class="mf-item"><input type="checkbox" value="Hadir" onchange="onMultiFilterChange('Status')"> Hadir</label>
+                            <label class="mf-item"><input type="checkbox" value="Tidak Hadir" onchange="onMultiFilterChange('Status')"> Tidak Hadir</label>
+                            <label class="mf-item"><input type="checkbox" value="Lulus" onchange="onMultiFilterChange('Status')"> Lulus</label>
+                            <label class="mf-item"><input type="checkbox" value="Tidak Lulus" onchange="onMultiFilterChange('Status')"> Tidak Lulus</label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Armada Multi-Filter -->
+                <div class="multi-filter-wrap" id="mfWrapArmada">
+                    <button class="multi-filter-btn" id="mfBtnArmada" onclick="toggleMultiFilter('Armada')">
+                        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 5v3h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+                        <span id="mfLabelArmada">Semua Armada</span>
+                        <svg class="mf-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+                    </button>
+                    <div class="multi-filter-panel" id="mfPanelArmada">
+                        <div class="mf-panel-header">
+                            <span class="mf-panel-title">Armada</span>
+                            <label class="mf-select-all"><input type="checkbox" onchange="selectAllMultiFilter('Armada', this.checked)"> Semua</label>
+                            <button class="mf-clear-btn" onclick="clearMultiFilter('Armada')">Reset</button>
+                        </div>
+                        <div id="mfListArmada">
+                            <label class="mf-item"><input type="checkbox" value="CDD" onchange="onMultiFilterChange('Armada')"> CDD</label>
+                            <label class="mf-item"><input type="checkbox" value="Wingbox" onchange="onMultiFilterChange('Armada')"> Wingbox</label>
+                            <label class="mf-item"><input type="checkbox" value="Bigmama" onchange="onMultiFilterChange('Armada')"> Big Mama</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="filter-search">
+                    <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    <input type="text" placeholder="Cari nama / WA..." id="filterSearch">
+                </div>
+                <div class="col-toggle-wrap">
+                    <button class="btn btn-sm" style="background:#6366F1;color:#fff;" onclick="toggleColPanel()">Kolom</button>
+                    <div class="col-toggle-panel" id="colTogglePanel">
+                        <div class="col-toggle-title">Kolom</div>
+                        <div id="colToggleList"></div>
+                    </div>
+                </div>
+            </div>
+
+
+            <!-- Bulk Actions -->
+            <div class="bulk-actions-bar" id="bulkActions" style="display:none;">
+                <div class="bulk-left">
+                    <input type="checkbox" id="selectAllTop" onchange="toggleSelectAll(this)">
+                    <span id="selectedCount">0 dipilih</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                    <!-- Bulk Status Update -->
+                    <div style="display:flex;align-items:center;gap:6px;">
+                        <select id="bulkStatusSelect" class="dash-select" style="padding:6px 10px;font-size:0.8rem;min-width:170px;">
+                            <option value="">— Ubah Status ke —</option>
+                            <option value="Belum Pemberkasan">Belum Pemberkasan</option>
+                            <option value="Sudah Pemberkasan">Sudah Pemberkasan</option>
+                            <option value="Menunggu Test Drive">Menunggu Test Drive</option>
+                            <option value="Jadwal Test Drive">Jadwal Test Drive</option>
+                            <option value="Hadir">Hadir</option>
+                            <option value="Tidak Hadir">Tidak Hadir</option>
+                            <option value="Lulus">Lulus</option>
+                            <option value="Tidak Lulus">Tidak Lulus</option>
+                        </select>
+                        <button class="btn btn-sm" style="background:#10B981;color:#fff;" onclick="bulkUpdateStatus()">✅ Terapkan</button>
+                    </div>
+                    <button class="btn btn-sm btn-danger" onclick="bulkDeleteCandidates()">🗑️ Hapus Terpilih</button>
+                </div>
+            </div>
+
+            <!-- Candidates Table -->
+            <div class="chart-box" style="padding:0;">
+                <div class="table-wrap">
+                    <table class="dash-table dash-table-full" style="font-size:0.75rem;">
+                        <thead>
+                            <tr>
+                                <th style="position:sticky;left:0;z-index:6;background:var(--bg-secondary);"><input type="checkbox" id="selectAllCand" onchange="toggleSelectAll(this)"></th>
+                                <th class="sortable" data-sort="given_id">ID</th>
+                                <th class="sortable" data-sort="user_created_at">Tgl Akun</th>
+                                <th class="sortable" data-sort="user_username">Username</th>
+                                <th>Password</th>
+                                <th class="sortable" data-sort="name">Nama</th>
+                                <th class="sortable" data-sort="nik">NIK</th>
+                                <th>WhatsApp</th>
+                                <th>Email</th>
+                                <th class="sortable" data-sort="sim_type">SIM</th>
+                                <th class="sortable" data-sort="armada_type">Armada</th>
+                                <th class="sortable" data-sort="status">Status</th>
+                                <th class="sortable" data-sort="tempat_lahir">Tempat Lahir</th>
+                                <th class="sortable" data-sort="tanggal_lahir">Tgl Lahir</th>
+                                <th>Alamat</th>
+                                <th class="sortable" data-sort="pendidikan_terakhir">Pendidikan</th>
+                                <th class="sortable" data-sort="pernah_kerja_spx">SPX?</th>
+                                <th class="sortable" data-sort="surat_sehat">Surat Sehat</th>
+                                <th class="sortable" data-sort="paklaring">Paklaring</th>
+                                <th class="sortable" data-sort="referensi">Referensi</th>
+                                <th>Kontak Darurat</th>
+                                <th>Nama Kontak</th>
+                                <th>Hub. Kontak</th>
+                                <th class="sortable" data-sort="location_name">Lokasi</th>
+                                <th class="sortable" data-sort="test_drive_date">Tgl Test Drive</th>
+                                <th>Jam Test Drive</th>
+                                <th>Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="candidateTableBody">
+                            <tr><td colspan="24" class="table-empty">Memuat...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- ── Pagination Toolbar ── -->
+            <div class="pager-bar" id="pagerBar">
+                <div class="pager-nav">
+                    <button class="pager-btn" id="pagerFirst" onclick="goPage(1)" title="Halaman pertama"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="11 17 6 12 11 7"/><polyline points="18 17 13 12 18 7"/></svg></button>
+                    <button class="pager-btn" id="pagerPrev" onclick="goPage(currentPage-1)" title="Sebelumnya"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg></button>
+                    <input type="number" id="pagerInput" class="pager-input" value="1" min="1" onchange="goPage(parseInt(this.value))" onkeydown="if(event.key==='Enter')goPage(parseInt(this.value))">
+                    <span class="pager-of">dari <span id="pagerTotal">1</span></span>
+                    <button class="pager-btn" id="pagerNext" onclick="goPage(currentPage+1)" title="Berikutnya"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg></button>
+                    <button class="pager-btn" id="pagerLast" onclick="goPage(totalPages)" title="Halaman terakhir"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="13 17 18 12 13 7"/><polyline points="6 17 11 12 6 7"/></svg></button>
+                </div>
+                <div class="pager-mid">
+                    <label class="pager-showall"><input type="checkbox" id="pagerShowAll" onchange="toggleShowAll(this.checked)"><span>Tampilkan semua</span></label>
+                    <span class="pager-sep">|</span>
+                    <span class="pager-label">Baris per halaman:</span>
+                    <select id="pagerRowsSelect" class="pager-rows-select" onchange="setRowsPerPage(parseInt(this.value))">
+                        <option value="25">25</option>
+                        <option value="50" selected>50</option>
+                        <option value="100">100</option>
+                        <option value="250">250</option>
+                        <option value="500">500</option>
+                        <option value="1000">1000</option>
+                    </select>
+                </div>
+                <div class="pager-right">
+                    <span class="pager-info" id="pagerInfo">Menampilkan 0–0 dari 0</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- ═══ PAGE: ANALYTICS ══════════════ -->
+        <section class="dash-page" id="page-analytics">
+            <div class="page-header">
+                <h2>&#128202; Analytics Dashboard</h2>
+            </div>
+
+            <!-- Row 1: Calendar + Armada Pie -->
+            <div class="analytics-row-2col">
+                <!-- Date Range Calendar -->
+                <div class="chart-box analytics-cal-box">
+                    <div class="chart-header"><h3>&#128197; Rentang Tanggal</h3></div>
+                    <div class="range-cal">
+                        <div class="range-cal-top">
+                            <button class="range-cal-nav" onclick="rangeCalNav(-1)">&#8249;</button>
+                            <div class="range-cal-title" id="rangeCalTitle"></div>
+                            <button class="range-cal-nav" onclick="rangeCalNav(1)">&#8250;</button>
+                        </div>
+                        <div class="range-cal-days">
+                            <span>SEN</span><span>SEL</span><span>RAB</span><span>KAM</span><span>JUM</span><span>SAB</span><span>MIN</span>
+                        </div>
+                        <div class="range-cal-grid" id="rangeCalGrid"></div>
+                        <div class="range-cal-info" id="rangeCalInfo">
+                            <span class="range-cal-label">RENTANG TERPILIH</span>
+                            <div class="range-cal-dates" id="rangeCalDates">Klik 2 tanggal untuk memilih</div>
+                        </div>
+                        <div class="range-cal-presets">
+                            <button onclick="setRangePreset(7)">7H</button>
+                            <button onclick="setRangePreset(14)">14H</button>
+                            <button onclick="setRangePreset(30)">30H</button>
+                            <button class="preset-reset" onclick="resetRange()">Reset</button>
+                        </div>
+                    </div>
+                </div>
+                <!-- Armada Pie -->
+                <div class="chart-box">
+                    <div class="chart-header"><h3>&#127849; Per Tipe Armada</h3></div>
+                    <div class="chart-canvas-wrap"><canvas id="armadaChart"></canvas></div>
+                </div>
+            </div>
+
+            <!-- Row 2: Forecast Chart full width -->
+            <div class="chart-box">
+                <div class="chart-header"><h3>&#128200; Trend Pendaftaran + Forecast AI</h3><span class="badge badge-ai">Forecast</span></div>
+                <div class="chart-canvas-wrap" style="height:280px;"><canvas id="forecastChart"></canvas></div>
+            </div>
+
+            <!-- Row 3: Location Detail Table -->
+            <div class="chart-box">
+                <div class="chart-header"><h3>&#128205; Detail per Lokasi</h3></div>
+                <div class="table-wrap">
+                    <table class="dash-table">
+                        <thead>
+                            <tr>
+                                <th>Lokasi</th>
+                                <th>Total</th>
+                                <th>Lulus</th>
+                                <th>Tidak Lulus</th>
+                                <th>Pending</th>
+                                <th>Pass Rate</th>
+                            </tr>
+                        </thead>
+                        <tbody id="locationTableBody">
+                            <tr><td colspan="6" class="table-empty">Memuat...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- ═══ PAGE: AI INSIGHTS ════════════ -->
+        <section class="dash-page" id="page-aiInsights">
+            <div class="page-header">
+                <h2>AI & Machine Learning Insights</h2>
+                <span class="badge badge-ai">Powered by ML Engine v1.0</span>
+            </div>
+
+            <!-- ML Summary Cards -->
+            <div class="kpi-row">
+                <div class="kpi-card kpi-ai">
+                    <div class="kpi-icon-wrap"><svg viewBox="0 0 24 24"><path d="M12 2a4 4 0 0 0-4 4c0 2 2 3 2 6h4c0-3 2-4 2-6a4 4 0 0 0-4-4z"/><line x1="10" y1="22" x2="14" y2="22"/><line x1="10" y1="19" x2="14" y2="19"/></svg></div>
+                    <div class="kpi-data">
+                        <div class="kpi-value" id="mlHighPotential">0</div>
+                        <div class="kpi-label">Potensi Tinggi</div>
+                    </div>
+                </div>
+                <div class="kpi-card kpi-orange">
+                    <div class="kpi-icon-wrap"><svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
+                    <div class="kpi-data">
+                        <div class="kpi-value" id="mlHighRisk">0</div>
+                        <div class="kpi-label">High Risk</div>
+                    </div>
+                </div>
+                <div class="kpi-card kpi-blue">
+                    <div class="kpi-icon-wrap"><svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
+                    <div class="kpi-data">
+                        <div class="kpi-value" id="mlAvgScore">0</div>
+                        <div class="kpi-label">Avg. AI Score</div>
+                    </div>
+                </div>
+                <div class="kpi-card kpi-green">
+                    <div class="kpi-icon-wrap"><svg viewBox="0 0 24 24"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg></div>
+                    <div class="kpi-data">
+                        <div class="kpi-value" id="mlForecastNext">0</div>
+                        <div class="kpi-label">Prediksi Minggu Depan</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- AI Insights List -->
+            <div class="charts-row">
+                <div class="chart-box chart-wide">
+                    <div class="chart-header"><h3>Smart Insights</h3></div>
+                    <div id="aiFullInsights" class="ai-insights-list"></div>
+                </div>
+                <div class="chart-box">
+                    <div class="chart-header"><h3>⚠️ Anomaly Detection</h3><span class="badge badge-ai">Z-Score</span></div>
+                    <div id="anomalyList" class="ai-insights-list"></div>
+                </div>
+            </div>
+
+            <!-- Top Candidates by AI -->
+            <div class="chart-box">
+                <div class="chart-header"><h3>🏆 Top Candidates (AI Ranked)</h3></div>
+                <div class="table-wrap">
+                    <table class="dash-table">
+                        <thead>
+                            <tr>
+                                <th>Rank</th>
+                                <th>Nama</th>
+                                <th>Armada</th>
+                                <th>AI Score</th>
+                                <th>Risk Level</th>
+                                <th>Readiness</th>
+                            </tr>
+                        </thead>
+                        <tbody id="aiRankedTableBody">
+                            <tr><td colspan="6" class="table-empty">Processing...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- ═══ PAGE: KORLAP MANAGEMENT (Owner Only) ═══ -->
+        <section class="dash-page" id="page-korlapMgmt">
+            <div class="page-header">
+                <h2>Akses Korlap</h2>
+                <button class="btn btn-sm btn-primary" onclick="toggleCreateKorlap()">+ Buat Akun Korlap</button>
+            </div>
+
+            <!-- Create Form (hidden) -->
+            <div class="chart-box" id="createKorlapBox" style="display:none;">
+                <div class="chart-header"><h3>📝 Buat Akun Korlap Baru</h3></div>
+                <form id="createKorlapForm" class="korlap-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Username</label>
+                            <input type="text" class="form-input" id="klUsername" placeholder="username_korlap" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Nama Lengkap</label>
+                            <input type="text" class="form-input" id="klName" placeholder="Nama korlap" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Password</label>
+                            <input type="text" class="form-input" id="klPassword" placeholder="Min. 6 karakter" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Role</label>
+                            <select class="dash-select" id="klRole" required style="width:100%;">
+                                <option value="">— Pilih Role —</option>
+                                <option value="korlap_interview">Korlap Interview</option>
+                                <option value="korlap_td">Korlap TD (Test Drive)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Lokasi</label>
+                            <select class="dash-select" id="klLocation" style="width:100%;">
+                                <option value="">— Pilih Lokasi —</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="display:flex;align-items:flex-end;">
+                            <button type="submit" class="btn btn-primary" style="width:100%;">Buat Akun</button>
+                        </div>
+                    </div>
+                </form>
+
+                <!-- Role explanation -->
+                <div style="margin-top:16px;padding:14px;border-radius:10px;background:var(--bg-secondary);font-size:0.82rem;line-height:1.6;">
+                    <strong>📖 Penjelasan Role:</strong><br>
+                    <span style="color:#818CF8;">● Korlap Interview</span> — Mengubah status: <em>Belum → Sudah Pemberkasan → Menunggu Test Drive → Jadwal Test Drive</em><br>
+                    <span style="color:#F59E0B;">● Korlap TD</span> — Mengubah status: <em>Jadwal Test Drive → Hadir / Tidak Hadir → Lulus / Tidak Lulus</em>
+                </div>
+            </div>
+
+            <!-- Bulk Actions Korlap -->
+            <div class="bulk-actions-bar" id="bulkActionsKorlap" style="display:none;">
+                <span id="korlapSelectedCount">0 dipilih</span>
+                <button class="btn btn-sm btn-danger" onclick="bulkDeleteKorlap()">🗑 Hapus Terpilih</button>
+            </div>
+
+            <!-- Korlap List -->
+            <div class="chart-box" style="padding:0;">
+                <div class="table-wrap" id="korlapTableWrap">
+                    <table class="dash-table korlap-table">
+                        <colgroup>
+                            <col style="width:42px">
+                            <col style="width:50px">
+                            <col>
+                            <col>
+                            <col style="width:160px">
+                            <col>
+                            <col style="width:140px">
+                            <col style="width:50px">
+                        </colgroup>
+                        <thead>
+                            <tr>
+                                <th><input type="checkbox" id="selectAllKorlap" onchange="toggleSelectAllKorlap(this)"></th>
+                                <th>ID</th>
+                                <th>Username</th>
+                                <th>Nama</th>
+                                <th>Role</th>
+                                <th>Lokasi</th>
+                                <th>Password</th>
+                                <th>Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="korlapTableBody">
+                            <tr><td colspan="7" class="table-empty">Memuat...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+        </section>
+
+        <!-- ═══ PAGE: LOCATIONS ══════════════ -->
+        <section class="dash-page" id="page-locations">
+            <div class="page-header">
+                <h2>Manajemen Lokasi</h2>
+                <button class="btn btn-sm btn-primary" onclick="toggleCreateLocation()">+ Tambah Lokasi</button>
+            </div>
+
+            <div class="chart-box" id="createLocationBox" style="display:none;">
+                <div class="chart-header"><h3>📍 Tambah Lokasi Interview Baru</h3></div>
+                <form id="createLocationForm" class="korlap-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Nama Lokasi</label>
+                            <input type="text" class="form-input" id="locName" placeholder="Contoh: Makobas" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Alamat Lengkap</label>
+                            <input type="text" class="form-input" id="locAddress" placeholder="Jalan Raya..." required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group" style="flex:2;">
+                            <label class="form-label">Maps Link (Opsional)</label>
+                            <input type="text" class="form-input" id="locMaps" placeholder="https://maps.app.goo.gl/...">
+                        </div>
+                        <div class="form-group" style="display:flex;align-items:flex-end;flex:1;">
+                            <button type="submit" class="btn btn-primary" style="width:100%;">Simpan Lokasi</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <div class="chart-box" style="padding:0;">
+                <div class="table-wrap">
+                    <table class="dash-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Nama Lokasi</th>
+                                <th>Alamat</th>
+                                <th>Maps Link</th>
+                                <th>Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="locationsTableBody">
+                            <tr><td colspan="5" class="table-empty">Memuat...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- ═══ PAGE: BLACKLIST ══════════════ -->
+        <section class="dash-page" id="page-blacklist">
+            <div class="page-header">
+                <h2>Blacklist NIK</h2>
+                <button class="btn btn-sm" style="background:var(--error);color:#fff;" onclick="toggleCreateBlacklist()">+ Tambah Blacklist</button>
+            </div>
+
+            <div class="chart-box" id="createBlacklistBox" style="display:none;border-color:var(--error);">
+                <div class="chart-header"><h3 style="color:var(--error);">🚫 Blokir NIK Baru</h3></div>
+                <form id="createBlacklistForm" class="korlap-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">NIK (16 Digit)</label>
+                            <input type="text" class="form-input" id="blNik" placeholder="Masukan NIK Ter-Blacklist" required maxlength="16">
+                        </div>
+                        <div class="form-group" style="flex:2;">
+                            <label class="form-label">Alasan Blacklist</label>
+                            <input type="text" class="form-input" id="blReason" placeholder="Fraud, Mangkir, dll..." required>
+                        </div>
+                        <div class="form-group" style="display:flex;align-items:flex-end;">
+                            <button type="submit" class="btn" style="background:var(--error);color:#fff;width:100%;border:none;padding:12px;border-radius:8px;font-weight:600;cursor:pointer;">Blokir NIK</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <div class="chart-box" style="padding:0;">
+                <div class="table-wrap">
+                    <table class="dash-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>NIK Terblokir</th>
+                                <th>Nama</th>
+                                <th>Alasan</th>
+                                <th>Tanggal Blokir</th>
+                                <th>Didaftarkan Oleh</th>
+                                <th>Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="blacklistTableBody">
+                            <tr><td colspan="7" class="table-empty">Memuat...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ═══════════════════════════════════════ -->
+    <!-- CANDIDATE DETAIL MODAL                 -->
+    <!-- ═══════════════════════════════════════ -->
+    <div class="modal-overlay" id="candidateModal">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="modal-title">Detail Kandidat</div>
+                <button class="modal-close" onclick="closeModal('candidateModal')">✕</button>
+            </div>
+            <div class="modal-body" id="modalBody">
+                <div class="spinner"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- DOCUMENT PREVIEW MODAL -->
+    <div class="modal-overlay" id="previewModal">
+        <div class="modal" style="max-width:900px;">
+            <div class="modal-header">
+                <div class="modal-title">Preview Dokumen</div>
+                <button class="modal-close" onclick="closeModal('previewModal')">✕</button>
+            </div>
+            <div class="modal-body" id="previewBody"></div>
+        </div>
+    </div>
+
+    <!-- Import Preview Modal -->
+    <div class="modal-overlay" id="importModal">
+        <div class="modal" style="max-width:700px;">
+            <div class="modal-header">
+                <div class="modal-title">Import Data Kandidat</div>
+                <button class="modal-close" onclick="closeModal('importModal')">&#10005;</button>
+            </div>
+            <div class="modal-body">
+                <div id="importPreview"></div>
+                <div id="importProgress" style="display:none;">
+                    <div style="text-align:center;padding:20px;">
+                        <p style="margin-top:10px;color:var(--text-muted);">Mengimport data...</p>
+                    </div>
+                </div>
+                <div id="importResult" style="display:none;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mobile Bottom Navigation -->
+    <div class="admin-bottom-nav" id="adminBottomNav">
+        <button class="admin-btab active" data-page="overview" onclick="switchPage('overview')">
+            <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+            <span>Dashboard</span>
+        </button>
+        <button class="admin-btab" data-page="candidates" onclick="switchPage('candidates')">
+            <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+            <span>Kandidat</span>
+        </button>
+        <button class="admin-btab" data-page="analytics" onclick="switchPage('analytics')">
+            <svg viewBox="0 0 24 24"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg>
+            <span>Analytics</span>
+        </button>
+        <button class="admin-btab" data-page="aiInsights" onclick="switchPage('aiInsights')">
+            <svg viewBox="0 0 24 24"><path d="M12 2a4 4 0 0 0-4 4c0 2 2 3 2 6h4c0-3 2-4 2-6a4 4 0 0 0-4-4z"/><line x1="10" y1="22" x2="14" y2="22"/><line x1="9" y1="16" x2="15" y2="16"/></svg>
+            <span>AI</span>
+        </button>
+        <button class="admin-btab admin-btab-owner" data-page="korlapMgmt" onclick="switchPage('korlapMgmt')" style="display:none;">
+            <svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
+            <span>Korlap</span>
+        </button>
+    </div>
+
+    <div class="fill-hint" id="fillHint"></div>
+
+    <script src="js/ml-engine.js"></script>
+    <script src="js/admin.js"></script>
+</body>
+</html>

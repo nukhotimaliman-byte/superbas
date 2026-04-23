@@ -1,8 +1,8 @@
 <?php
 /**
  * BAS Recruitment — Import/Export API (Owner only)
- * GET  ?action=export       — Export candidates to JSON (for client-side Excel)
- * POST ?action=import       — Import candidates from JSON (parsed client-side)
+ * GET  ?action=export       — Export drv_candidates to JSON (for client-side Excel)
+ * POST ?action=import       — Import drv_candidates from JSON (parsed client-side)
  */
 require_once __DIR__ . '/../config.php';
 
@@ -42,15 +42,15 @@ switch ($action) {
                 l.name AS lokasi_interview,
                 c.jadwal_interview,
                 c.created_at
-            FROM candidates c
-            LEFT JOIN users u ON c.user_id = u.id
-            LEFT JOIN locations l ON c.location_id = l.id
+            FROM drv_candidates c
+            LEFT JOIN drv_users u ON c.user_id = u.id
+            LEFT JOIN drv_locations l ON c.location_id = l.id
             ORDER BY c.id ASC
         ");
         $candidates = $stmt->fetchAll();
 
-        // Get documents per candidate
-        $docStmt = $db->query("SELECT candidate_id, doc_type, original_name FROM documents ORDER BY candidate_id");
+        // Get drv_documents per candidate
+        $docStmt = $db->query("SELECT candidate_id, doc_type, original_name FROM drv_documents ORDER BY candidate_id");
         $docs = [];
         foreach ($docStmt->fetchAll() as $d) {
             $docs[$d['candidate_id']][] = $d['doc_type'] . ': ' . $d['original_name'];
@@ -85,8 +85,8 @@ switch ($action) {
         $errors = [];
         $locCache = [];
 
-        // Preload locations
-        $locStmt = $db->query("SELECT id, name FROM locations");
+        // Preload drv_locations
+        $locStmt = $db->query("SELECT id, name FROM drv_locations");
         foreach ($locStmt->fetchAll() as $loc) {
             $locCache[strtolower(trim($loc['name']))] = $loc['id'];
         }
@@ -138,7 +138,7 @@ switch ($action) {
                 // ── Check if NIK exists → UPDATE instead of INSERT ──
                 $existing = null;
                 if ($nik) {
-                    $check = $db->prepare('SELECT id FROM candidates WHERE nik = ? LIMIT 1');
+                    $check = $db->prepare('SELECT id FROM drv_candidates WHERE nik = ? LIMIT 1');
                     $check->execute([$nik]);
                     $existing = $check->fetch();
                 }
@@ -171,12 +171,12 @@ switch ($action) {
                     $updates[] = 'jadwal_interview = ?'; $params[] = $jadwalIntv;
 
                     $params[] = $existing['id'];
-                    $db->prepare('UPDATE candidates SET ' . implode(', ', $updates) . ' WHERE id = ?')->execute($params);
+                    $db->prepare('UPDATE drv_candidates SET ' . implode(', ', $updates) . ' WHERE id = ?')->execute($params);
                     $updated++;
                 } else {
                     // INSERT new candidate
                     $stmt = $db->prepare("
-                        INSERT INTO candidates 
+                        INSERT INTO drv_candidates 
                         (given_id, name, nik, whatsapp, email, sim_type, armada_type, location_id, status,
                          tempat_lahir, tanggal_lahir, address, pendidikan_terakhir, pernah_kerja_spx,
                          surat_sehat, paklaring, jadwal_interview)
