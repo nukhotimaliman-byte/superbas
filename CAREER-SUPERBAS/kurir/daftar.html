@@ -1321,13 +1321,14 @@
             let filled = 0;
             let total = 0;
 
+            // Data Diri fields
             const fields = [
                 currentCandidate.tempat_lahir,
                 currentCandidate.tanggal_lahir,
                 currentCandidate.address,
                 currentCandidate.whatsapp,
                 currentCandidate.sim_type,
-                (currentCandidate.armada_type && currentCandidate.whatsapp) ? currentCandidate.armada_type : null,
+                currentCandidate.armada_type,
                 currentCandidate.pernah_kerja_spx,
                 currentCandidate.pendidikan_terakhir,
                 currentCandidate.surat_sehat,
@@ -1340,7 +1341,10 @@
             total += 1;
             if (currentCandidate.signature_data || signatureDone) filled += 1;
 
-
+            // Required documents: KTP, Pas Photo, SIM
+            const reqDocs = ['KTP', 'Pas Photo', 'SIM'];
+            total += reqDocs.length;
+            filled += reqDocs.filter(k => uploadedDocs[k]).length;
 
             const pct = total > 0 ? Math.round((filled / total) * 100) : 0;
             const fill = document.getElementById('pbxFill');
@@ -1757,11 +1761,10 @@
 
             const steps = [
                 { label: 'Pendaftaran' },
-                { label: 'Pemberkasan' },
-                { label: 'Test Drive' }
+                { label: 'Pemberkasan' }
             ];
 
-            const map = { 0: 0, 1: 1, 2: 2, 3: 2, 4: 3, 5: 3 };
+            const map = { 0: 0, 1: 1, 2: 2, 3: 2, 4: 2, 5: 2 };
             const currentIdx = STATUS_ORDER.indexOf(currentStatus);
             const stepIdx = map[currentIdx] ?? 0;
 
