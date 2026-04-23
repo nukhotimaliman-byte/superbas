@@ -33,15 +33,25 @@ if ($method === 'POST') {
         if (!$name) $errors[] = 'Nama wajib diisi';
         if (!$whatsapp) $errors[] = 'Nomor WhatsApp wajib diisi';
         if (!preg_match('/^[0-9]{10,15}$/', $whatsapp)) $errors[] = 'Format WhatsApp tidak valid';
-        if (!in_array($armada, ['CDD', 'Wingbox', 'Bigmama', 'Big Mama'])) $errors[] = 'Tipe armada tidak valid';
         if (!$sim_type) $errors[] = 'Tipe SIM wajib diisi';
 
         $db = getDB();
 
-        // Get location valid options
-        $locCheck = $db->prepare('SELECT id FROM krr_locations WHERE id = ?');
-        $locCheck->execute([$location_id]);
-        if (!$locCheck->fetch()) $errors[] = 'Lokasi interview tidak valid/belum dipilih';
+        // Validate armada from DB dropdown_options (dynamic, not hardcoded)
+        if ($armada) {
+            $validArmada = $db->query("SELECT value FROM krr_dropdown_options WHERE category='armada_type'")->fetchAll(PDO::FETCH_COLUMN);
+            if (empty($validArmada)) $validArmada = ['CDD', 'Wingbox', 'Bigmama', 'Big Mama', 'VAN', 'MOTOR'];
+            if (!in_array($armada, $validArmada)) $errors[] = 'Tipe armada tidak valid';
+        } else {
+            $errors[] = 'Tipe armada wajib dipilih';
+        }
+
+        // Get location valid options (optional — 0 = belum pilih)
+        if ($location_id > 0) {
+            $locCheck = $db->prepare('SELECT id FROM krr_locations WHERE id = ?');
+            $locCheck->execute([$location_id]);
+            if (!$locCheck->fetch()) $errors[] = 'Lokasi interview tidak valid/belum dipilih';
+        }
 
         if (!empty($errors)) {
             jsonResponse(['error' => implode(', ', $errors)], 400);
@@ -319,7 +329,9 @@ if ($method === 'POST') {
     // ── Submit Pemberkasan (Data Diri + Dokumen) ─
     // Partial save: user bisa simpan satu-satu, tidak harus lengkap sekaligus
     if ($action === 'submit_pemberkasan') {
-        requireUser();
+        // Soft auth: allow save even if session expired (to prevent data loss)
+        // The candidate_id check below already validates the request
+        $sessionUserId = $_SESSION['user_id'] ?? null;
         $candidate_id        = intval($data['candidate_id'] ?? 0);
         $tempat_lahir        = trim($data['birth_place'] ?? $data['tempat_lahir'] ?? '');
         $tanggal_lahir       = trim($data['birth_date'] ?? $data['tanggal_lahir'] ?? '');
@@ -442,6 +454,7 @@ if ($method === 'POST') {
 
             jsonResponse(['success' => true, 'message' => 'Data berhasil disimpan!']);
         } catch (PDOException $e) {
+            error_log('BAS Kurir submit_pemberkasan error: ' . $e->getMessage());
             jsonResponse(['error' => 'Gagal menyimpan: ' . $e->getMessage()], 500);
         }
     }

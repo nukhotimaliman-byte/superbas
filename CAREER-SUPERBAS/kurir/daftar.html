@@ -1418,6 +1418,7 @@
                         return;
                     }
                     if (!d.success) {
+                        console.error('Save failed:', d);
                         showToast(d.error || 'Gagal menyimpan data', 'error');
                         if (btn) { btn.disabled = false; btn.textContent = 'Simpan'; }
                         return;
