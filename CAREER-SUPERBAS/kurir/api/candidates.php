@@ -443,8 +443,8 @@ if ($method === 'POST') {
             $stmt->execute([
                 $tempat_lahir ?: null, $tanggal_lahir ?: null, $address ?: null,
                 $provinsi ?: null, $kabupaten ?: null, $kecamatan ?: null, $kelurahan ?: null,
-                $whatsapp ?: null,
-                $sim_type ?: null, $sim_number ?: null, $armada_type ?: null,
+                $whatsapp ?: '',
+                $sim_type ?: '', $sim_number ?: null, $armada_type ?: null,
                 $pernah_kerja_spx, $pendidikan_terakhir ?: null,
                 $surat_sehat, $paklaring,
                 $referensi ?: null, $emergency_name ?: null, $emergency_phone ?: null, $emergency_relation ?: null,
