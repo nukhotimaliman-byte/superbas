@@ -365,16 +365,26 @@ if ($method === 'POST') {
             }
         }
 
-        // Validate SIM type only if provided
-        $validSim = ['SIM A', 'SIM B1', 'SIM B1 Umum', 'SIM B2', 'SIM B2 Umum', 'SIM C'];
-        if ($sim_type && !in_array($sim_type, $validSim)) {
-            jsonResponse(['error' => 'Jenis SIM tidak valid'], 400);
+        // Validate SIM type only if provided — read valid values from DB dropdown_options
+        if ($sim_type) {
+            $dbValid = getDB();
+            $validSim = $dbValid->query("SELECT value FROM krr_dropdown_options WHERE category='sim_type'")->fetchAll(PDO::FETCH_COLUMN);
+            // Fallback hardcoded list if DB has no entries
+            if (empty($validSim)) $validSim = ['SIM A', 'SIM B1', 'SIM B1 Umum', 'SIM B2', 'SIM B2 Umum', 'SIM C'];
+            if (!in_array($sim_type, $validSim)) {
+                jsonResponse(['error' => 'Jenis SIM tidak valid'], 400);
+            }
         }
 
-        // Validate armada only if provided
-        $validArmada = ['CDD', 'Wingbox', 'Bigmama', 'Big Mama'];
-        if ($armada_type && !in_array($armada_type, $validArmada)) {
-            jsonResponse(['error' => 'Posisi dilamar tidak valid'], 400);
+        // Validate armada only if provided — read valid values from DB dropdown_options
+        if ($armada_type) {
+            $dbValid = getDB();
+            $validArmada = $dbValid->query("SELECT value FROM krr_dropdown_options WHERE category='armada_type'")->fetchAll(PDO::FETCH_COLUMN);
+            // Fallback hardcoded list if DB has no entries
+            if (empty($validArmada)) $validArmada = ['CDD', 'Wingbox', 'Bigmama', 'Big Mama', 'VAN', 'MOTOR'];
+            if (!in_array($armada_type, $validArmada)) {
+                jsonResponse(['error' => 'Posisi dilamar tidak valid'], 400);
+            }
         }
 
         // Validate Yes/No fields only if provided
