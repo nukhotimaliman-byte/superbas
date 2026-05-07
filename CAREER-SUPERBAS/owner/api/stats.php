@@ -8,6 +8,8 @@
  */
 require_once __DIR__ . '/../config.php';
 
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
 $owner = requireOwnerAuth();
 $db = getDB();
 $action = $_GET['action'] ?? 'overview';
