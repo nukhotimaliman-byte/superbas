@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" type="image/png" href="../favicon-bas.png">
+<title>BAS Command Center</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,100..900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/dashboard.css?v=1.0">
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="hdr">
+<div class="hdr-in">
+    <div class="hdr-left">
+        <a class="hdr-logo" href="/"><img src="../BAS.svg" alt="BAS"></a>
+        <div class="hdr-divider"></div>
+        <span class="hdr-title">Command Center</span>
+    </div>
+    <div class="hdr-right">
+        <span class="hdr-clock" id="clock"></span>
+        <span class="hdr-user" id="userName"></span>
+        <button class="hdr-btn" id="themeToggle" title="Toggle theme">
+            <svg class="ic-dark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+            <svg class="ic-light" style="display:none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        </button>
+        <button class="hdr-btn" id="logoutBtn" title="Logout">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        </button>
+    </div>
+</div>
+</header>
+
+<!-- TABS -->
+<nav class="tabs">
+<div class="tabs-in">
+    <button class="tab active" data-tab="overview">Overview</button>
+    <button class="tab" data-tab="candidates">Candidates</button>
+    <button class="tab" data-tab="blacklist">Blacklist</button>
+    <button class="tab" data-tab="analytics">Analytics</button>
+    <button class="tab" data-tab="quick-access">Quick Access</button>
+    <button class="tab" data-tab="export">Export</button>
+    <button class="tab" data-tab="settings">Settings</button>
+</div>
+</nav>
+
+<!-- MAIN -->
+<div class="main">
+
+<!-- Maintenance Banner -->
+<div class="maint-banner" id="maintBanner">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+    <span>Website sedang dalam mode maintenance</span>
+</div>
+
+<!-- OVERVIEW PANEL -->
+<div class="panel active" id="panel-overview">
+    <div class="stat-grid" id="statGrid"></div>
+    <div class="chart-grid">
+        <div class="chart-card">
+            <div class="chart-title">Status Breakdown</div>
+            <div class="chart-area"><canvas id="chartStatus" height="220"></canvas></div>
+        </div>
+        <div class="chart-card">
+            <div class="chart-title">Registrasi 30 Hari</div>
+            <div class="chart-area"><canvas id="chartTrend" height="220"></canvas></div>
+        </div>
+        <div class="chart-card">
+            <div class="chart-title">Top Kota</div>
+            <div class="chart-area"><canvas id="chartCities" height="220"></canvas></div>
+        </div>
+        <div class="chart-card">
+            <div class="chart-title">Pass Rate</div>
+            <div class="chart-area"><canvas id="chartPassRate" height="220"></canvas></div>
+        </div>
+    </div>
+</div>
+
+<!-- CANDIDATES PANEL -->
+<div class="panel" id="panel-candidates">
+    <div class="sub-tabs" id="candidateSubTabs">
+        <button class="sub-tab active" data-project="all">All</button>
+        <button class="sub-tab" data-project="driver">Driver</button>
+        <button class="sub-tab" data-project="kurir">Kurir</button>
+        <button class="sub-tab" data-project="daily_worker">Daily Worker</button>
+    </div>
+    <div class="table-wrap">
+        <div class="table-toolbar">
+            <input class="table-search" id="candidateSearch" type="text" placeholder="Cari nama, WA, alamat...">
+            <select class="table-select" id="candidateStatus">
+                <option value="">Semua Status</option>
+                <option value="Baru">Baru</option>
+                <option value="Proses">Proses</option>
+                <option value="Interview">Interview</option>
+                <option value="Lulus">Lulus</option>
+                <option value="Tidak Lulus">Tidak Lulus</option>
+                <option value="Blacklist">Blacklist</option>
+            </select>
+            <select class="table-select" id="candidateCity"><option value="">Semua Kota</option></select>
+        </div>
+        <div style="overflow-x:auto"><table class="tbl" id="candidateTable">
+            <thead><tr id="candidateHead"></tr></thead>
+            <tbody id="candidateBody"></tbody>
+        </table></div>
+        <div class="table-footer">
+            <span class="table-info" id="candidateInfo"></span>
+            <div class="table-pages" id="candidatePages"></div>
+        </div>
+    </div>
+</div>
+
+<!-- BLACKLIST PANEL -->
+<div class="panel" id="panel-blacklist">
+    <div class="table-wrap">
+        <div class="table-toolbar">
+            <input class="table-search" id="blacklistSearch" type="text" placeholder="Cari nama atau WA...">
+            <button class="s-btn s-btn--primary" id="addBlacklistBtn">+ Tambah Blacklist</button>
+        </div>
+        <div style="overflow-x:auto"><table class="tbl">
+            <thead><tr><th>Nama</th><th>WhatsApp</th><th>Project</th><th>Alasan</th><th>Tgl Blacklist</th></tr></thead>
+            <tbody id="blacklistBody"><tr><td colspan="5" class="tbl-empty">Loading...</td></tr></tbody>
+        </table></div>
+    </div>
+</div>
+
+<!-- ANALYTICS PANEL -->
+<div class="panel" id="panel-analytics">
+    <div class="stat-grid" id="comparisonCards"></div>
+    <div class="chart-grid">
+        <div class="chart-card">
+            <div class="chart-title">Perbandingan per Project</div>
+            <div class="chart-area"><canvas id="chartComparison" height="260"></canvas></div>
+        </div>
+        <div class="chart-card">
+            <div class="chart-title">Distribusi Pelamar</div>
+            <div class="chart-area"><canvas id="chartDistribution" height="260"></canvas></div>
+        </div>
+    </div>
+</div>
+
+<!-- QUICK ACCESS PANEL -->
+<div class="panel" id="panel-quick-access">
+    <div class="qa-grid" id="quickAccessGrid"></div>
+</div>
+
+<!-- EXPORT PANEL -->
+<div class="panel" id="panel-export">
+    <div class="settings-card">
+        <div class="settings-title">Export Data Kandidat</div>
+        <div class="s-form-group">
+            <label class="s-form-label">Project</label>
+            <select class="s-input" id="exportProject" style="max-width:300px">
+                <option value="all">Semua Project</option>
+                <option value="driver">Driver</option>
+                <option value="kurir">Kurir</option>
+                <option value="daily_worker">Daily Worker</option>
+            </select>
+        </div>
+        <div style="display:flex;gap:12px;flex-wrap:wrap">
+            <div class="s-form-group" style="flex:1;min-width:140px">
+                <label class="s-form-label">Dari Tanggal</label>
+                <input class="s-input" type="date" id="exportFrom">
+            </div>
+            <div class="s-form-group" style="flex:1;min-width:140px">
+                <label class="s-form-label">Sampai Tanggal</label>
+                <input class="s-input" type="date" id="exportTo">
+            </div>
+        </div>
+        <div class="s-form-group">
+            <label class="s-form-label">Status</label>
+            <select class="s-input" id="exportStatus" style="max-width:300px">
+                <option value="">Semua Status</option>
+                <option value="Baru">Baru</option>
+                <option value="Proses">Proses</option>
+                <option value="Lulus">Lulus</option>
+                <option value="Tidak Lulus">Tidak Lulus</option>
+            </select>
+        </div>
+        <button class="s-btn s-btn--primary" id="exportBtn" style="margin-top:8px">Download CSV</button>
+    </div>
+</div>
+
+<!-- SETTINGS PANEL -->
+<div class="panel" id="panel-settings">
+    <div class="settings-grid">
+        <div class="settings-nav" id="settingsNav">
+            <button class="settings-nav-item active" data-section="s-maintenance">Maintenance Mode</button>
+            <button class="settings-nav-item" data-section="s-landing">Landing Page Stats</button>
+            <button class="settings-nav-item" data-section="s-social">Social Media</button>
+            <button class="settings-nav-item" data-section="s-faq">FAQ Manager</button>
+            <button class="settings-nav-item" data-section="s-testimonials">Testimonial</button>
+            <button class="settings-nav-item" data-section="s-system">System</button>
+        </div>
+        <div>
+            <!-- Maintenance -->
+            <div class="settings-panel active" id="s-maintenance">
+                <div class="settings-card">
+                    <div class="settings-title">Maintenance Mode</div>
+                    <div class="settings-row">
+                        <div><div class="settings-row-label">Website Status</div><div class="settings-row-desc">Matikan website untuk semua pengunjung</div></div>
+                        <label class="toggle"><input type="checkbox" id="maintToggle"><span class="toggle-slider"></span></label>
+                    </div>
+                    <div class="s-form-group" style="margin-top:16px">
+                        <label class="s-form-label">Pesan Maintenance</label>
+                        <textarea class="s-input s-textarea" id="maintMessage" placeholder="Alasan website dimatikan..."></textarea>
+                    </div>
+                    <div class="s-form-group">
+                        <label class="s-form-label">Estimasi Kembali Online</label>
+                        <input class="s-input" type="text" id="maintEstimate" placeholder="Contoh: 2 jam lagi">
+                    </div>
+                    <button class="s-btn s-btn--primary" id="saveMaintBtn">Simpan</button>
+                </div>
+            </div>
+            <!-- Landing Stats -->
+            <div class="settings-panel" id="s-landing">
+                <div class="settings-card">
+                    <div class="settings-title">Landing Page Stats</div>
+                    <div class="settings-row">
+                        <div><div class="settings-row-label">Auto-count dari Database</div><div class="settings-row-desc">Angka di landing page otomatis dari DB</div></div>
+                        <label class="toggle"><input type="checkbox" id="autoCountToggle"><span class="toggle-slider"></span></label>
+                    </div>
+                    <div class="s-form-group" style="margin-top:16px">
+                        <label class="s-form-label">Total Pelamar</label>
+                        <input class="s-input" type="text" id="statPelamar" placeholder="45.762">
+                    </div>
+                    <div class="s-form-group">
+                        <label class="s-form-label">Kota Aktif</label>
+                        <input class="s-input" type="text" id="statKota" placeholder="200">
+                    </div>
+                    <button class="s-btn s-btn--primary" id="saveLandingBtn">Simpan</button>
+                </div>
+            </div>
+            <!-- Social Media -->
+            <div class="settings-panel" id="s-social">
+                <div class="settings-card">
+                    <div class="settings-title">Social Media Links</div>
+                    <div id="socialFields"></div>
+                    <button class="s-btn s-btn--primary" id="saveSocialBtn" style="margin-top:12px">Simpan</button>
+                </div>
+            </div>
+            <!-- FAQ -->
+            <div class="settings-panel" id="s-faq">
+                <div class="settings-card">
+                    <div class="settings-title">FAQ Manager</div>
+                    <div id="faqFields"></div>
+                    <button class="s-btn" id="addFaqBtn" style="margin-top:12px">+ Tambah FAQ</button>
+                    <button class="s-btn s-btn--primary" id="saveFaqBtn" style="margin-top:12px;margin-left:8px">Simpan</button>
+                </div>
+            </div>
+            <!-- Testimonials -->
+            <div class="settings-panel" id="s-testimonials">
+                <div class="settings-card">
+                    <div class="settings-title">Testimonial Manager</div>
+                    <div id="testiFields"></div>
+                    <button class="s-btn" id="addTestiBtn" style="margin-top:12px">+ Tambah Testimoni</button>
+                    <button class="s-btn s-btn--primary" id="saveTestiBtn" style="margin-top:12px;margin-left:8px">Simpan</button>
+                </div>
+            </div>
+            <!-- System -->
+            <div class="settings-panel" id="s-system">
+                <div class="settings-card">
+                    <div class="settings-title">System Information</div>
+                    <div id="systemInfo"><div class="loading"><div class="spinner"></div></div></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+</div><!-- /main -->
+
+<!-- Modal -->
+<div class="modal-overlay" id="modalOverlay">
+    <div class="modal">
+        <div class="modal-header">
+            <h3 class="modal-title" id="modalTitle">Detail</h3>
+            <button class="modal-close" id="modalClose"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+        </div>
+        <div class="modal-body" id="modalBody"></div>
+        <div class="modal-footer" id="modalFooter"></div>
+    </div>
+</div>
+
+<!-- Toast -->
+<div class="toast-container" id="toastContainer"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+<script src="js/utils.js?v=1.0"></script>
+<script src="js/overview.js?v=1.0"></script>
+<script src="js/candidates.js?v=1.0"></script>
+<script src="js/modules.js?v=1.0"></script>
+<script src="js/dashboard.js?v=1.0"></script>
+</body>
+</html>
