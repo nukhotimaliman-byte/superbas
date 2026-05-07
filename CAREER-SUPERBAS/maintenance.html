@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/png" href="favicon-bas.png">
+<title>Super-BAS &mdash; Maintenance</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,100..900&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#06060a;--accent:#38BDF8;--accent-d:rgba(56,189,248,.15);--t1:#f0f0f0;--t2:rgba(255,255,255,.45);--font:'Inter',system-ui,sans-serif}
+body{font-family:var(--font);background:var(--bg);color:var(--t1);min-height:100vh;display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative}
+body::before{content:'';position:fixed;top:40%;left:50%;transform:translate(-50%,-50%);width:800px;height:800px;background:radial-gradient(circle,rgba(56,189,248,.03),transparent 70%);pointer-events:none}
+
+.mt-wrap{position:relative;z-index:2;text-align:center;max-width:480px;padding:0 24px}
+.mt-logo{margin-bottom:40px}
+.mt-logo img{height:44px;filter:invert(1) brightness(2);opacity:.8;margin:0 auto;display:block}
+
+.mt-icon{width:80px;height:80px;margin:0 auto 32px;color:var(--accent);opacity:.6;animation:pulse 3s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:.6;filter:drop-shadow(0 0 0 transparent)}50%{opacity:1;filter:drop-shadow(0 0 20px rgba(56,189,248,.3))}}
+
+.mt-title{font-size:1.5rem;font-weight:800;letter-spacing:-.02em;margin-bottom:12px}
+.mt-message{font-size:.88rem;color:var(--t2);line-height:1.7;margin-bottom:8px}
+.mt-estimate{font-size:.78rem;color:var(--accent);margin-bottom:40px;font-weight:600}
+
+.mt-wa{display:inline-flex;align-items:center;gap:8px;padding:12px 28px;background:#25D366;color:#fff;font-size:.8rem;font-weight:600;border-radius:100px;text-decoration:none;transition:.3s ease;font-family:var(--font)}
+.mt-wa:hover{transform:translateY(-2px);box-shadow:0 8px 30px rgba(37,211,102,.3)}
+.mt-wa svg{width:20px;height:20px;fill:#fff}
+
+.mt-footer{position:fixed;bottom:24px;left:0;right:0;text-align:center;font-size:.6rem;color:rgba(255,255,255,.12)}
+</style>
+</head>
+<body>
+
+<div class="mt-wrap">
+    <div class="mt-logo"><img src="BAS.svg" alt="BAS"></div>
+
+    <div class="mt-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
+        </svg>
+    </div>
+
+    <h1 class="mt-title">Website Sedang Dalam Perbaikan</h1>
+    <p class="mt-message" id="mtMessage">Website sedang dalam perbaikan sistem. Mohon maaf atas ketidaknyamanannya.</p>
+    <p class="mt-estimate" id="mtEstimate"></p>
+
+    <a class="mt-wa" href="https://wa.me/6281234567890" target="_blank">
+        <svg viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.917 1.042 5.591 2.773 7.669L.96 23.308l3.789-1.769A11.94 11.94 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.75c-2.467 0-4.75-.878-6.518-2.337l-.393-.33-2.422 1.13.948-2.316-.362-.423A9.712 9.712 0 0 1 2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75z"/></svg>
+        Hubungi Kami
+    </a>
+</div>
+
+<div class="mt-footer">&copy; 2026 PT Barokah Amanah Sentosa</div>
+
+<script>
+(async function(){
+    try{
+        const r=await fetch('/owner/api/site-status.php');
+        const d=await r.json();
+        if(!d.maintenance){
+            window.location.href='/';
+            return;
+        }
+        if(d.message){
+            document.getElementById('mtMessage').textContent=d.message;
+        }
+        if(d.estimate){
+            document.getElementById('mtEstimate').textContent='Estimasi kembali online: '+d.estimate;
+        }
+    }catch(e){}
+})();
+</script>
+</body>
+</html>
