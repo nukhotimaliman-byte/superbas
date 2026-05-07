@@ -40,6 +40,15 @@ function initTheme(){
       localStorage.setItem('bas-theme', 'light');
     }
     updateThemeIcons();
+    // Re-render active panel charts with new theme colors
+    setTimeout(() => {
+      const active = document.querySelector('.sidebar-item.active');
+      if (active) {
+        const view = active.dataset.view;
+        if (view === 'overview') loadOverview();
+        else if (view === 'analytics') loadAnalytics();
+      }
+    }, 100);
   });
 }
 

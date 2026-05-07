@@ -6,15 +6,19 @@ let chartInstances = {};
 function destroyChart(id) { if (chartInstances[id]) { chartInstances[id].destroy(); delete chartInstances[id]; } }
 
 /* ── Chart.js Global Config ─────────────────────────── */
+function isLightTheme() {
+    return document.documentElement.getAttribute('data-theme') === 'light';
+}
+
 function getChartDefaults() {
-    const isDark = !document.documentElement.hasAttribute('data-theme') ||
-                   document.documentElement.getAttribute('data-theme') !== 'light';
+    const light = isLightTheme();
     return {
-        gridColor: isDark ? 'rgba(255,255,255,.05)' : 'rgba(0,0,0,.06)',
-        textColor: isDark ? 'rgba(255,255,255,.4)' : 'rgba(0,0,0,.4)',
-        tooltipBg: isDark ? '#1a1a28' : '#ffffff',
-        tooltipText: isDark ? '#f0f0f0' : '#111827',
-        tooltipBorder: isDark ? 'rgba(255,255,255,.1)' : 'rgba(0,0,0,.1)',
+        gridColor: light ? 'rgba(0,0,0,.07)' : 'rgba(255,255,255,.05)',
+        textColor: light ? 'rgba(0,0,0,.55)' : 'rgba(255,255,255,.4)',
+        tooltipBg: light ? '#ffffff' : '#1a1a28',
+        tooltipText: light ? '#111827' : '#f0f0f0',
+        tooltipBorder: light ? 'rgba(0,0,0,.12)' : 'rgba(255,255,255,.1)',
+        pointBorder: light ? '#ffffff' : '#0d0d14',
     };
 }
 
@@ -186,9 +190,9 @@ async function loadTrend() {
             data: {
                 labels: dates.map(d => d.slice(5)),
                 datasets: [
-                    { label: 'Driver', data: mkData('driver'), borderColor: COLORS.driver.solid, backgroundColor: makeGradient(ctx, COLORS.driver.gradient), tension: .4, fill: true, pointRadius: 0, pointHoverRadius: 5, pointHoverBackgroundColor: COLORS.driver.solid, borderWidth: 2 },
-                    { label: 'Kurir', data: mkData('kurir'), borderColor: COLORS.kurir.solid, backgroundColor: makeGradient(ctx, COLORS.kurir.gradient), tension: .4, fill: true, pointRadius: 0, pointHoverRadius: 5, pointHoverBackgroundColor: COLORS.kurir.solid, borderWidth: 2 },
-                    { label: 'Daily Worker', data: mkData('daily_worker'), borderColor: COLORS.daily.solid, backgroundColor: makeGradient(ctx, COLORS.daily.gradient), tension: .4, fill: true, pointRadius: 0, pointHoverRadius: 5, pointHoverBackgroundColor: COLORS.daily.solid, borderWidth: 2 },
+                    { label: 'Driver', data: mkData('driver'), borderColor: COLORS.driver.solid, backgroundColor: makeGradient(ctx, COLORS.driver.gradient), tension: .4, fill: true, pointRadius: 0, pointHoverRadius: 5, pointHoverBackgroundColor: COLORS.driver.solid, pointBorderColor: cfg.pointBorder, pointBorderWidth: 2, borderWidth: 2 },
+                    { label: 'Kurir', data: mkData('kurir'), borderColor: COLORS.kurir.solid, backgroundColor: makeGradient(ctx, COLORS.kurir.gradient), tension: .4, fill: true, pointRadius: 0, pointHoverRadius: 5, pointHoverBackgroundColor: COLORS.kurir.solid, pointBorderColor: cfg.pointBorder, pointBorderWidth: 2, borderWidth: 2 },
+                    { label: 'Daily Worker', data: mkData('daily_worker'), borderColor: COLORS.daily.solid, backgroundColor: makeGradient(ctx, COLORS.daily.gradient), tension: .4, fill: true, pointRadius: 0, pointHoverRadius: 5, pointHoverBackgroundColor: COLORS.daily.solid, pointBorderColor: cfg.pointBorder, pointBorderWidth: 2, borderWidth: 2 },
                 ]
             },
             options: {
