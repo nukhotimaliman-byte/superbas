@@ -138,19 +138,37 @@ switch ($action) {
 
     case 'top_cities':
         $limit = intval($_GET['limit'] ?? 10);
-        $rows = safeQuery($db, "
-            SELECT city, SUM(cnt) AS total FROM (
+
+        // Query each project separately to avoid UNION ALL failures
+        $cityMap = [];
+        $tables = [
+            ['candidates' => 'drv_candidates', 'locations' => 'drv_locations'],
+            ['candidates' => 'krr_candidates', 'locations' => 'krr_locations'],
+            ['candidates' => 'dw_candidates',  'locations' => 'dw_locations'],
+        ];
+        foreach ($tables as $t) {
+            $rows = safeQuery($db, "
                 SELECT COALESCE(l.name, 'Unknown') AS city, COUNT(*) AS cnt
-                FROM drv_candidates c LEFT JOIN drv_locations l ON c.location_id = l.id GROUP BY l.name
-                UNION ALL
-                SELECT COALESCE(l.name, 'Unknown') AS city, COUNT(*) AS cnt
-                FROM krr_candidates c LEFT JOIN krr_locations l ON c.location_id = l.id GROUP BY l.name
-                UNION ALL
-                SELECT COALESCE(l.name, 'Unknown') AS city, COUNT(*) AS cnt
-                FROM dw_candidates c LEFT JOIN dw_locations l ON c.location_id = l.id GROUP BY l.name
-            ) combined GROUP BY city ORDER BY total DESC LIMIT ?
-        ", [$limit]);
-        jsonResponse($rows);
+                FROM {$t['candidates']} c
+                LEFT JOIN {$t['locations']} l ON c.location_id = l.id
+                GROUP BY l.name
+            ");
+            foreach ($rows as $row) {
+                $city = $row['city'] ?: 'Unknown';
+                $cityMap[$city] = ($cityMap[$city] ?? 0) + intval($row['cnt']);
+            }
+        }
+
+        // Sort descending and limit
+        arsort($cityMap);
+        $result = [];
+        $i = 0;
+        foreach ($cityMap as $city => $total) {
+            if ($i >= $limit) break;
+            $result[] = ['city' => $city, 'total' => $total];
+            $i++;
+        }
+        jsonResponse($result);
         break;
 
     default:
