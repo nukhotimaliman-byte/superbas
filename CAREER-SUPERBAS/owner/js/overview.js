@@ -84,11 +84,12 @@ function renderStatCards(d) {
 
     g.innerHTML = cards.map(c => {
         const valColor = c.color ? `color:${c.color}` : (c.accent ? 'color:var(--accent)' : '');
+        const iconBg = c.color ? `color:${c.color};background:${c.color}12` : '';
         const trendUp = c.today > 0;
-        return `<div class="stat-card">
+        return `<div class="stat-card${c.accent ? ' stat-card--accent' : ''}">
             <div class="stat-card-top">
                 <div class="stat-label">${c.l}</div>
-                <div class="stat-icon" ${c.color ? `style="color:${c.color}"` : ''}>${c.icon}</div>
+                <div class="stat-icon" ${iconBg ? `style="${iconBg}"` : ''}>${c.icon}</div>
             </div>
             <div class="stat-value" style="${valColor}">${(c.v || 0).toLocaleString('id-ID')}</div>
             <div class="stat-trend ${trendUp ? 'up' : 'neutral'}">
@@ -108,7 +109,7 @@ function renderStatusChart(d) {
         return;
     }
 
-    const colorMap = { 'Baru': '#38BDF8', 'Proses': '#FBBF24', 'Interview': '#A78BFA', 'Lulus': '#22C55E', 'Tidak Lulus': '#EF4444', 'Blacklist': '#EF4444' };
+    const colorMap = { 'Baru': '#38BDF8', 'Belum Pemberkasan': '#64748B', 'Sudah Pemberkasan': '#06B6D4', 'Proses': '#FBBF24', 'Undang WI': '#F59E0B', 'Jadwal Test Drive': '#8B5CF6', 'Menunggu Test Drive': '#A78BFA', 'Hadir': '#10B981', 'Tidak Hadir': '#F97316', 'Interview': '#6366F1', 'Lulus': '#22C55E', 'Tidak Lulus': '#EF4444', 'Blacklist': '#DC2626', 'abnormal': '#94A3B8' };
     const colors = labels.map(l => colorMap[l] || '#666');
     const cfg = getChartDefaults();
 
@@ -188,7 +189,7 @@ async function loadTrend() {
         chartInstances.chartTrend = new Chart(Q('#chartTrend'), {
             type: 'line',
             data: {
-                labels: dates.map(d => d.slice(5)),
+                labels: dates.map(dt => { const p = dt.split('-'); return parseInt(p[2]) + '/' + parseInt(p[1]); }),
                 datasets: [
                     { label: 'Driver', data: mkData('driver'), borderColor: COLORS.driver.solid, backgroundColor: makeGradient(ctx, COLORS.driver.gradient), tension: .4, fill: true, pointRadius: 0, pointHoverRadius: 5, pointHoverBackgroundColor: COLORS.driver.solid, pointBorderColor: cfg.pointBorder, pointBorderWidth: 2, borderWidth: 2 },
                     { label: 'Kurir', data: mkData('kurir'), borderColor: COLORS.kurir.solid, backgroundColor: makeGradient(ctx, COLORS.kurir.gradient), tension: .4, fill: true, pointRadius: 0, pointHoverRadius: 5, pointHoverBackgroundColor: COLORS.kurir.solid, pointBorderColor: cfg.pointBorder, pointBorderWidth: 2, borderWidth: 2 },

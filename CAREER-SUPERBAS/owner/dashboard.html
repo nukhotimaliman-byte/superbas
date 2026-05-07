@@ -96,23 +96,55 @@
         <h2 class="panel-title">Overview</h2>
         <p class="panel-desc">Ringkasan data recruitment semua project</p>
     </div>
+
+    <!-- Stat Cards -->
     <div class="stat-grid" id="statGrid"></div>
+
+    <!-- Row 1: Trend (full width) -->
+    <div class="chart-grid chart-grid--full">
+        <div class="chart-card">
+            <div class="chart-title-row">
+                <div class="chart-title-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                </div>
+                <div class="chart-title">Registrasi 30 Hari</div>
+            </div>
+            <div class="chart-area" style="height:280px"><canvas id="chartTrend"></canvas></div>
+        </div>
+    </div>
+
+    <!-- Row 2: Status + Pass Rate -->
     <div class="chart-grid">
         <div class="chart-card">
-            <div class="chart-title">Status Breakdown</div>
-            <div class="chart-area"><canvas id="chartStatus" height="220"></canvas></div>
+            <div class="chart-title-row">
+                <div class="chart-title-icon chart-title-icon--info">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                </div>
+                <div class="chart-title">Status Breakdown</div>
+            </div>
+            <div class="chart-area" style="height:260px"><canvas id="chartStatus"></canvas></div>
         </div>
         <div class="chart-card">
-            <div class="chart-title">Registrasi 30 Hari</div>
-            <div class="chart-area"><canvas id="chartTrend" height="220"></canvas></div>
+            <div class="chart-title-row">
+                <div class="chart-title-icon chart-title-icon--success">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                </div>
+                <div class="chart-title">Pass Rate</div>
+            </div>
+            <div class="chart-area" style="height:260px"><canvas id="chartPassRate"></canvas></div>
         </div>
+    </div>
+
+    <!-- Row 3: Top Kota (full width) -->
+    <div class="chart-grid chart-grid--full">
         <div class="chart-card">
-            <div class="chart-title">Top Kota</div>
-            <div class="chart-area"><canvas id="chartCities" height="220"></canvas></div>
-        </div>
-        <div class="chart-card">
-            <div class="chart-title">Pass Rate</div>
-            <div class="chart-area"><canvas id="chartPassRate" height="220"></canvas></div>
+            <div class="chart-title-row">
+                <div class="chart-title-icon chart-title-icon--warn">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                </div>
+                <div class="chart-title">Top Kota Pelamar</div>
+            </div>
+            <div class="chart-area" style="height:280px"><canvas id="chartCities"></canvas></div>
         </div>
     </div>
 </div>

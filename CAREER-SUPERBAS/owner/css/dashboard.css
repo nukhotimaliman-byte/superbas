@@ -261,7 +261,16 @@ body.sidebar-collapsed .main { margin-left: var(--sidebar-collapsed); }
     padding: 24px; transition: .3s var(--ease);
 }
 .chart-card:hover { border-color: var(--border-h); }
-.chart-title { font-size: .78rem; font-weight: 700; margin-bottom: 20px; }
+.chart-grid--full { grid-template-columns: 1fr; }
+.chart-title-row { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; }
+.chart-title-icon {
+    width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;
+    border-radius: 8px; background: var(--accent-g); color: var(--accent); flex-shrink: 0;
+}
+.chart-title-icon--info { background: rgba(139,92,246,.08); color: #8B5CF6; }
+.chart-title-icon--success { background: rgba(34,197,94,.08); color: #22C55E; }
+.chart-title-icon--warn { background: rgba(251,191,36,.08); color: #FBBF24; }
+.chart-title { font-size: .78rem; font-weight: 700; }
 .chart-area { position: relative; width: 100%; }
 .chart-area canvas { width: 100% !important; }
 .chart-empty { display: flex; align-items: center; justify-content: center; min-height: 200px; font-size: .78rem; color: var(--t3); font-weight: 500; }
