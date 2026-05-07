@@ -18,10 +18,30 @@ async function loadAnalytics(){
   try{
     const d=await api('stats.php?action=comparison');
     const cards=Q('#comparisonCards');
-    cards.innerHTML=['driver','kurir','daily_worker'].map(p=>{
+    const totalAll = d.driver.total + d.kurir.total + d.daily_worker.total;
+    const totalThisMonth = d.driver.this_month + d.kurir.this_month + d.daily_worker.this_month;
+    const totalLastMonth = d.driver.last_month + d.kurir.last_month + d.daily_worker.last_month;
+    const totalTrend = totalThisMonth - totalLastMonth;
+    const totalTrendIcon = totalTrend >= 0 ? '&#9650;' : '&#9660;';
+    const totalTrendCls = totalTrend >= 0 ? 'up' : 'down';
+
+    // Total card first, then per-project
+    const totalCard = `<div class="stat-card stat-card--accent"><div class="stat-card-top"><div class="stat-label">Total Kandidat</div><div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="18" height="18"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div></div><div class="stat-value">${totalAll.toLocaleString('id-ID')}</div><div class="stat-trend ${totalTrendCls}">${totalTrendIcon} ${Math.abs(totalTrend)} vs bulan lalu</div><div style="margin-top:8px;font-size:.62rem;color:var(--t3)">Bulan ini: ${totalThisMonth} | Bulan lalu: ${totalLastMonth}</div></div>`;
+
+    const projectIcons = {
+        driver: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="18" height="18"><rect x="1" y="3" width="15" height="13" rx="2"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>',
+        kurir: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="18" height="18"><rect x="1" y="6" width="20" height="14" rx="2"/><path d="M1 10h20"/><path d="M7 6V4a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v2"/></svg>',
+        daily_worker: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="18" height="18"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>'
+    };
+    const projectColors = { driver: '#38BDF8', kurir: '#FBBF24', daily_worker: '#A78BFA' };
+
+    const projectCards = ['driver','kurir','daily_worker'].map(p=>{
       const c=d[p];const trendIcon=c.trend>=0?'&#9650;':'&#9660;';const trendCls=c.trend>=0?'up':'down';
-      return`<div class="stat-card"><div class="stat-label">${p.replace('_',' ')}</div><div class="stat-value">${c.total.toLocaleString('id-ID')}</div><div class="stat-trend ${trendCls}">${trendIcon} ${Math.abs(c.trend)} vs bulan lalu</div><div style="margin-top:8px;font-size:.65rem;color:var(--t3)">Pass rate: ${c.pass_rate}% | Bulan ini: ${c.this_month}</div></div>`;
+      const color = projectColors[p];
+      return`<div class="stat-card"><div class="stat-card-top"><div class="stat-label">${p.replace('_',' ')}</div><div class="stat-icon" style="color:${color};background:${color}12">${projectIcons[p]}</div></div><div class="stat-value" style="color:${color}">${c.total.toLocaleString('id-ID')}</div><div class="stat-trend ${trendCls}">${trendIcon} ${Math.abs(c.trend)} vs bulan lalu</div><div style="margin-top:8px;font-size:.62rem;color:var(--t3)">Pass rate: ${c.pass_rate}% | Bulan ini: ${c.this_month}</div></div>`;
     }).join('');
+
+    cards.innerHTML = totalCard + projectCards;
     // Comparison chart
     destroyChart('chartComparison');
     chartInstances.chartComparison=new Chart(Q('#chartComparison'),{type:'bar',data:{labels:['Driver','Kurir','Daily Worker'],datasets:[

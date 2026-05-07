@@ -208,7 +208,6 @@ async function loadForecastChart() {
         from = fmtISO(calState.startDate);
         to = fmtISO(calState.endDate);
     } else {
-        // Default: last 14 days
         const end = new Date();
         const start = new Date();
         start.setDate(start.getDate() - 13);
@@ -219,32 +218,39 @@ async function loadForecastChart() {
     try {
         const d = await api(`stats.php?action=trend&from=${from}&to=${to}`);
 
-        // Aggregate all projects into daily totals
-        const dailyMap = {};
-        ['driver', 'kurir', 'daily_worker'].forEach(p => {
-            (d[p] || []).forEach(r => {
-                dailyMap[r.date] = (dailyMap[r.date] || 0) + parseInt(r.cnt);
-            });
-        });
-
-        // Fill missing dates with 0
+        // Build date range array (fill missing dates)
         const start = new Date(from + 'T00:00:00');
         const end = new Date(to + 'T00:00:00');
         const actualDates = [];
-        const actualValues = [];
         for (let dt = new Date(start); dt <= end; dt.setDate(dt.getDate() + 1)) {
-            const iso = fmtISO(dt);
-            actualDates.push(iso);
-            actualValues.push(dailyMap[iso] || 0);
+            actualDates.push(fmtISO(dt));
         }
 
-        // Store data dots for calendar
-        calState.dataDots = new Set(Object.keys(dailyMap));
-        renderCalendar(); // Re-render with dots
+        // Build per-project actual values
+        const projects = [
+            { key: 'driver',       label: 'Driver',       color: '#38BDF8', gradientA: ['rgba(56,189,248,.25)','rgba(56,189,248,.01)'],  gradientF: ['rgba(56,189,248,.10)','rgba(56,189,248,.01)'] },
+            { key: 'kurir',        label: 'Kurir',        color: '#FBBF24', gradientA: ['rgba(251,191,36,.20)','rgba(251,191,36,.01)'],   gradientF: ['rgba(251,191,36,.08)','rgba(251,191,36,.01)'] },
+            { key: 'daily_worker', label: 'Daily Worker', color: '#A78BFA', gradientA: ['rgba(167,139,250,.20)','rgba(167,139,250,.01)'], gradientF: ['rgba(167,139,250,.08)','rgba(167,139,250,.01)'] },
+        ];
 
-        // Generate forecast for same number of days forward
-        const forecastDays = actualDates.length;
-        const forecastValues = generateForecast(actualValues, forecastDays);
+        // Map API data to daily values
+        const projectData = {};
+        const allDataDots = new Set();
+        projects.forEach(p => {
+            const map = {};
+            (d[p.key] || []).forEach(r => {
+                map[r.date] = parseInt(r.cnt);
+                allDataDots.add(r.date);
+            });
+            projectData[p.key] = actualDates.map(dt => map[dt] || 0);
+        });
+
+        // Store data dots for calendar
+        calState.dataDots = allDataDots;
+        renderCalendar();
+
+        // Generate forecasts per project
+        const forecastDays = Math.max(7, Math.min(actualDates.length, 14));
         const forecastDates = [];
         const lastActual = new Date(actualDates[actualDates.length - 1] + 'T00:00:00');
         for (let i = 1; i <= forecastDays; i++) {
@@ -261,70 +267,75 @@ async function loadForecastChart() {
         };
         const allLabels = allDates.map(fmtLabel);
 
-        // Build datasets
-        // Actual: values + nulls for forecast period
-        const actualData = [...actualValues, ...Array(forecastDays).fill(null)];
-        // Forecast: nulls for actual period, then overlap last actual point + forecast
-        const forecastData = [
-            ...Array(actualValues.length - 1).fill(null),
-            actualValues[actualValues.length - 1], // connect point
-            ...forecastValues
-        ];
-
         const ctx = canvas.getContext('2d');
+        const datasets = [];
 
-        // Gradients
-        const actualGradient = ctx.createLinearGradient(0, 0, 0, 320);
-        actualGradient.addColorStop(0, 'rgba(56,189,248,.25)');
-        actualGradient.addColorStop(1, 'rgba(56,189,248,.01)');
+        projects.forEach(p => {
+            const actual = projectData[p.key];
+            const forecast = generateForecast(actual, forecastDays);
 
-        const forecastGradient = ctx.createLinearGradient(0, 0, 0, 320);
-        forecastGradient.addColorStop(0, 'rgba(139,92,246,.2)');
-        forecastGradient.addColorStop(1, 'rgba(139,92,246,.01)');
+            // Actual dataset: values + nulls
+            const actualData = [...actual, ...Array(forecastDays).fill(null)];
+
+            // Forecast dataset: nulls + overlap last + forecast
+            const forecastData = [
+                ...Array(actual.length - 1).fill(null),
+                actual[actual.length - 1],
+                ...forecast
+            ];
+
+            // Gradient fills
+            const gradA = ctx.createLinearGradient(0, 0, 0, 340);
+            gradA.addColorStop(0, p.gradientA[0]);
+            gradA.addColorStop(1, p.gradientA[1]);
+
+            const gradF = ctx.createLinearGradient(0, 0, 0, 340);
+            gradF.addColorStop(0, p.gradientF[0]);
+            gradF.addColorStop(1, p.gradientF[1]);
+
+            // Actual line
+            datasets.push({
+                label: p.label,
+                data: actualData,
+                borderColor: p.color,
+                backgroundColor: gradA,
+                borderWidth: 2.5,
+                tension: 0.4,
+                fill: true,
+                pointRadius: 3,
+                pointHoverRadius: 6,
+                pointBackgroundColor: p.color,
+                pointBorderColor: '#0d0d14',
+                pointBorderWidth: 2,
+                spanGaps: false,
+            });
+
+            // Forecast line (dashed)
+            datasets.push({
+                label: p.label + ' (Prediksi)',
+                data: forecastData,
+                borderColor: p.color,
+                backgroundColor: gradF,
+                borderWidth: 2,
+                borderDash: [6, 4],
+                tension: 0.4,
+                fill: true,
+                pointRadius: 3,
+                pointHoverRadius: 6,
+                pointBackgroundColor: p.color,
+                pointBorderColor: '#0d0d14',
+                pointBorderWidth: 2,
+                pointStyle: 'rectRot',
+                spanGaps: false,
+            });
+        });
 
         destroyChart('chartForecast');
         chartInstances.chartForecast = new Chart(canvas, {
             type: 'line',
-            data: {
-                labels: allLabels,
-                datasets: [
-                    {
-                        label: 'Aktual',
-                        data: actualData,
-                        borderColor: '#38BDF8',
-                        backgroundColor: actualGradient,
-                        borderWidth: 2.5,
-                        tension: 0.4,
-                        fill: true,
-                        pointRadius: 3,
-                        pointHoverRadius: 6,
-                        pointBackgroundColor: '#38BDF8',
-                        pointBorderColor: '#0d0d14',
-                        pointBorderWidth: 2,
-                        spanGaps: false,
-                    },
-                    {
-                        label: 'Prediksi AI',
-                        data: forecastData,
-                        borderColor: '#A78BFA',
-                        backgroundColor: forecastGradient,
-                        borderWidth: 2.5,
-                        borderDash: [6, 4],
-                        tension: 0.4,
-                        fill: true,
-                        pointRadius: 4,
-                        pointHoverRadius: 7,
-                        pointBackgroundColor: '#A78BFA',
-                        pointBorderColor: '#0d0d14',
-                        pointBorderWidth: 2,
-                        pointStyle: 'circle',
-                        spanGaps: false,
-                    }
-                ]
-            },
+            data: { labels: allLabels, datasets },
             options: {
-                responsive: true,
-                maintainAspectRatio: false,
+                responsive: true, maintainAspectRatio: false,
                 interaction: { mode: 'index', intersect: false },
                 scales: {
                     x: {
@@ -332,7 +343,7 @@ async function loadForecastChart() {
                         grid: { color: cfg.gridColor, drawBorder: false },
                     },
                     y: {
-                        ticks: { color: cfg.textColor, font: { size: 10, family: "'Inter'" }, beginAtZero: true },
+                        ticks: { color: cfg.textColor, font: { size: 10, family: "'Inter'" } },
                         grid: { color: cfg.gridColor, drawBorder: false },
                         beginAtZero: true,
                     }
@@ -341,22 +352,21 @@ async function loadForecastChart() {
                     legend: {
                         labels: {
                             color: cfg.textColor,
-                            font: { size: 12, family: "'Inter'", weight: '500' },
-                            usePointStyle: true,
-                            pointStyleWidth: 10,
-                            padding: 20,
+                            font: { size: 11, family: "'Inter'", weight: '500' },
+                            usePointStyle: true, pointStyleWidth: 10, padding: 16,
+                            filter: (item) => !item.text.includes('Prediksi'),
                         }
                     },
                     tooltip: {
                         ...chartTooltipStyle(cfg),
-                        mode: 'index',
-                        intersect: false,
+                        mode: 'index', intersect: false,
+                        filter: (item) => item.raw !== null,
                         callbacks: {
-                            title: (items) => items[0]?.label || '',
                             label: (item) => {
                                 if (item.raw === null) return null;
-                                const prefix = item.datasetIndex === 0 ? '📊 Aktual' : '🔮 Prediksi';
-                                return ` ${prefix}: ${item.raw} pendaftar`;
+                                const isDashed = item.dataset.borderDash && item.dataset.borderDash.length;
+                                const suffix = isDashed ? ' (prediksi)' : '';
+                                return ` ${item.dataset.label.replace(' (Prediksi)','')}: ${item.raw}${suffix}`;
                             }
                         }
                     }
