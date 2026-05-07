@@ -115,12 +115,12 @@ a{text-decoration:none;color:inherit}ul{list-style:none}img{display:block;max-wi
 .partner-item{display:flex;flex-direction:column;align-items:center;min-width:160px;flex-shrink:0;transition:.3s var(--ease)}
 .partner-item:hover{transform:scale(1.08)}
 .partner-item .logo-area{height:140px;display:flex;align-items:center;justify-content:center}
-.partner-item img{height:56px;width:auto;max-width:160px;object-fit:contain;filter:grayscale(100%) opacity(.5);transition:all .4s ease}
+.partner-item img{height:56px;width:auto;max-width:160px;object-fit:contain;filter:opacity(.85);transition:all .4s ease}
 .partner-item img[alt="Shopee Express"]{height:48px}
 .partner-item img[alt="Sicepat Express"]{height:64px}
 .partner-item img[alt="GoTo Logistic"]{height:140px}
 .partner-item img[alt="Astro"]{height:120px}
-.partner-item:hover img{filter:grayscale(0%) opacity(1)}
+.partner-item:hover img{filter:opacity(1);transform:scale(1.05)}
 .partner-item .partner-name{font-size:.75rem;font-weight:600;color:var(--t3);text-align:center;white-space:nowrap;transition:color .3s ease}
 .partner-item:hover .partner-name{color:var(--accent)}
 
@@ -187,8 +187,7 @@ a{text-decoration:none;color:inherit}ul{list-style:none}img{display:block;max-wi
 /* TESTIMONIALS */
 .testi{padding:100px 0;border-top:1px solid var(--border);overflow:hidden}
 .testi-head{text-align:center;margin-bottom:48px}
-.testi-track{display:flex;gap:20px;animation:scrollTesti 30s linear infinite;width:max-content}
-.testi-track:hover{animation-play-state:paused}
+.testi-track{display:flex;gap:20px;width:max-content;cursor:grab;user-select:none}
 .testi-card{background:var(--bg2);border:1px solid var(--border);border-radius:36px;padding:36px 24px 32px;width:280px;flex-shrink:0;transition:.3s var(--ease);display:flex;flex-direction:column;align-items:center;text-align:center;position:relative;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.06)}
 .testi-card::before{content:'';position:absolute;top:0;left:0;bottom:0;width:5px;background:linear-gradient(180deg,#FBBF24,#F59E0B)}
 .testi-card:hover{border-color:var(--border-h);transform:translateY(-4px);box-shadow:0 16px 48px rgba(56,189,248,.08)}

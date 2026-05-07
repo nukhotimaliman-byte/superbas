@@ -133,10 +133,20 @@ const vw=window.innerWidth;
 const needSets=Math.ceil((vw*3)/setWidth)+1;
 for(let i=0;i<needSets;i++){origItems.forEach(item=>track.appendChild(item.cloneNode(true)));}
 let pos=0;let speed=0.5;let paused=false;
+let isDragging=false,startX=0,dragOffset=0;
 track.addEventListener('mouseenter',()=>paused=true);
-track.addEventListener('mouseleave',()=>paused=false);
+track.addEventListener('mouseleave',()=>{paused=false;isDragging=false;});
+track.addEventListener('mousedown',e=>{isDragging=true;startX=e.clientX;dragOffset=pos;track.style.cursor='grabbing';e.preventDefault();});
+window.addEventListener('mousemove',e=>{if(!isDragging)return;pos=dragOffset+(e.clientX-startX);});
+window.addEventListener('mouseup',()=>{isDragging=false;track.style.cursor='grab';});
+track.addEventListener('touchstart',e=>{isDragging=true;startX=e.touches[0].clientX;dragOffset=pos;paused=true;},{passive:true});
+track.addEventListener('touchmove',e=>{if(!isDragging)return;pos=dragOffset+(e.touches[0].clientX-startX);},{passive:true});
+track.addEventListener('touchend',()=>{isDragging=false;paused=false;});
+track.style.cursor='grab';
 function animate(){
-if(!paused){pos-=speed;if(Math.abs(pos)>=setWidth){pos+=setWidth;}track.style.transform='translateX('+pos+'px)';}
+if(!paused&&!isDragging){pos-=speed;if(Math.abs(pos)>=setWidth){pos+=setWidth;}}
+if(pos>0)pos-=setWidth;if(Math.abs(pos)>=setWidth*2)pos+=setWidth;
+track.style.transform='translateX('+pos+'px)';
 requestAnimationFrame(animate);
 }
 requestAnimationFrame(animate);
@@ -250,7 +260,7 @@ else{img.onload=img.onerror=()=>{loaded++;if(loaded>=total)initMarquee();};}
 <!-- TESTIMONIALS -->
 <section class="testi rv">
 <div class="ctn"><div class="testi-head"><p class="jobs-tag">Testimoni</p><h2 class="jobs-title">Kata Mereka yang Sudah Bergabung</h2></div></div>
-<div class="testi-track">
+<div class="testi-track" id="testiTrack">
 <div class="testi-card"><img class="testi-avatar" src="gallery/avatars/hendra.png" alt="Pak Hendra"><div class="testi-stars">★★★★★</div><p class="testi-quote">Sangat Mudah & Cepat!</p><p class="testi-desc">Proses pendaftarannya sangat mudah dan cepat. Dalam 2 hari saya sudah dihubungi admin. Sekarang sudah hampir 1 tahun bekerja.</p><p class="testi-name">Pak Hendra</p><p class="testi-role">Driver CDD — Jakarta</p><span class="testi-qmark">❝</span></div>
 <div class="testi-card"><img class="testi-avatar" src="gallery/avatars/sugianto.png" alt="Pak Sugianto"><div class="testi-stars">★★★★★</div><p class="testi-quote">Benar-Benar Gratis!</p><p class="testi-desc">Awalnya ragu karena gratis, tapi ternyata memang benar-benar tidak ada biaya. Gaji juga tepat waktu setiap bulan.</p><p class="testi-name">Pak Sugianto</p><p class="testi-role">Kurir Motor — Surabaya</p><span class="testi-qmark">❝</span></div>
 <div class="testi-card"><img class="testi-avatar" src="gallery/avatars/ridwan.png" alt="Pak Ridwan"><div class="testi-stars">★★★★★</div><p class="testi-quote">Profesional Sekali!</p><p class="testi-desc">Tim BAS sangat profesional. Dari pendaftaran sampai penempatan, semuanya jelas dan terorganisir dengan baik.</p><p class="testi-name">Pak Ridwan</p><p class="testi-role">Driver Wingbox — Bandung</p><span class="testi-qmark">❝</span></div>
@@ -263,6 +273,30 @@ else{img.onload=img.onerror=()=>{loaded++;if(loaded>=total)initMarquee();};}
 <div class="testi-card"><img class="testi-avatar" src="gallery/avatars/agus.png" alt="Pak Agus"><div class="testi-stars">★★★★★</div><p class="testi-quote">Stabil!</p><p class="testi-desc">Pendapatan stabil, 8 bulan kerja tanpa masalah. Top!</p><p class="testi-name">Pak Agus</p><p class="testi-role">Kurir Mobil — Medan</p><span class="testi-qmark">❝</span></div>
 </div>
 </section>
+<script>
+(function(){
+const t=document.getElementById('testiTrack');if(!t)return;
+const cards=[...t.children];const gap=20;
+let setW=0;cards.forEach(c=>{setW+=c.offsetWidth+gap;});
+const vw=window.innerWidth;const copies=Math.ceil((vw*3)/setW)+1;
+for(let i=0;i<copies;i++){cards.forEach(c=>t.appendChild(c.cloneNode(true)));}
+let pos=0,speed=0.4,paused=false,dragging=false,sx=0,doff=0;
+t.addEventListener('mouseenter',()=>paused=true);
+t.addEventListener('mouseleave',()=>{paused=false;dragging=false;});
+t.addEventListener('mousedown',e=>{dragging=true;sx=e.clientX;doff=pos;t.style.cursor='grabbing';e.preventDefault();});
+window.addEventListener('mousemove',e=>{if(!dragging)return;pos=doff+(e.clientX-sx);});
+window.addEventListener('mouseup',()=>{dragging=false;t.style.cursor='grab';});
+t.addEventListener('touchstart',e=>{dragging=true;sx=e.touches[0].clientX;doff=pos;paused=true;},{passive:true});
+t.addEventListener('touchmove',e=>{if(!dragging)return;pos=doff+(e.touches[0].clientX-sx);},{passive:true});
+t.addEventListener('touchend',()=>{dragging=false;paused=false;});
+function anim(){
+if(!paused&&!dragging){pos-=speed;if(Math.abs(pos)>=setW)pos+=setW;}
+if(pos>0)pos-=setW;if(Math.abs(pos)>=setW*2)pos+=setW;
+t.style.transform='translateX('+pos+'px)';requestAnimationFrame(anim);
+}
+requestAnimationFrame(anim);
+})();
+</script>
 
 <!-- CARE VALUES -->
 <section class="care rv">
