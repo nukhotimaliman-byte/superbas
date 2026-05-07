@@ -1,6 +1,6 @@
 /**
- * BAS Command Center — Dashboard v1.0
- * Main initialization (modules loaded via script tags)
+ * BAS Command Center — Dashboard v2.0
+ * Sidebar layout · Main initialization
  */
 (async function(){
   // Theme & clock
@@ -12,7 +12,7 @@
   if (!user) return;
 
   // Init all UI modules
-  initTabs();
+  initSidebar();
   initSettingsNav();
   initModalClose();
   initLogout();
@@ -82,21 +82,51 @@ function initLogout(){
   });
 }
 
-/* ── Tab Navigation ──────────────────────────────────── */
-function initTabs(){
-  QQ('.tab').forEach(t => t.addEventListener('click', () => {
-    QQ('.tab').forEach(x => x.classList.remove('active'));
-    t.classList.add('active');
+/* ── Sidebar Navigation ──────────────────────────────── */
+function initSidebar(){
+  const sidebar = Q('#sidebar');
+  const toggleBtn = Q('#sidebarToggle');
+  const isMobile = () => window.innerWidth <= 1024;
+
+  // Collapse state from localStorage
+  const collapsed = localStorage.getItem('bas-sidebar') === 'collapsed';
+  if (collapsed && !isMobile()) sidebar.classList.add('collapsed');
+
+  // Toggle button
+  toggleBtn.addEventListener('click', () => {
+    if (isMobile()) {
+      sidebar.classList.toggle('mobile-open');
+    } else {
+      sidebar.classList.toggle('collapsed');
+      localStorage.setItem('bas-sidebar', sidebar.classList.contains('collapsed') ? 'collapsed' : 'expanded');
+    }
+  });
+
+  // Close mobile sidebar when clicking outside
+  document.addEventListener('click', e => {
+    if (isMobile() && sidebar.classList.contains('mobile-open')
+        && !sidebar.contains(e.target) && !toggleBtn.contains(e.target)) {
+      sidebar.classList.remove('mobile-open');
+    }
+  });
+
+  // Navigation items
+  QQ('.sidebar-item').forEach(item => item.addEventListener('click', () => {
+    QQ('.sidebar-item').forEach(x => x.classList.remove('active'));
+    item.classList.add('active');
     QQ('.panel').forEach(p => p.classList.remove('active'));
-    const p = Q('#panel-' + t.dataset.tab);
+    const p = Q('#panel-' + item.dataset.tab);
     if (p) p.classList.add('active');
 
+    // Close mobile sidebar after selection
+    if (isMobile()) sidebar.classList.remove('mobile-open');
+
     // Lazy-load panel data
-    const tab = t.dataset.tab;
-    if (tab === 'candidates' && !window._cL) { loadCandidates(); window._cL = 1; }
-    if (tab === 'blacklist'  && !window._bL) { loadBlacklist();  window._bL = 1; }
-    if (tab === 'analytics'  && !window._aL) { loadAnalytics();  window._aL = 1; }
-    if (tab === 'settings'   && !window._sL) { loadSettings();   window._sL = 1; }
+    const tab = item.dataset.tab;
+    if (tab === 'candidates'   && !window._cL) { loadCandidates(); window._cL = 1; }
+    if (tab === 'blacklist'    && !window._bL) { loadBlacklist();  window._bL = 1; }
+    if (tab === 'analytics'    && !window._aL) { loadAnalytics();  window._aL = 1; }
+    if (tab === 'settings'     && !window._sL) { loadSettings();   window._sL = 1; }
     if (tab === 'quick-access' && !window._qL) { renderQuickAccess(); window._qL = 1; }
   }));
 }
