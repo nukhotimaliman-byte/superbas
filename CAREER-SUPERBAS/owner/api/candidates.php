@@ -17,7 +17,7 @@ $action = $_GET['action'] ?? 'list';
 // Table mapping
 $tables = [
     'driver' => ['candidates' => 'drv_candidates', 'locations' => 'drv_locations'],
-    'kurir'  => ['candidates' => 'kur_candidates', 'locations' => 'kur_locations'],
+    'kurir'  => ['candidates' => 'krr_candidates', 'locations' => 'krr_locations'],
     'daily_worker' => ['candidates' => 'dw_candidates', 'locations' => 'dw_locations'],
 ];
 
@@ -167,7 +167,7 @@ switch ($action) {
             SELECT whatsapp, GROUP_CONCAT(DISTINCT project) AS projects, COUNT(*) AS count FROM (
                 SELECT whatsapp, 'driver' AS project FROM drv_candidates WHERE whatsapp IS NOT NULL AND whatsapp != ''
                 UNION ALL
-                SELECT whatsapp, 'kurir' FROM kur_candidates WHERE whatsapp IS NOT NULL AND whatsapp != ''
+                SELECT whatsapp, 'kurir' FROM krr_candidates WHERE whatsapp IS NOT NULL AND whatsapp != ''
                 UNION ALL
                 SELECT whatsapp, 'daily_worker' FROM dw_candidates WHERE whatsapp IS NOT NULL AND whatsapp != ''
             ) all_wa
@@ -190,7 +190,7 @@ switch ($action) {
             }
         }
         if ($project === 'all' || $project === 'kurir') {
-            foreach ($db->query('SELECT id, name FROM kur_locations ORDER BY name')->fetchAll() as $r) {
+            foreach ($db->query('SELECT id, name FROM krr_locations ORDER BY name')->fetchAll() as $r) {
                 $locations[] = ['id' => $r['id'], 'name' => $r['name'], 'project' => 'kurir'];
             }
         }

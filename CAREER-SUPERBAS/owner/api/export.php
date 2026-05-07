@@ -23,7 +23,7 @@ fputcsv($output, ['Project', 'ID', 'Nama', 'WhatsApp', 'Alamat', 'Kota', 'Status
 
 $tables = [
     'driver' => ['candidates' => 'drv_candidates', 'locations' => 'drv_locations'],
-    'kurir'  => ['candidates' => 'kur_candidates', 'locations' => 'kur_locations'],
+    'kurir'  => ['candidates' => 'krr_candidates', 'locations' => 'krr_locations'],
     'daily_worker' => ['candidates' => 'dw_candidates', 'locations' => 'dw_locations'],
 ];
 

@@ -12,7 +12,7 @@ if ($settings['landing_stats']['auto_count']) {
     // Auto-count from database
     $db = getDB();
     $drv = $db->query('SELECT COUNT(*) AS cnt FROM drv_candidates')->fetch()['cnt'];
-    $kur = $db->query('SELECT COUNT(*) AS cnt FROM kur_candidates')->fetch()['cnt'];
+    $kur = $db->query('SELECT COUNT(*) AS cnt FROM krr_candidates')->fetch()['cnt'];
     $dw  = $db->query('SELECT COUNT(*) AS cnt FROM dw_candidates')->fetch()['cnt'];
     $total = intval($drv) + intval($kur) + intval($dw);
 
@@ -21,7 +21,7 @@ if ($settings['landing_stats']['auto_count']) {
         SELECT COUNT(DISTINCT city) AS cnt FROM (
             SELECT l.name AS city FROM drv_candidates c LEFT JOIN drv_locations l ON c.location_id = l.id WHERE l.name IS NOT NULL
             UNION
-            SELECT l.name FROM kur_candidates c LEFT JOIN kur_locations l ON c.location_id = l.id WHERE l.name IS NOT NULL
+            SELECT l.name FROM krr_candidates c LEFT JOIN krr_locations l ON c.location_id = l.id WHERE l.name IS NOT NULL
             UNION
             SELECT l.name FROM dw_candidates c LEFT JOIN dw_locations l ON c.location_id = l.id WHERE l.name IS NOT NULL
         ) cities

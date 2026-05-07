@@ -35,17 +35,17 @@ switch ($action) {
 
     case 'overview':
         $drv = safeCount($db, 'drv_candidates');
-        $kur = safeCount($db, 'kur_candidates');
+        $kur = safeCount($db, 'krr_candidates');
         $dw  = safeCount($db, 'dw_candidates');
         $total = $drv + $kur + $dw;
 
         $drvToday = safeCount($db, 'drv_candidates', 'DATE(created_at) = CURDATE()');
-        $kurToday = safeCount($db, 'kur_candidates', 'DATE(created_at) = CURDATE()');
+        $kurToday = safeCount($db, 'krr_candidates', 'DATE(created_at) = CURDATE()');
         $dwToday  = safeCount($db, 'dw_candidates',  'DATE(created_at) = CURDATE()');
 
         // Status breakdown - query each table individually
         $byStatus = [];
-        foreach (['drv_candidates', 'kur_candidates', 'dw_candidates'] as $tbl) {
+        foreach (['drv_candidates', 'krr_candidates', 'dw_candidates'] as $tbl) {
             $rows = safeQuery($db, "SELECT status, COUNT(*) AS cnt FROM {$tbl} GROUP BY status");
             foreach ($rows as $row) {
                 $s = $row['status'] ?? 'Unknown';
@@ -88,7 +88,7 @@ switch ($action) {
         };
         jsonResponse([
             'driver' => $trendQuery('drv_candidates'),
-            'kurir' => $trendQuery('kur_candidates'),
+            'kurir' => $trendQuery('krr_candidates'),
             'daily_worker' => $trendQuery('dw_candidates'),
             'days' => $days
         ]);
@@ -119,7 +119,7 @@ switch ($action) {
         };
         jsonResponse([
             'driver' => $compare('drv_candidates'),
-            'kurir' => $compare('kur_candidates'),
+            'kurir' => $compare('krr_candidates'),
             'daily_worker' => $compare('dw_candidates')
         ]);
         break;
@@ -132,7 +132,7 @@ switch ($action) {
                 FROM drv_candidates c LEFT JOIN drv_locations l ON c.location_id = l.id GROUP BY l.name
                 UNION ALL
                 SELECT COALESCE(l.name, 'Unknown') AS city, COUNT(*) AS cnt
-                FROM kur_candidates c LEFT JOIN kur_locations l ON c.location_id = l.id GROUP BY l.name
+                FROM krr_candidates c LEFT JOIN krr_locations l ON c.location_id = l.id GROUP BY l.name
                 UNION ALL
                 SELECT COALESCE(l.name, 'Unknown') AS city, COUNT(*) AS cnt
                 FROM dw_candidates c LEFT JOIN dw_locations l ON c.location_id = l.id GROUP BY l.name
