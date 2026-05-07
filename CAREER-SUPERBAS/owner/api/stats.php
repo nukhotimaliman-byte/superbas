@@ -8,8 +8,6 @@
  */
 require_once __DIR__ . '/../config.php';
 
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
 $owner = requireOwnerAuth();
 $db = getDB();
 $action = $_GET['action'] ?? 'overview';
@@ -140,21 +138,25 @@ switch ($action) {
 
     case 'top_cities':
         $limit = intval($_GET['limit'] ?? 10);
-
-        // Query kabupaten from each project table individually
         $cityMap = [];
-        foreach (['drv_candidates', 'krr_candidates', 'dw_candidates'] as $tbl) {
-            // Check if kabupaten column exists
+        $tables = ['drv_candidates', 'krr_candidates', 'dw_candidates'];
+        foreach ($tables as $tbl) {
             try {
-                $rows = $db->query("SELECT kabupaten, COUNT(*) AS cnt FROM {$tbl} WHERE kabupaten IS NOT NULL AND TRIM(kabupaten) != '' GROUP BY kabupaten")->fetchAll();
+                // First check if kabupaten column exists
+                $cols = $db->query("SHOW COLUMNS FROM {$tbl} LIKE 'kabupaten'")->fetchAll();
+                if (empty($cols)) continue;
+
+                $stmt = $db->query("SELECT kabupaten, COUNT(*) AS cnt FROM {$tbl} WHERE kabupaten IS NOT NULL AND kabupaten != '' GROUP BY kabupaten ORDER BY cnt DESC");
+                $rows = $stmt->fetchAll();
                 foreach ($rows as $row) {
                     $city = trim($row['kabupaten']);
-                    if ($city) {
+                    if ($city !== '') {
                         $cityMap[$city] = ($cityMap[$city] ?? 0) + intval($row['cnt']);
                     }
                 }
             } catch (Exception $e) {
-                // Column doesn't exist or table missing, skip
+                // Table or column missing, skip
+                continue;
             }
         }
 
@@ -163,6 +165,11 @@ switch ($action) {
         $i = 0;
         foreach ($cityMap as $city => $total) {
             if ($i >= $limit) break;
+            $result[] = ['city' => $city, 'total' => $total];
+            $i++;
+        }
+        jsonResponse($result);
+        break;
             $result[] = ['city' => $city, 'total' => $total];
             $i++;
         }
