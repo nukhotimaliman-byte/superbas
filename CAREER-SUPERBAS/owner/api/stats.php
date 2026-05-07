@@ -43,19 +43,14 @@ switch ($action) {
         $kurToday = safeCount($db, 'kur_candidates', 'DATE(created_at) = CURDATE()');
         $dwToday  = safeCount($db, 'dw_candidates',  'DATE(created_at) = CURDATE()');
 
-        // Status breakdown
+        // Status breakdown - query each table individually
         $byStatus = [];
-        $statusRows = safeQuery($db, "
-            SELECT status, SUM(cnt) AS total FROM (
-                SELECT status, COUNT(*) AS cnt FROM drv_candidates GROUP BY status
-                UNION ALL
-                SELECT status, COUNT(*) AS cnt FROM kur_candidates GROUP BY status
-                UNION ALL
-                SELECT status, COUNT(*) AS cnt FROM dw_candidates GROUP BY status
-            ) combined GROUP BY status
-        ");
-        foreach ($statusRows as $row) {
-            $byStatus[$row['status']] = intval($row['total']);
+        foreach (['drv_candidates', 'kur_candidates', 'dw_candidates'] as $tbl) {
+            $rows = safeQuery($db, "SELECT status, COUNT(*) AS cnt FROM {$tbl} GROUP BY status");
+            foreach ($rows as $row) {
+                $s = $row['status'] ?? 'Unknown';
+                $byStatus[$s] = ($byStatus[$s] ?? 0) + intval($row['cnt']);
+            }
         }
 
         $lulus = $byStatus['Lulus'] ?? 0;
