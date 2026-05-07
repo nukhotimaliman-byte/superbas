@@ -139,32 +139,30 @@ switch ($action) {
     case 'top_cities':
         $limit = intval($_GET['limit'] ?? 10);
 
-        // Query each project separately to avoid UNION ALL failures
+        // Query kabupaten from each project table individually
         $cityMap = [];
-        $tables = [
-            ['candidates' => 'drv_candidates', 'locations' => 'drv_locations'],
-            ['candidates' => 'krr_candidates', 'locations' => 'krr_locations'],
-            ['candidates' => 'dw_candidates',  'locations' => 'dw_locations'],
-        ];
-        foreach ($tables as $t) {
+        foreach (['drv_candidates', 'krr_candidates', 'dw_candidates'] as $tbl) {
             $rows = safeQuery($db, "
-                SELECT COALESCE(l.name, 'Unknown') AS city, COUNT(*) AS cnt
-                FROM {$t['candidates']} c
-                LEFT JOIN {$t['locations']} l ON c.location_id = l.id
-                GROUP BY l.name
+                SELECT COALESCE(NULLIF(TRIM(kabupaten), ''), 'Belum Ditentukan') AS city, COUNT(*) AS cnt
+                FROM {$tbl}
+                GROUP BY city
             ");
             foreach ($rows as $row) {
-                $city = $row['city'] ?: 'Belum Ditentukan';
+                $city = $row['city'];
                 $cityMap[$city] = ($cityMap[$city] ?? 0) + intval($row['cnt']);
             }
         }
 
-        // Sort descending and limit
         arsort($cityMap);
         $result = [];
         $i = 0;
         foreach ($cityMap as $city => $total) {
             if ($i >= $limit) break;
+            $result[] = ['city' => $city, 'total' => $total];
+            $i++;
+        }
+        jsonResponse($result);
+        break;
             $result[] = ['city' => $city, 'total' => $total];
             $i++;
         }
