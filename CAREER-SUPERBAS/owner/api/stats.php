@@ -142,14 +142,17 @@ switch ($action) {
         // Query kabupaten from each project table individually
         $cityMap = [];
         foreach (['drv_candidates', 'krr_candidates', 'dw_candidates'] as $tbl) {
-            $rows = safeQuery($db, "
-                SELECT COALESCE(NULLIF(TRIM(kabupaten), ''), 'Belum Ditentukan') AS city, COUNT(*) AS cnt
-                FROM {$tbl}
-                GROUP BY city
-            ");
-            foreach ($rows as $row) {
-                $city = $row['city'];
-                $cityMap[$city] = ($cityMap[$city] ?? 0) + intval($row['cnt']);
+            // Check if kabupaten column exists
+            try {
+                $rows = $db->query("SELECT kabupaten, COUNT(*) AS cnt FROM {$tbl} WHERE kabupaten IS NOT NULL AND TRIM(kabupaten) != '' GROUP BY kabupaten")->fetchAll();
+                foreach ($rows as $row) {
+                    $city = trim($row['kabupaten']);
+                    if ($city) {
+                        $cityMap[$city] = ($cityMap[$city] ?? 0) + intval($row['cnt']);
+                    }
+                }
+            } catch (Exception $e) {
+                // Column doesn't exist or table missing, skip
             }
         }
 
@@ -158,6 +161,11 @@ switch ($action) {
         $i = 0;
         foreach ($cityMap as $city => $total) {
             if ($i >= $limit) break;
+            $result[] = ['city' => $city, 'total' => $total];
+            $i++;
+        }
+        jsonResponse($result);
+        break;
             $result[] = ['city' => $city, 'total' => $total];
             $i++;
         }
