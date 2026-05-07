@@ -63,7 +63,7 @@ Options -Indexes
 # Protect uploads — only allow image/pdf access
 <IfModule mod_rewrite.c>
     RewriteEngine On
-    RewriteCond %{REQUEST_URI} ^/uploads/
+    RewriteCond %{REQUEST_URI} /uploads/ [NC]
     RewriteCond %{REQUEST_URI} !\.(jpg|jpeg|png|pdf)$ [NC]
     RewriteRule .* - [F,L]
 </IfModule>

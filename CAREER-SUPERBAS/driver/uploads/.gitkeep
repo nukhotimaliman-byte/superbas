@@ -1,0 +1,2 @@
+# This file ensures the uploads directory survives git deployments.
+# Do NOT delete this file.

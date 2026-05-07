@@ -1,0 +1,2 @@
+# This file ensures the uploads/chat directory survives git deployments.
+# Do NOT delete this file.

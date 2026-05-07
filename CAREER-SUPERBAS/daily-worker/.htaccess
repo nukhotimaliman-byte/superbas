@@ -27,4 +27,9 @@
 
   # Arahkan semua SPA routes ke app.html
   RewriteRule . app.html [L]
+
+  # Protect uploads — only allow image/pdf access
+  RewriteCond %{REQUEST_URI} /uploads/ [NC]
+  RewriteCond %{REQUEST_URI} !\.(jpg|jpeg|png|pdf)$ [NC]
+  RewriteRule .* - [F,L]
 </IfModule>
