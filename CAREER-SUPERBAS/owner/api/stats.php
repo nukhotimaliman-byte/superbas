@@ -154,7 +154,7 @@ switch ($action) {
                 GROUP BY l.name
             ");
             foreach ($rows as $row) {
-                $city = $row['city'] ?: 'Unknown';
+                $city = $row['city'] ?: 'Belum Ditentukan';
                 $cityMap[$city] = ($cityMap[$city] ?? 0) + intval($row['cnt']);
             }
         }
