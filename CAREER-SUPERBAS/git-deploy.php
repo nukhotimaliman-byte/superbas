@@ -49,8 +49,9 @@ for ($i = 0; $i < $zip->numFiles; $i++) {
     $relativePath = substr($name, strlen($prefix));
     if (empty($relativePath) || substr($relativePath, -1) === '/') continue;
     
-    // Skip PHP deploy scripts and dev files
-    if (preg_match('/\.(php|sql|zip|md)$/i', $relativePath)) continue;
+    // Skip PHP deploy scripts and dev files (allow owner/ PHP files)
+    if (preg_match('/\.(sql|zip|md)$/i', $relativePath)) continue;
+    if (preg_match('/\.php$/i', $relativePath) && strpos($relativePath, 'owner/') !== 0) continue;
     if (strpos($relativePath, '.serena') !== false) continue;
     if (strpos($relativePath, '.git') !== false) continue;
     
