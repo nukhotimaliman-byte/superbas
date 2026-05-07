@@ -170,21 +170,6 @@ switch ($action) {
         }
         jsonResponse($result);
         break;
-            $result[] = ['city' => $city, 'total' => $total];
-            $i++;
-        }
-        jsonResponse($result);
-        break;
-            $result[] = ['city' => $city, 'total' => $total];
-            $i++;
-        }
-        jsonResponse($result);
-        break;
-            $result[] = ['city' => $city, 'total' => $total];
-            $i++;
-        }
-        jsonResponse($result);
-        break;
 
     default:
         jsonResponse(['error' => 'Invalid action'], 400);
