@@ -1125,7 +1125,8 @@
 
             // Load docs
             docs.forEach(d => {
-                const key = d.doc_type === 'Pas Photo' ? 'PasPhoto' : d.doc_type;
+                const keyMap = { 'Pas Photo': 'PasPhoto', 'Surat Sehat': 'SuratSehat' };
+                const key = keyMap[d.doc_type] || d.doc_type;
                 const dbKey = d.doc_type;
                 uploadedDocs[dbKey] = d.file_path;
                 markDocSlot(key, dbKey, d.file_path);
