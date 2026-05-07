@@ -1,28 +1,19 @@
-# Enable phtml as PHP handler (for installer)
-AddType application/x-httpd-php .phtml
+# Block config.php and json files
+<Files "config.php">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+</Files>
 
-# Protect sensitive files
-<FilesMatch "\.(json|php)$">
+<FilesMatch "\.(json)$">
     <IfModule mod_authz_core.c>
         Require all denied
     </IfModule>
 </FilesMatch>
 
-# Allow API PHP files
-<FilesMatch "^(index|dashboard|maintenance)\.html$">
-    <IfModule mod_authz_core.c>
-        Require all granted
-    </IfModule>
-</FilesMatch>
-
-# Allow API directory
-<IfModule mod_rewrite.c>
-    RewriteEngine On
-    RewriteRule ^api/.*\.php$ - [L]
-</IfModule>
-
 # Block direct access to data directory
 <IfModule mod_rewrite.c>
+    RewriteEngine On
     RewriteRule ^data/ - [F,L]
 </IfModule>
 
