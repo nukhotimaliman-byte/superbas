@@ -305,8 +305,8 @@ async function loadForecastChart() {
                 pointRadius: 3,
                 pointHoverRadius: 6,
                 pointBackgroundColor: p.color,
-                pointBorderColor: '#0d0d14',
-                pointBorderWidth: 2,
+                pointBorderColor: p.color,
+                pointBorderWidth: 0,
                 spanGaps: false,
             });
 
@@ -314,7 +314,7 @@ async function loadForecastChart() {
             datasets.push({
                 label: p.label + ' (Prediksi)',
                 data: forecastData,
-                borderColor: p.color,
+                borderColor: p.color + '99',
                 backgroundColor: gradF,
                 borderWidth: 2,
                 borderDash: [6, 4],
@@ -323,9 +323,9 @@ async function loadForecastChart() {
                 pointRadius: 3,
                 pointHoverRadius: 6,
                 pointBackgroundColor: p.color,
-                pointBorderColor: '#0d0d14',
-                pointBorderWidth: 2,
-                pointStyle: 'rectRot',
+                pointBorderColor: p.color,
+                pointBorderWidth: 0,
+                pointStyle: 'circle',
                 spanGaps: false,
             });
         });
