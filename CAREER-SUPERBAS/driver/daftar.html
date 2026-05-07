@@ -505,7 +505,7 @@
                     <label class="idgen-label">NAMA LENGKAP</label>
                     <input class="idgen-input" type="text" id="idgenName" readonly>
 
-                    <label class="idgen-label" style="margin-top:18px;">ID DRIVER</label>
+                    <label class="idgen-label" style="margin-top:18px;">ID</label>
                     <input class="idgen-input" type="text" id="idgenId" readonly>
                 </div>
 
@@ -1656,60 +1656,41 @@
 
         /* ── Auto Image Compressor ───────────────── */
         async function compressImage(file, maxBytes) {
-            // PDFs pass through unchanged
             if (file.type === 'application/pdf') return file;
             
-            return new Promise((resolve) => {
+            return new Promise((resolve, reject) => {
+                const timer = setTimeout(() => resolve(file), 15000);
                 const reader = new FileReader();
+                reader.onerror = () => { clearTimeout(timer); resolve(file); };
                 reader.onload = (e) => {
                     const img = new Image();
+                    img.onerror = () => { clearTimeout(timer); resolve(file); };
                     img.onload = () => {
-                        const canvas = document.createElement('canvas');
-                        
-                        // Scale down if very large (max 2000px on longest side)
-                        const MAX_DIM = 2000;
-                        let { width, height } = img;
-                        if (width > MAX_DIM || height > MAX_DIM) {
-                            if (width > height) {
-                                height = Math.round(height * MAX_DIM / width);
-                                width = MAX_DIM;
-                            } else {
-                                width = Math.round(width * MAX_DIM / height);
-                                height = MAX_DIM;
+                        try {
+                            const canvas = document.createElement('canvas');
+                            const MAX_DIM = 2000;
+                            let { width, height } = img;
+                            if (width > MAX_DIM || height > MAX_DIM) {
+                                if (width > height) { height = Math.round(height * MAX_DIM / width); width = MAX_DIM; }
+                                else { width = Math.round(width * MAX_DIM / height); height = MAX_DIM; }
                             }
-                        }
-                        canvas.width = width;
-                        canvas.height = height;
-                        canvas.getContext('2d').drawImage(img, 0, 0, width, height);
-
-                        // Binary search for best quality under maxBytes
-                        let lo = 0.1, hi = 0.92, bestBlob = null;
-                        const attempt = (q) => new Promise(res =>
-                            canvas.toBlob(blob => res(blob), 'image/jpeg', q)
-                        );
-
-                        (async () => {
-                            // Quick check — already small enough at high quality
-                            let blob = await attempt(hi);
-                            if (blob.size <= maxBytes) {
-                                return resolve(new File([blob], file.name.replace(/\.[^.]+$/, '.jpg'), { type: 'image/jpeg' }));
-                            }
-
-                            // Binary search
-                            for (let i = 0; i < 6; i++) {
-                                const mid = (lo + hi) / 2;
-                                blob = await attempt(mid);
-                                if (blob.size <= maxBytes) {
-                                    bestBlob = blob;
-                                    lo = mid;
-                                } else {
-                                    hi = mid;
+                            canvas.width = width; canvas.height = height;
+                            canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+                            let lo = 0.1, hi = 0.92, bestBlob = null;
+                            const attempt = (q) => new Promise(res => canvas.toBlob(blob => res(blob), 'image/jpeg', q));
+                            (async () => {
+                                let blob = await attempt(hi);
+                                if (!blob) { clearTimeout(timer); return resolve(file); }
+                                if (blob.size <= maxBytes) { clearTimeout(timer); return resolve(new File([blob], file.name.replace(/\.[^.]+$/, '.jpg'), { type: 'image/jpeg' })); }
+                                for (let i = 0; i < 6; i++) {
+                                    const mid = (lo + hi) / 2; blob = await attempt(mid);
+                                    if (blob && blob.size <= maxBytes) { bestBlob = blob; lo = mid; } else { hi = mid; }
                                 }
-                            }
-
-                            if (!bestBlob) bestBlob = await attempt(lo);
-                            resolve(new File([bestBlob], file.name.replace(/\.[^.]+$/, '.jpg'), { type: 'image/jpeg' }));
-                        })();
+                                if (!bestBlob) bestBlob = await attempt(lo);
+                                clearTimeout(timer);
+                                resolve(new File([bestBlob || blob], file.name.replace(/\.[^.]+$/, '.jpg'), { type: 'image/jpeg' }));
+                            })();
+                        } catch { clearTimeout(timer); resolve(file); }
                     };
                     img.src = e.target.result;
                 };
@@ -1773,7 +1754,12 @@
                 } else {
                     showToast(data.error || 'Upload gagal', 'error');
                 }
-            } catch { showToast('Terjadi kesalahan koneksi', 'error'); }
+            } catch (err) {
+                console.error('Upload error:', err);
+                showToast('Terjadi kesalahan koneksi', 'error');
+                const statusEl = document.getElementById(`status-${type}`);
+                if (statusEl) statusEl.textContent = 'Gagal, tap untuk coba lagi';
+            }
             event.target.value = '';
         }
 
@@ -1831,7 +1817,7 @@
                     <span class="home-card-row-value${cls ? ' ' + cls : ''}">${value}</span>
                 </div>`;
 
-            // ── Test Drive Schedule Card (di atas ID Driver) ──
+            // ── Test Drive Schedule Card (di atas ID) ──
             const tdDate = currentCandidate.test_drive_date;
             const tdTime = currentCandidate.test_drive_time;
             const adminMsg = currentCandidate.korlap_notes;
@@ -1872,7 +1858,7 @@
 
             container.innerHTML = `
                 ${scheduleCard}
-                ${row('ID Driver', idDriver, 'accent mono')}
+                ${row('ID', idDriver, 'accent mono')}
                 ${row('Nama', escapeHtml(currentCandidate.name), 'bold')}
                 ${row('NIK', currentCandidate.nik || '-', 'mono')}
                 ${row('Tempat & Tgl Lahir', birthInfo, 'accent')}
@@ -2123,7 +2109,7 @@
                     btn.disabled = true;
                     btn.style.opacity = '0.5';
                     btn.style.cursor = 'not-allowed';
-                    btn.title = 'ID Driver belum diterbitkan oleh Admin';
+                    btn.title = 'ID belum diterbitkan oleh Admin';
                 } else {
                     btn.disabled = false;
                     btn.style.opacity = '1';
@@ -2137,7 +2123,7 @@
             const name = document.getElementById('idgenName').value || 'NAMA';
             const id = document.getElementById('idgenId').value;
             if (!id) {
-                showToast('Buku profil belum diisi / ID Driver belum diterbitkan.', 'error');
+                showToast('Buku profil belum diisi / ID belum diterbitkan.', 'error');
                 return;
             }
             const armada = currentCandidate?.armada_type || 'CDD';
