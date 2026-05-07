@@ -189,6 +189,50 @@
             <div class="chart-area"><canvas id="chartDistribution" height="260"></canvas></div>
         </div>
     </div>
+
+    <!-- ═══ FORECAST SECTION ═══ -->
+    <div class="forecast-section">
+        <div class="forecast-header">
+            <div class="forecast-title">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                Trend Pendaftaran + Forecast AI
+            </div>
+            <span class="forecast-badge">Forecast</span>
+        </div>
+        <div class="forecast-grid">
+            <div class="forecast-chart-wrap">
+                <div class="chart-area"><canvas id="chartForecast" height="320"></canvas></div>
+            </div>
+            <div class="forecast-calendar">
+                <div class="cal-widget-header">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                    Rentang Tanggal
+                </div>
+                <div class="cal-nav">
+                    <button class="cal-arrow" id="calPrev">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="15 18 9 12 15 6"/></svg>
+                    </button>
+                    <span class="cal-month" id="calMonth">Mei 2026</span>
+                    <button class="cal-arrow" id="calNext">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="9 18 15 12 9 6"/></svg>
+                    </button>
+                </div>
+                <div class="cal-grid" id="calGrid"></div>
+                <div class="cal-range-box">
+                    <div class="cal-range-label">Rentang Terpilih</div>
+                    <div class="cal-range-display" id="calRangeDisplay">
+                        <span class="cal-range-hint">Klik 2 tanggal untuk memilih rentang</span>
+                    </div>
+                </div>
+                <div class="cal-presets">
+                    <button class="cal-preset" data-days="7">7H</button>
+                    <button class="cal-preset" data-days="14">14H</button>
+                    <button class="cal-preset" data-days="30">30H</button>
+                    <button class="cal-preset cal-preset--reset" data-days="0">Reset</button>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <!-- QUICK ACCESS PANEL -->
@@ -354,6 +398,7 @@
 <script src="js/overview.js?v=2.0"></script>
 <script src="js/candidates.js?v=2.0"></script>
 <script src="js/modules.js?v=2.0"></script>
+<script src="js/forecast.js?v=2.0"></script>
 <script src="js/dashboard.js?v=2.0"></script>
 </body>
 </html>

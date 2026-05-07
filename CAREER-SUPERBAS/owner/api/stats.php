@@ -77,8 +77,19 @@ switch ($action) {
         break;
 
     case 'trend':
+        $from = $_GET['from'] ?? null;
+        $to   = $_GET['to'] ?? null;
         $days = min(intval($_GET['days'] ?? 30), 90);
-        $trendQuery = function($table) use ($db, $days) {
+
+        $trendQuery = function($table) use ($db, $from, $to, $days) {
+            if ($from && $to) {
+                return safeQuery($db, "
+                    SELECT DATE(created_at) AS date, COUNT(*) AS cnt
+                    FROM {$table}
+                    WHERE DATE(created_at) >= ? AND DATE(created_at) <= ?
+                    GROUP BY DATE(created_at) ORDER BY date
+                ", [$from, $to]);
+            }
             return safeQuery($db, "
                 SELECT DATE(created_at) AS date, COUNT(*) AS cnt
                 FROM {$table}
@@ -86,6 +97,7 @@ switch ($action) {
                 GROUP BY DATE(created_at) ORDER BY date
             ", [$days]);
         };
+
         jsonResponse([
             'driver' => $trendQuery('drv_candidates'),
             'kurir' => $trendQuery('krr_candidates'),
