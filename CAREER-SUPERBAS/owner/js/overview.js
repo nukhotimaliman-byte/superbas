@@ -13,17 +13,18 @@ function isLightTheme() {
 function getChartDefaults() {
     const light = isLightTheme();
     const cfg = {
-        gridColor: light ? 'rgba(0,0,0,.07)' : 'rgba(255,255,255,.06)',
-        textColor: light ? '#374151' : '#c4c8d4',
+        gridColor: light ? 'rgba(0,0,0,.08)' : 'rgba(255,255,255,.07)',
+        textColor: light ? '#6b7280' : '#9ca3af',
         tooltipBg: light ? '#ffffff' : '#1a1a28',
         tooltipText: light ? '#111827' : '#f0f0f0',
         tooltipBorder: light ? 'rgba(0,0,0,.12)' : 'rgba(255,255,255,.1)',
-        pointBorder: light ? '#ffffff' : '#0d0d14',
+        pointBorder: light ? '#ffffff' : '#13131d',
     };
-    // Set Chart.js global defaults for text color
+    // Force Chart.js global defaults
     if (window.Chart) {
         Chart.defaults.color = cfg.textColor;
         Chart.defaults.borderColor = cfg.gridColor;
+        Chart.defaults.scale = Chart.defaults.scale || {};
     }
     return cfg;
 }
