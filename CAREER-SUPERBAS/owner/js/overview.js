@@ -12,14 +12,20 @@ function isLightTheme() {
 
 function getChartDefaults() {
     const light = isLightTheme();
-    return {
-        gridColor: light ? 'rgba(0,0,0,.07)' : 'rgba(255,255,255,.05)',
-        textColor: light ? 'rgba(0,0,0,.55)' : 'rgba(255,255,255,.4)',
+    const cfg = {
+        gridColor: light ? 'rgba(0,0,0,.07)' : 'rgba(255,255,255,.06)',
+        textColor: light ? '#374151' : '#c4c8d4',
         tooltipBg: light ? '#ffffff' : '#1a1a28',
         tooltipText: light ? '#111827' : '#f0f0f0',
         tooltipBorder: light ? 'rgba(0,0,0,.12)' : 'rgba(255,255,255,.1)',
         pointBorder: light ? '#ffffff' : '#0d0d14',
     };
+    // Set Chart.js global defaults for text color
+    if (window.Chart) {
+        Chart.defaults.color = cfg.textColor;
+        Chart.defaults.borderColor = cfg.gridColor;
+    }
+    return cfg;
 }
 
 function chartTooltipStyle(cfg) {
