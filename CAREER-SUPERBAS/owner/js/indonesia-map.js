@@ -98,8 +98,8 @@ function getColor(count, colors) {
 let _mapCache = null;
 
 /* ── Main Init ── */
-async function initIndonesiaMap() {
-  const container = Q('#mapContainer');
+async function initIndonesiaMap(targetId) {
+  const container = Q(targetId || '#mapContainer');
   if (!container) return;
 
   try {

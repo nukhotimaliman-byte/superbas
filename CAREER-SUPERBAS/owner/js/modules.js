@@ -53,6 +53,7 @@ async function loadAnalytics(){
     chartInstances.chartDistribution=new Chart(Q('#chartDistribution'),{type:'pie',data:{labels:['Driver','Kurir','Daily Worker'],datasets:[{data:[d.driver.total,d.kurir.total,d.daily_worker.total],backgroundColor:['#38BDF8','#FBBF24','#22C55E'],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{color:'#999',font:{size:11}}}}}});
       // Init forecast section
     initForecast();
+    initIndonesiaMap('#mapContainerAnalytics');
   }catch(e){console.error('Analytics error:', e); toast('Gagal memuat analytics','error');}
 }
 

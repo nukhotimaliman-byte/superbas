@@ -224,14 +224,38 @@
         <p class="panel-desc">Perbandingan performa antar project</p>
     </div>
     <div class="stat-grid" id="comparisonCards"></div>
+
+    <!-- Map Distribusi (Analytics) -->
+    <div class="chart-grid chart-grid--full">
+        <div class="chart-card map-card">
+            <div class="chart-title-row">
+                <div class="chart-title-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                </div>
+                <div class="chart-title">Distribusi Kandidat per Provinsi</div>
+            </div>
+            <div id="mapContainerAnalytics" class="map-container"></div>
+        </div>
+    </div>
+
     <div class="chart-grid">
         <div class="chart-card">
-            <div class="chart-title">Perbandingan per Project</div>
-            <div class="chart-area"><canvas id="chartComparison" height="260"></canvas></div>
+            <div class="chart-title-row">
+                <div class="chart-title-icon chart-title-icon--info">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+                </div>
+                <div class="chart-title">Perbandingan per Project</div>
+            </div>
+            <div class="chart-area" style="height:260px"><canvas id="chartComparison"></canvas></div>
         </div>
         <div class="chart-card">
-            <div class="chart-title">Distribusi Pelamar</div>
-            <div class="chart-area"><canvas id="chartDistribution" height="260"></canvas></div>
+            <div class="chart-title-row">
+                <div class="chart-title-icon chart-title-icon--warn">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>
+                </div>
+                <div class="chart-title">Distribusi Pelamar</div>
+            </div>
+            <div class="chart-area" style="height:260px"><canvas id="chartDistribution"></canvas></div>
         </div>
     </div>
 

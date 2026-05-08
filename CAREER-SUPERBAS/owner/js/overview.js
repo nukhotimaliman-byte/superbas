@@ -13,7 +13,7 @@ function isLightTheme() {
 function getChartDefaults() {
     const light = isLightTheme();
     const cfg = {
-        gridColor: light ? 'rgba(0,0,0,.08)' : 'rgba(255,255,255,.07)',
+        gridColor: light ? 'rgba(0,0,0,.08)' : 'rgba(255,255,255,.1)',
         textColor: light ? '#6b7280' : '#9ca3af',
         tooltipBg: light ? '#ffffff' : '#1a1a28',
         tooltipText: light ? '#111827' : '#f0f0f0',
