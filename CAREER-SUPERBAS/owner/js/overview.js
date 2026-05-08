@@ -65,6 +65,7 @@ async function loadOverview() {
         renderPassRateChart(d);
         loadTrend();
         loadCities();
+        initIndonesiaMap();
     } catch(e) {
         console.error('Overview error:', e);
         // Render with zeros so the UI doesn't look broken

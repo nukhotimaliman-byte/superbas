@@ -171,6 +171,33 @@ switch ($action) {
         jsonResponse($result);
         break;
 
+    case 'by_province':
+        $provMap = [];
+        $todayMap = [];
+        $projectBreakdown = [];
+        $projectNames = ['drv_candidates' => 'driver', 'krr_candidates' => 'kurir', 'dw_candidates' => 'daily_worker'];
+        foreach ($projectNames as $tbl => $proj) {
+            try {
+                $cols = $db->query("SHOW COLUMNS FROM {$tbl} LIKE 'provinsi'")->fetchAll();
+                if (empty($cols)) continue;
+                $rows = $db->query("SELECT provinsi, COUNT(*) AS cnt FROM {$tbl} WHERE provinsi IS NOT NULL AND provinsi != '' GROUP BY provinsi")->fetchAll();
+                foreach ($rows as $r) {
+                    $p = trim($r['provinsi']);
+                    if (!$p) continue;
+                    $provMap[$p] = ($provMap[$p] ?? 0) + intval($r['cnt']);
+                    $projectBreakdown[$p][$proj] = ($projectBreakdown[$p][$proj] ?? 0) + intval($r['cnt']);
+                }
+                $todayRows = $db->query("SELECT provinsi, COUNT(*) AS cnt FROM {$tbl} WHERE provinsi IS NOT NULL AND provinsi != '' AND DATE(created_at) = CURDATE() GROUP BY provinsi")->fetchAll();
+                foreach ($todayRows as $r) {
+                    $p = trim($r['provinsi']);
+                    if ($p) $todayMap[$p] = ($todayMap[$p] ?? 0) + intval($r['cnt']);
+                }
+            } catch (Exception $e) { continue; }
+        }
+        arsort($provMap);
+        jsonResponse(['provinces' => $provMap, 'today' => $todayMap, 'breakdown' => $projectBreakdown]);
+        break;
+
     default:
         jsonResponse(['error' => 'Invalid action'], 400);
 }
