@@ -262,6 +262,9 @@ body.sidebar-collapsed .main { margin-left: var(--sidebar-collapsed); }
 }
 .chart-card:hover { border-color: var(--border-h); }
 .chart-grid--full { grid-template-columns: 1fr; }
+.chart-grid--map { grid-template-columns: 3fr 2fr; }
+@media (max-width: 900px) { .chart-grid--map { grid-template-columns: 1fr; } }
+.chart-grid--map .map-card { margin-top: 0; }
 .chart-title-row { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; }
 .chart-title-icon {
     width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;
