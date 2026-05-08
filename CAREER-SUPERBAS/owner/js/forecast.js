@@ -305,8 +305,8 @@ async function loadForecastChart() {
                 pointRadius: 3,
                 pointHoverRadius: 6,
                 pointBackgroundColor: p.color,
-                pointBorderColor: cfg.pointBorder,
-                pointBorderWidth: 2,
+                pointBorderColor: p.color,
+                pointBorderWidth: 0,
                 spanGaps: false,
             });
 
@@ -323,8 +323,8 @@ async function loadForecastChart() {
                 pointRadius: 3,
                 pointHoverRadius: 6,
                 pointBackgroundColor: p.color,
-                pointBorderColor: cfg.pointBorder,
-                pointBorderWidth: 2,
+                pointBorderColor: p.color,
+                pointBorderWidth: 0,
                 pointStyle: 'circle',
                 spanGaps: false,
             });
