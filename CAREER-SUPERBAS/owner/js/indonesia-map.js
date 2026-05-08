@@ -1,6 +1,7 @@
 /**
- * BAS Command Center — Indonesia Province Map v1.0
+ * BAS Command Center — Indonesia Province Map v2.0
  * Choropleth heat map + pulse dots + counter badges
+ * Fixed: badge overlap, light-mode contrast, theme-aware re-render
  */
 
 /* ── Province ID Mapping (SVG id → provinsi name in DB) ── */
@@ -21,13 +22,11 @@ const PROV_MAP = {
   'IDPA': 'Papua', 'IDPB': 'Papua Barat',
 };
 
-// Reverse map: normalized name → SVG id
 const NAME_TO_ID = {};
 Object.entries(PROV_MAP).forEach(([id, name]) => {
   NAME_TO_ID[name.toLowerCase()] = id;
 });
 
-// Extra aliases for matching DB data
 const ALIASES = {
   'dki jakarta': 'IDJK', 'jakarta raya': 'IDJK', 'jakarta': 'IDJK',
   'di yogyakarta': 'IDYO', 'yogyakarta': 'IDYO', 'diy': 'IDYO',
@@ -38,11 +37,22 @@ const ALIASES = {
   'nusa tenggara timur': 'IDNT', 'ntt': 'IDNT',
 };
 
+/* Manual badge offsets (dx, dy) for crowded regions */
+const BADGE_OFFSETS = {
+  'IDJB': { dx: 15, dy: 20 },     // Jawa Barat → push right-down
+  'IDBT': { dx: -20, dy: -10 },   // Banten → push left-up
+  'IDJK': { dx: -10, dy: 10 },    // DKI Jakarta → push left-down
+  'IDJT': { dx: 10, dy: -15 },    // Jawa Tengah → push right-up
+  'IDJI': { dx: 15, dy: -10 },    // Jawa Timur → push right-up
+  'IDYO': { dx: 0, dy: 20 },      // Yogyakarta → push down
+  'IDKR': { dx: 0, dy: -15 },     // Kep. Riau → push up
+  'IDBB': { dx: 0, dy: 15 },      // Bangka → push down
+};
+
 function matchProvince(dbName) {
   const n = dbName.toLowerCase().trim();
   if (NAME_TO_ID[n]) return NAME_TO_ID[n];
   if (ALIASES[n]) return ALIASES[n];
-  // Fuzzy: try contains
   for (const [key, id] of Object.entries(NAME_TO_ID)) {
     if (n.includes(key) || key.includes(n)) return id;
   }
@@ -52,25 +62,27 @@ function matchProvince(dbName) {
   return null;
 }
 
-/* ── Color Scales ── */
+/* ── Color Scales (improved light mode contrast) ── */
 function getMapColors() {
   const light = document.documentElement.getAttribute('data-theme') === 'light';
   return {
-    empty:  light ? '#e2e8f0' : '#1e1e2e',
-    level1: light ? '#bae6fd' : '#0c4a6e',
-    level2: light ? '#7dd3fc' : '#0369a1',
-    level3: light ? '#38bdf8' : '#0ea5e9',
-    level4: light ? '#0284c7' : '#38bdf8',
-    stroke: light ? '#cbd5e1' : '#2a2a3e',
-    strokeHover: light ? '#0284c7' : '#38bdf8',
+    empty:  light ? '#dfe4ea' : '#1e1e2e',
+    level1: light ? '#93c5fd' : '#0c4a6e',
+    level2: light ? '#60a5fa' : '#0369a1',
+    level3: light ? '#3b82f6' : '#0ea5e9',
+    level4: light ? '#1d4ed8' : '#38bdf8',
+    stroke: light ? '#94a3b8' : '#2a2a3e',
+    strokeHover: light ? '#1d4ed8' : '#38bdf8',
     text:   light ? '#111827' : '#f0f0f0',
     textSub: light ? 'rgba(0,0,0,.55)' : 'rgba(255,255,255,.5)',
-    bg:     light ? '#ffffff' : '#13131d',
     tooltipBg: light ? '#ffffff' : '#1a1a2a',
-    tooltipBorder: light ? 'rgba(0,0,0,.1)' : 'rgba(255,255,255,.08)',
-    badge:  light ? '#0284c7' : '#38bdf8',
-    badgeText: light ? '#fff' : '#000',
-    pulseColor: light ? 'rgba(2,132,199,' : 'rgba(56,189,248,',
+    tooltipBorder: light ? 'rgba(0,0,0,.12)' : 'rgba(255,255,255,.08)',
+    badge:  light ? '#1d4ed8' : '#38bdf8',
+    badgeText: light ? '#ffffff' : '#0a0a14',
+    badgeShadow: light ? 'rgba(29,78,216,.35)' : 'rgba(56,189,248,.3)',
+    pulseColor: light ? 'rgba(29,78,216,' : 'rgba(56,189,248,',
+    pulseDot: light ? '#1d4ed8' : '#38bdf8',
+    liveDot: '#22C55E',
   };
 }
 
@@ -82,44 +94,45 @@ function getColor(count, colors) {
   return colors.level4;
 }
 
+/* ── Cached data for theme re-render ── */
+let _mapCache = null;
+
 /* ── Main Init ── */
 async function initIndonesiaMap() {
   const container = Q('#mapContainer');
   if (!container) return;
 
   try {
-    // Load data
-    const data = await api('stats.php?action=by_province');
-    const provinces = data.provinces || {};
-    const today = data.today || {};
-    const breakdown = data.breakdown || {};
+    // Load data (cache for theme switches)
+    if (!_mapCache) {
+      const data = await api('stats.php?action=by_province');
+      const provinces = data.provinces || {};
+      const today = data.today || {};
+      const breakdown = data.breakdown || {};
 
-    // Aggregate by SVG ID
-    const byId = {};
-    const todayById = {};
-    const breakdownById = {};
-    Object.entries(provinces).forEach(([name, count]) => {
-      const id = matchProvince(name);
-      if (id) {
-        byId[id] = (byId[id] || 0) + count;
-        breakdownById[id] = breakdownById[id] || {};
-        const bd = breakdown[name] || {};
-        Object.entries(bd).forEach(([proj, cnt]) => {
-          breakdownById[id][proj] = (breakdownById[id][proj] || 0) + cnt;
-        });
-      }
-    });
-    Object.entries(today).forEach(([name, count]) => {
-      const id = matchProvince(name);
-      if (id) todayById[id] = (todayById[id] || 0) + count;
-    });
+      const byId = {}, todayById = {}, breakdownById = {};
+      Object.entries(provinces).forEach(([name, count]) => {
+        const id = matchProvince(name);
+        if (id) {
+          byId[id] = (byId[id] || 0) + count;
+          breakdownById[id] = breakdownById[id] || {};
+          const bd = breakdown[name] || {};
+          Object.entries(bd).forEach(([proj, cnt]) => {
+            breakdownById[id][proj] = (breakdownById[id][proj] || 0) + cnt;
+          });
+        }
+      });
+      Object.entries(today).forEach(([name, count]) => {
+        const id = matchProvince(name);
+        if (id) todayById[id] = (todayById[id] || 0) + count;
+      });
 
-    // Load SVG
-    const svgResp = await fetch('/map.svg');
-    const svgText = await svgResp.text();
+      const svgResp = await fetch('/map.svg');
+      const svgText = await svgResp.text();
+      _mapCache = { svgText, byId, todayById, breakdownById };
+    }
 
-    // Build map
-    renderMap(container, svgText, byId, todayById, breakdownById);
+    renderMap(container, _mapCache.svgText, _mapCache.byId, _mapCache.todayById, _mapCache.breakdownById);
 
   } catch (e) {
     console.error('Map error:', e);
@@ -129,14 +142,12 @@ async function initIndonesiaMap() {
 
 function renderMap(container, svgText, byId, todayById, breakdownById) {
   const colors = getMapColors();
-  const maxCount = Math.max(1, ...Object.values(byId));
 
-  // Top 5 provinces for counter badges
+  // Top provinces for counter badges
   const sorted = Object.entries(byId).sort((a, b) => b[1] - a[1]);
   const top5 = sorted.slice(0, 5).map(e => e[0]);
   const totalToday = Object.values(todayById).reduce((a, b) => a + b, 0);
 
-  // Build HTML
   container.innerHTML = `
     <div class="map-wrap">
       <div class="map-svg-box" id="mapSvgBox">${svgText}</div>
@@ -144,7 +155,7 @@ function renderMap(container, svgText, byId, todayById, breakdownById) {
       <div class="map-legend">
         <div class="map-legend-title">Kandidat</div>
         <div class="map-legend-row">
-          <span class="map-legend-swatch" style="background:${colors.empty}"></span><span>0</span>
+          <span class="map-legend-swatch" style="background:${colors.empty};border:1px solid ${colors.stroke}"></span><span>0</span>
         </div>
         <div class="map-legend-row">
           <span class="map-legend-swatch" style="background:${colors.level1}"></span><span>1–5</span>
@@ -163,12 +174,11 @@ function renderMap(container, svgText, byId, todayById, breakdownById) {
     </div>
   `;
 
-  // Colorize provinces
   const svg = container.querySelector('svg');
   if (!svg) return;
   svg.setAttribute('width', '100%');
   svg.setAttribute('height', '100%');
-  svg.style.maxHeight = '420px';
+  svg.style.maxHeight = '400px';
 
   const paths = svg.querySelectorAll('path[id]');
   paths.forEach(path => {
@@ -180,14 +190,13 @@ function renderMap(container, svgText, byId, todayById, breakdownById) {
     path.style.stroke = colors.stroke;
     path.style.strokeWidth = '0.5';
     path.style.cursor = count > 0 ? 'pointer' : 'default';
-    path.style.transition = 'fill .2s ease, stroke .2s ease, filter .2s ease';
+    path.style.transition = 'fill .2s, stroke .2s, filter .2s';
 
-    // Glow for top 3
+    // Subtle glow for top 3
     if (top5.indexOf(id) < 3 && count > 0) {
-      path.style.filter = `drop-shadow(0 0 6px ${colors.pulseColor}0.4))`;
+      path.style.filter = `drop-shadow(0 0 5px ${colors.pulseColor}0.35))`;
     }
 
-    // Hover
     path.addEventListener('mouseenter', (e) => {
       if (count > 0) {
         path.style.stroke = colors.strokeHover;
@@ -201,16 +210,13 @@ function renderMap(container, svgText, byId, todayById, breakdownById) {
       path.style.stroke = colors.stroke;
       path.style.strokeWidth = '0.5';
       path.style.filter = top5.indexOf(id) < 3 && count > 0
-        ? `drop-shadow(0 0 6px ${colors.pulseColor}0.4))`
+        ? `drop-shadow(0 0 5px ${colors.pulseColor}0.35))`
         : 'none';
       hideTooltip();
     });
   });
 
-  // Add pulse dots for provinces with today registrations
   addPulseDots(svg, todayById, colors);
-
-  // Add counter badges for top 5
   addCounterBadges(svg, byId, top5, colors);
 }
 
@@ -221,7 +227,7 @@ function showTooltip(e, id, count, bd, colors) {
   const name = PROV_MAP[id] || id;
   let html = `<div class="mtt-name">${name}</div>`;
   if (count > 0) {
-    html += `<div class="mtt-count">${count} kandidat</div>`;
+    html += `<div class="mtt-count">${count.toLocaleString('id-ID')} kandidat</div>`;
     if (bd) {
       html += '<div class="mtt-divider"></div>';
       if (bd.driver) html += `<div class="mtt-row"><span class="mtt-dot" style="background:#38BDF8"></span>Driver: ${bd.driver}</div>`;
@@ -239,15 +245,14 @@ function showTooltip(e, id, count, bd, colors) {
 
 function moveTooltip(e) {
   const tip = Q('#mapTooltip');
-  if (!tip) return;
   const box = Q('#mapSvgBox');
-  if (!box) return;
+  if (!tip || !box) return;
   const rect = box.getBoundingClientRect();
   let x = e.clientX - rect.left + 16;
   let y = e.clientY - rect.top - 10;
-  // Keep in bounds
   if (x + 200 > rect.width) x = e.clientX - rect.left - 210;
   if (y + 120 > rect.height) y = rect.height - 130;
+  if (y < 0) y = 10;
   tip.style.left = x + 'px';
   tip.style.top = y + 'px';
 }
@@ -268,45 +273,70 @@ function addPulseDots(svg, todayById, colors) {
     const cx = bbox.x + bbox.width / 2;
     const cy = bbox.y + bbox.height / 2;
 
-    // Outer pulse ring
     const pulse = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
     pulse.setAttribute('cx', cx);
     pulse.setAttribute('cy', cy);
-    pulse.setAttribute('r', '4');
+    pulse.setAttribute('r', '3');
     pulse.setAttribute('fill', 'none');
-    pulse.setAttribute('stroke', colors.badge);
-    pulse.setAttribute('stroke-width', '1.5');
+    pulse.setAttribute('stroke', colors.pulseDot);
+    pulse.setAttribute('stroke-width', '1');
     pulse.setAttribute('class', 'map-pulse');
     svg.appendChild(pulse);
 
-    // Center dot
     const dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
     dot.setAttribute('cx', cx);
     dot.setAttribute('cy', cy);
-    dot.setAttribute('r', '2.5');
-    dot.setAttribute('fill', colors.badge);
+    dot.setAttribute('r', '2');
+    dot.setAttribute('fill', colors.pulseDot);
     dot.setAttribute('class', 'map-dot');
     svg.appendChild(dot);
   });
 }
 
-/* ── Counter Badges ── */
+/* ── Counter Badges (with overlap prevention) ── */
 function addCounterBadges(svg, byId, top5, colors) {
-  top5.forEach(id => {
+  const placed = []; // track placed badge centers for collision detection
+
+  top5.forEach((id, idx) => {
     const count = byId[id];
     if (!count) return;
     const path = svg.querySelector(`#${id}`);
     if (!path) return;
 
     const bbox = path.getBBox();
-    const cx = bbox.x + bbox.width / 2;
-    const cy = bbox.y + bbox.height / 2 - 8;
+    let cx = bbox.x + bbox.width / 2;
+    let cy = bbox.y + bbox.height / 2 - 6;
+
+    // Apply manual offset if defined
+    const off = BADGE_OFFSETS[id];
+    if (off) { cx += off.dx; cy += off.dy; }
+
+    // Collision avoidance with already placed badges
+    for (let attempt = 0; attempt < 5; attempt++) {
+      let collision = false;
+      for (const p of placed) {
+        const dist = Math.sqrt((cx - p.x) ** 2 + (cy - p.y) ** 2);
+        if (dist < 18) { collision = true; break; }
+      }
+      if (!collision) break;
+      cy -= 14; // push up
+    }
+    placed.push({ x: cx, y: cy });
 
     const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
     g.setAttribute('class', 'map-badge');
 
-    const textLen = String(count).length;
-    const rw = Math.max(14, textLen * 6 + 8);
+    const label = count.toLocaleString('id-ID');
+    const rw = Math.max(18, label.length * 6.5 + 10);
+
+    const shadow = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    shadow.setAttribute('x', cx - rw / 2 + 1);
+    shadow.setAttribute('y', cy - 7);
+    shadow.setAttribute('width', rw);
+    shadow.setAttribute('height', 16);
+    shadow.setAttribute('rx', 8);
+    shadow.setAttribute('fill', colors.badgeShadow);
+    g.appendChild(shadow);
 
     const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
     rect.setAttribute('x', cx - rw / 2);
@@ -322,10 +352,10 @@ function addCounterBadges(svg, byId, top5, colors) {
     text.setAttribute('y', cy + 4);
     text.setAttribute('text-anchor', 'middle');
     text.setAttribute('fill', colors.badgeText);
-    text.setAttribute('font-size', '9');
+    text.setAttribute('font-size', '8.5');
     text.setAttribute('font-weight', '700');
     text.setAttribute('font-family', "'Inter', sans-serif");
-    text.textContent = count;
+    text.textContent = label;
     g.appendChild(text);
 
     svg.appendChild(g);

@@ -276,28 +276,31 @@ body.sidebar-collapsed .main { margin-left: var(--sidebar-collapsed); }
 .chart-empty { display: flex; align-items: center; justify-content: center; min-height: 200px; font-size: .78rem; color: var(--t3); font-weight: 500; }
 
 /* ── MAP SECTION ─────────────────────────────────── */
-.map-card { margin-top: 24px; position: relative; }
+.map-card { margin-top: 24px; position: relative; overflow: hidden; }
 .map-container { position: relative; min-height: 200px; }
 .map-wrap { position: relative; }
 .map-svg-box {
     width: 100%; display: flex; justify-content: center; align-items: center;
-    padding: 8px 0;
+    padding: 12px 0 4px;
 }
-.map-svg-box svg {
-    max-width: 100%; height: auto; max-height: 420px;
-}
+.map-svg-box svg { max-width: 100%; height: auto; max-height: 400px; }
 
 /* Tooltip */
 .map-tooltip {
     position: absolute; z-index: 50; pointer-events: none;
     background: var(--bg2); border: 1px solid var(--border);
-    border-radius: 10px; padding: 12px 16px; min-width: 180px;
-    box-shadow: 0 8px 32px rgba(0,0,0,.3);
+    border-radius: 10px; padding: 12px 16px; min-width: 170px;
+    box-shadow: 0 8px 32px rgba(0,0,0,.25);
     opacity: 0; transition: opacity .15s ease;
     backdrop-filter: blur(12px);
 }
+[data-theme="light"] .map-tooltip {
+    background: #fff; border-color: rgba(0,0,0,.1);
+    box-shadow: 0 4px 20px rgba(0,0,0,.1);
+}
 .mtt-name { font-size: .78rem; font-weight: 700; color: var(--t1); margin-bottom: 2px; }
 .mtt-count { font-size: .9rem; font-weight: 800; color: var(--accent); }
+[data-theme="light"] .mtt-count { color: #1d4ed8; }
 .mtt-divider { height: 1px; background: var(--border); margin: 8px 0; }
 .mtt-row { font-size: .68rem; color: var(--t2); display: flex; align-items: center; gap: 6px; padding: 2px 0; }
 .mtt-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
@@ -305,9 +308,13 @@ body.sidebar-collapsed .main { margin-left: var(--sidebar-collapsed); }
 
 /* Legend */
 .map-legend {
-    position: absolute; top: 8px; right: 8px;
-    background: var(--bg3); border: 1px solid var(--border); border-radius: 8px;
-    padding: 10px 12px; z-index: 10;
+    position: absolute; top: 12px; right: 12px;
+    background: var(--bg3); border: 1px solid var(--border); border-radius: 10px;
+    padding: 10px 14px; z-index: 10;
+}
+[data-theme="light"] .map-legend {
+    background: #fff; border-color: rgba(0,0,0,.08);
+    box-shadow: 0 2px 10px rgba(0,0,0,.06);
 }
 .map-legend-title {
     font-size: .55rem; font-weight: 700; text-transform: uppercase;
@@ -315,20 +322,24 @@ body.sidebar-collapsed .main { margin-left: var(--sidebar-collapsed); }
 }
 .map-legend-row {
     display: flex; align-items: center; gap: 6px;
-    font-size: .58rem; color: var(--t2); padding: 1px 0;
+    font-size: .6rem; color: var(--t2); padding: 2px 0;
 }
 .map-legend-swatch {
-    width: 14px; height: 10px; border-radius: 2px; flex-shrink: 0;
+    width: 16px; height: 10px; border-radius: 3px; flex-shrink: 0;
 }
 
 /* LIVE indicator */
 .map-live {
-    position: absolute; top: 8px; left: 8px;
+    position: absolute; top: 12px; left: 12px;
     display: flex; align-items: center; gap: 6px;
-    font-size: .6rem; font-weight: 700; text-transform: uppercase;
-    letter-spacing: .08em; color: var(--accent);
+    font-size: .58rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .08em; color: #22C55E;
     background: var(--bg3); border: 1px solid var(--border); border-radius: 100px;
     padding: 5px 14px;
+}
+[data-theme="light"] .map-live {
+    background: #fff; border-color: rgba(0,0,0,.08);
+    box-shadow: 0 2px 8px rgba(0,0,0,.06); color: #16a34a;
 }
 .map-live-dot {
     width: 7px; height: 7px; border-radius: 50%;
@@ -339,21 +350,18 @@ body.sidebar-collapsed .main { margin-left: var(--sidebar-collapsed); }
     50% { opacity: .4; box-shadow: 0 0 0 4px rgba(34,197,94,0); }
 }
 
-/* Pulse animation for today's registrations */
+/* Pulse animation */
 .map-pulse {
     animation: mapPulse 2s ease-out infinite;
     pointer-events: none;
 }
 @keyframes mapPulse {
-    0% { r: 3; opacity: .8; }
-    100% { r: 12; opacity: 0; }
+    0% { r: 2; opacity: .8; }
+    100% { r: 10; opacity: 0; }
 }
 .map-dot { pointer-events: none; }
-
-/* Badge */
 .map-badge { pointer-events: none; }
-.map-badge rect { filter: drop-shadow(0 1px 4px rgba(0,0,0,.3)); }
-.map-badge text { pointer-events: none; }
+
 
 /* ── FORECAST SECTION ────────────────────────────── */
 .forecast-section {
