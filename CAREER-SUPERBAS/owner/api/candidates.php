@@ -37,9 +37,18 @@ switch ($action) {
         $allowedSort = ['created_at', 'name', 'status', 'whatsapp'];
         if (!in_array($sort, $allowedSort)) $sort = 'created_at';
 
-        $buildQuery = function($projectKey, $tbl, $locTbl) use ($status, $search, $city, $sort, $order) {
+        // Check if a table exists
+        $tableExists = function($tableName) use ($db) {
+            try {
+                $db->query("SELECT 1 FROM {$tableName} LIMIT 1");
+                return true;
+            } catch (Exception $e) { return false; }
+        };
+
+        $buildQuery = function($projectKey, $tbl, $locTbl) use ($status, $search, $city, $db, $tableExists) {
             $where = [];
             $params = [];
+            $hasLocTable = $tableExists($locTbl);
 
             if ($status) {
                 $where[] = "c.status = ?";
@@ -50,55 +59,66 @@ switch ($action) {
                 $s = "%{$search}%";
                 $params[] = $s; $params[] = $s; $params[] = $s;
             }
-            if ($city) {
+            if ($city && $hasLocTable) {
                 $where[] = "l.name = ?";
                 $params[] = $city;
+            } elseif ($city) {
+                $where[] = "c.kabupaten LIKE ?";
+                $params[] = "%{$city}%";
             }
 
             $whereClause = $where ? 'WHERE ' . implode(' AND ', $where) : '';
 
-            $sql = "SELECT '{$projectKey}' AS project, c.id, c.name, c.whatsapp, c.address, c.status,
-                    COALESCE(l.name, '-') AS city, c.created_at, c.korlap_notes
-                    FROM {$tbl} c LEFT JOIN {$locTbl} l ON c.location_id = l.id
-                    {$whereClause}";
+            if ($hasLocTable) {
+                $sql = "SELECT '{$projectKey}' AS project, c.id, c.name, c.whatsapp, c.address, c.status,
+                        COALESCE(l.name, COALESCE(c.kabupaten, '-')) AS city, c.created_at, c.korlap_notes
+                        FROM {$tbl} c LEFT JOIN {$locTbl} l ON c.location_id = l.id
+                        {$whereClause}";
+            } else {
+                $sql = "SELECT '{$projectKey}' AS project, c.id, c.name, c.whatsapp, c.address, c.status,
+                        COALESCE(c.kabupaten, '-') AS city, c.created_at, c.korlap_notes
+                        FROM {$tbl} c
+                        {$whereClause}";
+            }
 
             return ['sql' => $sql, 'params' => $params];
         };
 
-        if ($project === 'all') {
-            $unions = [];
-            $allParams = [];
-            foreach ($tables as $key => $t) {
-                $q = $buildQuery($key, $t['candidates'], $t['locations']);
-                $unions[] = "({$q['sql']})";
-                $allParams = array_merge($allParams, $q['params']);
-            }
-            $countSql = "SELECT COUNT(*) AS total FROM (" . implode(' UNION ALL ', $unions) . ") u";
-            $dataSql = implode(' UNION ALL ', $unions) . " ORDER BY {$sort} {$order} LIMIT {$limit} OFFSET {$offset}";
+        $allRows = [];
+        $total = 0;
 
-            $countStmt = $db->prepare($countSql);
-            $countStmt->execute($allParams);
-            $total = $countStmt->fetch()['total'];
-
-            $dataStmt = $db->prepare($dataSql);
-            $dataStmt->execute($allParams);
-            $rows = $dataStmt->fetchAll();
-        } else {
-            if (!isset($tables[$project])) jsonResponse(['error' => 'Invalid project'], 400);
-            $t = $tables[$project];
-            $q = $buildQuery($project, $t['candidates'], $t['locations']);
-
-            $countSql = "SELECT COUNT(*) AS total FROM ({$q['sql']}) u";
-            $dataSql = "{$q['sql']} ORDER BY {$sort} {$order} LIMIT {$limit} OFFSET {$offset}";
-
-            $countStmt = $db->prepare($countSql);
-            $countStmt->execute($q['params']);
-            $total = $countStmt->fetch()['total'];
-
-            $dataStmt = $db->prepare($dataSql);
-            $dataStmt->execute($q['params']);
-            $rows = $dataStmt->fetchAll();
+        $projectsToQuery = ($project === 'all') ? $tables : [$project => $tables[$project] ?? null];
+        if ($project !== 'all' && !isset($tables[$project])) {
+            jsonResponse(['error' => 'Invalid project'], 400);
         }
+
+        foreach ($projectsToQuery as $key => $t) {
+            if (!$t) continue;
+            try {
+                $q = $buildQuery($key, $t['candidates'], $t['locations']);
+
+                $countStmt = $db->prepare("SELECT COUNT(*) AS cnt FROM ({$q['sql']}) u");
+                $countStmt->execute($q['params']);
+                $total += intval($countStmt->fetch()['cnt']);
+
+                $dataStmt = $db->prepare("{$q['sql']} ORDER BY {$sort} {$order}");
+                $dataStmt->execute($q['params']);
+                $allRows = array_merge($allRows, $dataStmt->fetchAll());
+            } catch (Exception $e) {
+                // Table missing, skip
+            }
+        }
+
+        // Sort merged results
+        usort($allRows, function($a, $b) use ($sort, $order) {
+            $va = $a[$sort] ?? '';
+            $vb = $b[$sort] ?? '';
+            $cmp = strcmp($va, $vb);
+            return $order === 'DESC' ? -$cmp : $cmp;
+        });
+
+        // Paginate
+        $rows = array_slice($allRows, $offset, $limit);
 
         jsonResponse([
             'data' => $rows,
@@ -163,44 +183,46 @@ switch ($action) {
         break;
 
     case 'duplicates':
-        $dupeQuery = "
-            SELECT whatsapp, GROUP_CONCAT(DISTINCT project) AS projects, COUNT(*) AS count FROM (
-                SELECT whatsapp, 'driver' AS project FROM drv_candidates WHERE whatsapp IS NOT NULL AND whatsapp != ''
-                UNION ALL
-                SELECT whatsapp, 'kurir' FROM krr_candidates WHERE whatsapp IS NOT NULL AND whatsapp != ''
-                UNION ALL
-                SELECT whatsapp, 'daily_worker' FROM dw_candidates WHERE whatsapp IS NOT NULL AND whatsapp != ''
-            ) all_wa
-            GROUP BY whatsapp
-            HAVING COUNT(DISTINCT project) > 1
-            ORDER BY count DESC
-            LIMIT 100
-        ";
-        $dupes = $db->query($dupeQuery)->fetchAll();
-        jsonResponse(['duplicates' => $dupes, 'total' => count($dupes)]);
+        $allWa = [];
+        foreach (['drv_candidates' => 'driver', 'krr_candidates' => 'kurir', 'dw_candidates' => 'daily_worker'] as $tbl => $proj) {
+            try {
+                $rows = $db->query("SELECT whatsapp FROM {$tbl} WHERE whatsapp IS NOT NULL AND whatsapp != ''")->fetchAll();
+                foreach ($rows as $r) {
+                    $wa = $r['whatsapp'];
+                    if (!isset($allWa[$wa])) $allWa[$wa] = [];
+                    if (!in_array($proj, $allWa[$wa])) $allWa[$wa][] = $proj;
+                }
+            } catch (Exception $e) { /* skip */ }
+        }
+        $dupes = [];
+        foreach ($allWa as $wa => $projects) {
+            if (count($projects) > 1) {
+                $dupes[] = ['whatsapp' => $wa, 'projects' => implode(',', $projects), 'count' => count($projects)];
+            }
+        }
+        usort($dupes, fn($a, $b) => $b['count'] - $a['count']);
+        jsonResponse(['duplicates' => array_slice($dupes, 0, 100), 'total' => count($dupes)]);
         break;
 
     case 'locations':
         $project = $_GET['project'] ?? 'all';
         $locations = [];
 
-        if ($project === 'all' || $project === 'driver') {
-            foreach ($db->query('SELECT id, name FROM drv_locations ORDER BY name')->fetchAll() as $r) {
-                $locations[] = ['id' => $r['id'], 'name' => $r['name'], 'project' => 'driver'];
-            }
-        }
-        if ($project === 'all' || $project === 'kurir') {
-            foreach ($db->query('SELECT id, name FROM krr_locations ORDER BY name')->fetchAll() as $r) {
-                $locations[] = ['id' => $r['id'], 'name' => $r['name'], 'project' => 'kurir'];
-            }
-        }
-        if ($project === 'all' || $project === 'daily_worker') {
-            foreach ($db->query('SELECT id, name FROM dw_locations ORDER BY name')->fetchAll() as $r) {
-                $locations[] = ['id' => $r['id'], 'name' => $r['name'], 'project' => 'daily_worker'];
-            }
+        $locTables = [
+            'driver' => 'drv_locations',
+            'kurir' => 'krr_locations',
+            'daily_worker' => 'dw_locations',
+        ];
+
+        foreach ($locTables as $proj => $tbl) {
+            if ($project !== 'all' && $project !== $proj) continue;
+            try {
+                foreach ($db->query("SELECT id, name FROM {$tbl} ORDER BY name")->fetchAll() as $r) {
+                    $locations[] = ['id' => $r['id'], 'name' => $r['name'], 'project' => $proj];
+                }
+            } catch (Exception $e) { /* table missing */ }
         }
 
-        // Unique city names
         $unique = [];
         foreach ($locations as $l) {
             if (!in_array($l['name'], $unique)) $unique[] = $l['name'];
