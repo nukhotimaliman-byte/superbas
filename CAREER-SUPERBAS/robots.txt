@@ -1,0 +1,22 @@
+# Super-BAS Robots.txt
+User-agent: *
+Allow: /
+
+# Block admin/owner areas
+Disallow: /owner/
+Disallow: /driver/admin.html
+Disallow: /driver/owner.html
+Disallow: /driver/login.html
+Disallow: /kurir/admin.html
+Disallow: /kurir/owner.html
+Disallow: /kurir/login.html
+Disallow: /daily-worker/admin.html
+Disallow: /daily-worker/owner.html
+Disallow: /daily-worker/login.html
+
+# Block API endpoints
+Disallow: /owner/api/
+Disallow: /git-deploy.php
+
+# Sitemap
+Sitemap: https://super-bas.com/sitemap.xml
