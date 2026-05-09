@@ -1006,6 +1006,7 @@ body.dark-mode {
   flex-shrink: 0; font-size: 18px;
   background: rgba(37,211,102,0.1); color: #25D366;
 }
+.lt-link-icon svg { width: 20px; height: 20px; flex-shrink: 0; }
 .lt-link-icon.ic-whatsapp { background: rgba(37,211,102,0.1); color: #25D366; }
 .lt-link-icon.ic-instagram { background: rgba(225,48,108,0.1); color: #e1306c; }
 .lt-link-icon.ic-tiktok { background: rgba(0,0,0,0.08); color: var(--text); }
