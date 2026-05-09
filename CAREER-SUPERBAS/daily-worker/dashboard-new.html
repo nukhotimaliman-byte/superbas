@@ -17,16 +17,16 @@
   <div id="page-home" class="page-content active">
     <header class="app-header animate-in">
       <div class="header-left">
-        <div class="header-avatar" id="userAvatar">RW</div>
+        <div class="header-avatar" id="userAvatar">—</div>
         <div>
           <div class="header-greeting">Hello,</div>
-          <div class="header-name" id="userName">Ramdan RH. Woli</div>
+          <div class="header-name" id="userName">—</div>
         </div>
       </div>
       <div class="header-right">
         <button class="header-btn" id="chatBtn" title="Chat Admin">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-          <span class="chat-badge">3</span>
+          <span class="chat-badge" style="display:none;"></span>
         </button>
       </div>
     </header>
@@ -34,18 +34,18 @@
       <!-- OPS Card -->
       <div class="ops-card animate-in delay-1">
         <div class="ops-card-top">
-          <div class="ops-id" id="opsId">O P S 1 6 1 5 6 3 0</div>
+          <div class="ops-id" id="opsId">—</div>
           <span class="ops-id-lock"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
         </div>
-        <div class="ops-station" id="opsStation">MANTIKULORE DC</div>
+        <div class="ops-station" id="opsStation">—</div>
         <div class="ops-status-row">
           <div>
             <div class="ops-status-label">Pengisian Link Gaji</div>
-            <div class="ops-status-value" id="statusGajiCard">SUDAH &#10003;</div>
+            <div class="ops-status-value" id="statusGajiCard">—</div>
           </div>
           <div class="ops-join">
             <div>Bergabung</div>
-            <div style="font-weight:600;" id="joinDate">04 Feb 2026</div>
+            <div style="font-weight:600;" id="joinDate">—</div>
           </div>
         </div>
       </div>
@@ -62,17 +62,15 @@
       <!-- Quick Info -->
       <div class="section-title animate-in delay-4">Info Cepat</div>
       <div class="quick-info animate-in delay-4">
-        <div class="qi-card"><div class="qi-label">Status Gaji</div><div class="qi-value success" id="statusGaji">Sudah</div></div>
-        <div class="qi-card"><div class="qi-label">Bank</div><div class="qi-value" id="bankName">BSI</div></div>
-        <div class="qi-card"><div class="qi-label">Rek</div><div class="qi-value" id="rekeningNo">***0318</div></div>
+        <div class="qi-card"><div class="qi-label">Status Gaji</div><div class="qi-value pending" id="statusGaji">—</div></div>
+        <div class="qi-card"><div class="qi-label">Bank</div><div class="qi-value" id="bankName">—</div></div>
+        <div class="qi-card"><div class="qi-label">Rek</div><div class="qi-value" id="rekeningNo">—</div></div>
       </div>
 
       <!-- Aktivitas -->
       <div class="section-header animate-in delay-5"><h3>Aktivitas Terakhir</h3><a href="#" class="see-all">Lihat semua &rarr;</a></div>
-      <div class="activity-list animate-in delay-5">
-        <div class="activity-item"><div class="activity-icon si-green"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg></div><div class="activity-info"><div class="activity-title">Pemberkasan lengkap</div><div class="activity-desc">Semua dokumen sudah diupload</div></div><div class="activity-time">2 jam</div></div>
-        <div class="activity-item"><div class="activity-icon si-blue"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div><div class="activity-info"><div class="activity-title">Slip gaji tersedia</div><div class="activity-desc">Periode April 2026</div></div><div class="activity-time">1 hari</div></div>
-        <div class="activity-item"><div class="activity-icon si-orange"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div><div class="activity-info"><div class="activity-title">Pesan dari Admin</div><div class="activity-desc">Jadwal shift minggu depan</div></div><div class="activity-time">3 hari</div></div>
+      <div class="activity-list animate-in delay-5" id="activityList">
+        <div style="text-align:center;padding:20px 0;color:var(--text-secondary);font-size:13px;">Belum ada aktivitas</div>
       </div>
 
       <!-- Linktree -->
@@ -85,7 +83,7 @@
         </a>
         <a href="#" class="link-card">
           <div class="link-icon" style="background:rgba(37,211,102,0.1);color:#25D366;"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 2C6.477 2 2 6.477 2 12c0 1.89.525 3.66 1.438 5.168L2 22l4.832-1.438A9.955 9.955 0 0 0 12 22c5.523 0 10-4.477 10-10S17.523 2 12 2z"/></svg></div>
-          <div class="link-text"><div class="link-title">Grup WhatsApp MANTIKULORE DC</div><div class="link-desc">Grup station Anda</div></div>
+          <div class="link-text"><div class="link-title">Grup WhatsApp Station</div><div class="link-desc">Grup station Anda</div></div>
           <div class="link-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></div>
         </a>
         <a href="#" class="link-card">
@@ -121,7 +119,7 @@
       <!-- Month Selector -->
       <div class="month-selector">
         <button class="month-arrow" onclick="changeMonth(-1)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg></button>
-        <div class="month-label" id="monthLabel">Februari 2026</div>
+        <div class="month-label" id="monthLabel">—</div>
         <button class="month-arrow" onclick="changeMonth(1)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></button>
       </div>
       <!-- Summary per Periode -->
@@ -252,6 +250,6 @@
   <script src="../shared/js/bas-idcard.js?v=7"></script>
   <link rel="stylesheet" href="css/berkas.css?v=2">
   <script src="js/berkas.js?v=2"></script>
-  <script src="js/dashboard-new.js?v=10"></script>
+  <script src="js/dashboard-new.js?v=11"></script>
 </body>
 </html>

@@ -206,31 +206,12 @@ function updateOpsCard() {
 // ══════════════════════════════════════════
 // ABSENSI PAGE
 // ══════════════════════════════════════════
-const DUMMY_ABSENSI = [
-  {ops_id:'Ops1615630',nama:'RAMDAN RH. WOLI',station:'MANTIKULORE DC',shifting:'SHIFT 15 - 00',date:'2026-02-01'},
-  {ops_id:'Ops1615630',nama:'RAMDAN RH. WOLI',station:'MANTIKULORE DC',shifting:'SHIFT 07 - 16',date:'2026-02-02'},
-  {ops_id:'Ops1615630',nama:'RAMDAN RH. WOLI',station:'MANTIKULORE DC',shifting:'SHIFT 19 - 04',date:'2026-02-03'},
-  {ops_id:'Ops1615630',nama:'RAMDAN RH. WOLI',station:'MANTIKULORE DC',shifting:'SHIFT 01 - 10',date:'2026-02-04'},
-  {ops_id:'Ops1615630',nama:'RAMDAN RH. WOLI',station:'MANTIKULORE DC',shifting:'SHIFT 15 - 00',date:'2026-02-05'},
-  {ops_id:'Ops1615630',nama:'RAMDAN RH. WOLI',station:'MANTIKULORE DC',shifting:'SHIFT 07 - 16',date:'2026-02-08'},
-  {ops_id:'Ops1615630',nama:'RAMDAN RH. WOLI',station:'MANTIKULORE DC',shifting:'SHIFT 19 - 04',date:'2026-02-09'},
-  {ops_id:'Ops1615630',nama:'RAMDAN RH. WOLI',station:'MANTIKULORE DC',shifting:'SHIFT 00 - 09',date:'2026-02-10'},
-  {ops_id:'Ops1615630',nama:'RAMDAN RH. WOLI',station:'MANTIKULORE DC',shifting:'SHIFT 01 - 10',date:'2026-02-11'},
-  {ops_id:'Ops1615630',nama:'RAMDAN RH. WOLI',station:'MANTIKULORE DC',shifting:'SHIFT 14 - 23',date:'2026-02-12'},
-  {ops_id:'Ops1615630',nama:'RAMDAN RH. WOLI',station:'MANTIKULORE DC',shifting:'SHIFT 07 - 16',date:'2026-02-15'},
-  {ops_id:'Ops1615630',nama:'RAMDAN RH. WOLI',station:'MANTIKULORE DC',shifting:'SHIFT 19 - 04',date:'2026-02-16'},
-  {ops_id:'Ops1615630',nama:'RAMDAN RH. WOLI',station:'MANTIKULORE DC',shifting:'SHIFT 00 - 09',date:'2026-02-17'},
-  {ops_id:'Ops1615630',nama:'RAMDAN RH. WOLI',station:'MANTIKULORE DC',shifting:'SHIFT 04 - 13',date:'2026-02-18'},
-  {ops_id:'Ops1615630',nama:'RAMDAN RH. WOLI',station:'MANTIKULORE DC',shifting:'SHIFT 17 - 02',date:'2026-02-19'},
-  {ops_id:'Ops1615630',nama:'RAMDAN RH. WOLI',station:'MANTIKULORE DC',shifting:'SHIFT 07 - 16',date:'2026-02-22'},
-  {ops_id:'Ops1615630',nama:'RAMDAN RH. WOLI',station:'MANTIKULORE DC',shifting:'SHIFT 00 - 09',date:'2026-02-23'},
-  {ops_id:'Ops1615630',nama:'RAMDAN RH. WOLI',station:'MANTIKULORE DC',shifting:'SHIFT 14 - 23',date:'2026-02-24'},
-];
+const DUMMY_ABSENSI = [];
 
 const BULAN = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
 const HARI = ['Min','Sen','Sel','Rab','Kam','Jum','Sab'];
-let currentMonth = 1; // 0-indexed (Feb = 1)
-let currentYear = 2026;
+let currentMonth = new Date().getMonth();
+let currentYear = new Date().getFullYear();
 
 function changeMonth(dir) {
   currentMonth += dir;
@@ -320,12 +301,7 @@ function renderAbsensi() {
 // ══════════════════════════════════════════
 // SLIP GAJI PAGE — List + Accordion + PDF
 // ══════════════════════════════════════════
-const DUMMY_SLIPGAJI = [
-  { bulan:1,periode:1,year:2026,nama:'RAMDAN RH. WOLI',ops:'Ops1615630',hub:'Mantikulore DC',area:'Sulawesi+Papua',kota:'Kota Palu',hk:3,hk_rapel:0,rate:141800,gaji:425400,rapel:0,att_incentive:0,camp_incentive:0,perf_incentive:0,claim:0,pot_pribadi:0,asuransi:14875,total:410525,rekening:'8295334106',atas_nama:'Ramdan RH Woli',bank:'BCA',status:true,tgl_proses:'2026-01-25',note:'',bouncing:'' },
-  { bulan:1,periode:2,year:2026,nama:'RAMDAN RH. WOLI',ops:'Ops1615630',hub:'Mantikulore DC',area:'Sulawesi+Papua',kota:'Kota Palu',hk:8,hk_rapel:0,rate:141800,gaji:1134400,rapel:0,att_incentive:50000,camp_incentive:0,perf_incentive:0,claim:0,pot_pribadi:0,asuransi:39600,total:1144800,rekening:'8295334106',atas_nama:'Ramdan RH Woli',bank:'BCA',status:true,tgl_proses:'2026-02-10',note:'',bouncing:'' },
-  { bulan:2,periode:1,year:2026,nama:'RAMDAN RH. WOLI',ops:'Ops1615630',hub:'Mantikulore DC',area:'Sulawesi+Papua',kota:'Kota Palu',hk:10,hk_rapel:0,rate:141800,gaji:1418000,rapel:0,att_incentive:75000,camp_incentive:0,perf_incentive:25000,claim:0,pot_pribadi:50000,asuransi:49500,total:1418500,rekening:'8295334106',atas_nama:'Ramdan RH Woli',bank:'BCA',status:true,tgl_proses:'2026-02-25',note:'',bouncing:'' },
-  { bulan:2,periode:2,year:2026,nama:'RAMDAN RH. WOLI',ops:'Ops1615630',hub:'Mantikulore DC',area:'Sulawesi+Papua',kota:'Kota Palu',hk:3,hk_rapel:0,rate:141800,gaji:425400,rapel:0,att_incentive:0,camp_incentive:0,perf_incentive:0,claim:0,pot_pribadi:0,asuransi:14875,total:410525,rekening:'8295334106',atas_nama:'Ramdan RH Woli',bank:'BCA',status:true,tgl_proses:'2026-03-10',note:'BCA 100226',bouncing:'bouncing' },
-];
+const DUMMY_SLIPGAJI = [];
 
 function fmtRp(n) { return !n||n===0?'-':'Rp '+Number(n).toLocaleString('id-ID'); }
 
