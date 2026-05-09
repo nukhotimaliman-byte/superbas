@@ -1,0 +1,125 @@
+/* ══════════════════════════════════════════
+   BAS Camera Module — Shared Component
+   ══════════════════════════════════════════ */
+
+.bas-cam-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: #000;
+  z-index: 9999;
+  display: none;
+  flex-direction: column;
+}
+.bas-cam-overlay.active { display: flex; }
+
+/* Close button */
+.bas-cam-close {
+  position: absolute; top: 12px; right: 12px; z-index: 10;
+  width: 40px; height: 40px;
+  background: rgba(0,0,0,0.5); border: none;
+  border-radius: 50%; color: #fff; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+
+/* Video viewfinder */
+.bas-cam-video-wrap {
+  flex: 1; display: flex; align-items: center;
+  justify-content: center; overflow: hidden;
+  position: relative;
+}
+.bas-cam-video-wrap video {
+  width: 100%; height: 100%;
+  object-fit: cover;
+}
+
+/* GPS loading indicator */
+.bas-cam-gps {
+  position: absolute; top: 12px; left: 12px;
+  display: flex; align-items: center; gap: 6px;
+  padding: 6px 12px; border-radius: 8px;
+  background: rgba(0,0,0,0.5);
+  font-size: 11px; color: #fff;
+}
+.bas-cam-gps-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: #ef4444;
+  animation: gps-pulse 1.5s infinite;
+}
+.bas-cam-gps-dot.active { background: #10b981; animation: none; }
+@keyframes gps-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+/* Controls bar */
+.bas-cam-controls {
+  display: flex; align-items: center; justify-content: center;
+  gap: 32px; padding: 20px 0 36px;
+  background: rgba(0,0,0,0.6);
+}
+
+/* Flip button */
+.bas-cam-flip {
+  width: 44px; height: 44px;
+  background: rgba(255,255,255,0.15); border: none;
+  border-radius: 50%; color: #fff; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+
+/* Capture button */
+.bas-cam-capture {
+  width: 72px; height: 72px;
+  background: transparent; border: 4px solid #fff;
+  border-radius: 50%; cursor: pointer;
+  position: relative;
+  display: flex; align-items: center; justify-content: center;
+}
+.bas-cam-capture::after {
+  content: '';
+  width: 56px; height: 56px;
+  background: #fff; border-radius: 50%;
+  transition: transform 0.15s;
+}
+.bas-cam-capture:active::after { transform: scale(0.85); }
+
+/* Placeholder for symmetry */
+.bas-cam-spacer { width: 44px; height: 44px; }
+
+/* ── Preview Mode ── */
+.bas-cam-preview {
+  flex: 1; display: none; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 16px; gap: 12px;
+}
+.bas-cam-preview.active { display: flex; }
+.bas-cam-preview img {
+  max-width: 100%; max-height: 60vh;
+  border-radius: 12px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.5);
+}
+.bas-cam-preview-info {
+  font-size: 13px; color: rgba(255,255,255,0.7);
+  text-align: center;
+}
+
+/* Preview buttons */
+.bas-cam-preview-btns {
+  display: flex; gap: 10px; width: 100%;
+  max-width: 400px; padding: 0 16px;
+}
+.bas-cam-btn {
+  flex: 1; padding: 14px;
+  border: none; border-radius: 14px;
+  font-size: 14px; font-weight: 600;
+  cursor: pointer; text-align: center;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+}
+.bas-cam-btn-retake {
+  background: rgba(255,255,255,0.15); color: #fff;
+}
+.bas-cam-btn-download {
+  background: rgba(59,130,246,0.8); color: #fff;
+}
+.bas-cam-btn-use {
+  background: rgba(16,185,129,0.8); color: #fff;
+}

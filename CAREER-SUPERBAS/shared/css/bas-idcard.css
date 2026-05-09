@@ -1,0 +1,89 @@
+/* ══════════════════════════════════════════
+   BAS ID Card Module — Shared Component
+   ══════════════════════════════════════════ */
+
+.idcard-container {
+  padding: 16px;
+}
+
+/* Theme toggle */
+.idcard-toggle {
+  display: flex;
+  background: #f3f4f6;
+  border-radius: 12px;
+  padding: 4px;
+  margin-bottom: 16px;
+}
+.idcard-toggle-btn {
+  flex: 1;
+  padding: 10px;
+  border: none;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  background: transparent;
+  color: #6b7280;
+  transition: all 0.25s;
+  font-family: inherit;
+}
+.idcard-toggle-btn.active {
+  background: #fff;
+  color: #111827;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+/* Canvas wrapper */
+.idcard-canvas-wrap {
+  display: flex;
+  justify-content: center;
+}
+.idcard-canvas-wrap canvas {
+  width: 100%;
+  max-width: 280px;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+}
+
+/* Download button */
+.idcard-download {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  margin-top: 16px;
+  padding: 14px;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: #fff;
+  border: none;
+  border-radius: 14px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  box-shadow: 0 4px 16px rgba(99,102,241,0.3);
+}
+.idcard-download:active { transform: scale(0.97); }
+.idcard-download svg { width: 18px; height: 18px; }
+
+/* Locked state */
+.idcard-locked {
+  text-align: center;
+  padding: 48px 24px;
+}
+.idcard-locked svg {
+  width: 56px; height: 56px;
+  color: #d1d5db;
+  margin-bottom: 16px;
+}
+.idcard-locked h3 {
+  font-size: 16px;
+  color: #374151;
+  margin-bottom: 6px;
+}
+.idcard-locked p {
+  font-size: 13px;
+  color: #9ca3af;
+  line-height: 1.5;
+}

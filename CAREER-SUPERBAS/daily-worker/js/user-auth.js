@@ -158,7 +158,7 @@ function redirectByRole(role) {
         case 'korlap_td':
             window.location.href = 'admin.html'; break;
         default:
-            window.location.href = 'daftar.html'; break;
+            window.location.href = 'dashboard-new.html'; break;
     }
 }
 

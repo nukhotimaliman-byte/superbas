@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Super-BAS — Daily Worker Dashboard</title>
+  <link rel="icon" type="image/png" href="favicon-bas.png">
+  <link rel="stylesheet" href="css/dashboard-new.css?v=6">
+  <link rel="stylesheet" href="../shared/css/bas-camera.css?v=1">
+  <link rel="stylesheet" href="../shared/css/bas-idcard.css?v=2">
+</head>
+<body>
+
+  <!-- Demo Toggle -->
+  <div class="demo-toggle">
+    <span id="demo-stage">Stage 4/4</span>
+    <button class="demo-btn" onclick="demoNextStage()">Demo &rarr;</button>
+  </div>
+
+  <!-- ═══ PAGE: HOME ═══ -->
+  <div id="page-home" class="page-content active">
+    <header class="app-header animate-in">
+      <div class="header-left">
+        <div class="header-avatar" id="userAvatar">RW</div>
+        <div>
+          <div class="header-greeting">Hello,</div>
+          <div class="header-name" id="userName">Ramdan RH. Woli</div>
+        </div>
+      </div>
+      <div class="header-right">
+        <button class="header-btn" id="chatBtn" title="Chat Admin">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          <span class="chat-badge">3</span>
+        </button>
+      </div>
+    </header>
+    <div class="content">
+      <!-- OPS Card -->
+      <div class="ops-card animate-in delay-1">
+        <div class="ops-card-top">
+          <div class="ops-id" id="opsId">O P S 1 6 1 5 6 3 0</div>
+          <span class="ops-id-lock"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
+        </div>
+        <div class="ops-station" id="opsStation">MANTIKULORE DC</div>
+        <div class="ops-status-row">
+          <div>
+            <div class="ops-status-label">Pengisian Link Gaji</div>
+            <div class="ops-status-value" id="statusGajiCard">SUDAH &#10003;</div>
+          </div>
+          <div class="ops-join">
+            <div>Bergabung</div>
+            <div style="font-weight:600;" id="joinDate">04 Feb 2026</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Dynamic Notifications -->
+      <div id="notif-container"></div>
+
+      <!-- Top Services -->
+      <div class="section-title animate-in delay-3">Menu Layanan</div>
+      <div class="services-grid animate-in delay-3" id="services-grid">
+        <!-- Populated by JS: 7 items + Lainnya -->
+      </div>
+
+      <!-- Quick Info -->
+      <div class="section-title animate-in delay-4">Info Cepat</div>
+      <div class="quick-info animate-in delay-4">
+        <div class="qi-card"><div class="qi-label">Status Gaji</div><div class="qi-value success" id="statusGaji">Sudah</div></div>
+        <div class="qi-card"><div class="qi-label">Bank</div><div class="qi-value" id="bankName">BSI</div></div>
+        <div class="qi-card"><div class="qi-label">Rek</div><div class="qi-value" id="rekeningNo">***0318</div></div>
+      </div>
+
+      <!-- Aktivitas -->
+      <div class="section-header animate-in delay-5"><h3>Aktivitas Terakhir</h3><a href="#" class="see-all">Lihat semua &rarr;</a></div>
+      <div class="activity-list animate-in delay-5">
+        <div class="activity-item"><div class="activity-icon si-green"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg></div><div class="activity-info"><div class="activity-title">Pemberkasan lengkap</div><div class="activity-desc">Semua dokumen sudah diupload</div></div><div class="activity-time">2 jam</div></div>
+        <div class="activity-item"><div class="activity-icon si-blue"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div><div class="activity-info"><div class="activity-title">Slip gaji tersedia</div><div class="activity-desc">Periode April 2026</div></div><div class="activity-time">1 hari</div></div>
+        <div class="activity-item"><div class="activity-icon si-orange"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div><div class="activity-info"><div class="activity-title">Pesan dari Admin</div><div class="activity-desc">Jadwal shift minggu depan</div></div><div class="activity-time">3 hari</div></div>
+      </div>
+
+      <!-- Linktree -->
+      <div class="section-title animate-in delay-6" id="linktree-section">Link &amp; Grup</div>
+      <div class="linktree-section animate-in delay-6">
+        <a href="https://linktr.ee/REGISTRASI_BAS" target="_blank" class="link-card">
+          <div class="link-icon si-red"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></div>
+          <div class="link-text"><div class="link-title">Linktree BAS</div><div class="link-desc">Semua link penting dalam satu tempat</div></div>
+          <div class="link-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></div>
+        </a>
+        <a href="#" class="link-card">
+          <div class="link-icon" style="background:rgba(37,211,102,0.1);color:#25D366;"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 2C6.477 2 2 6.477 2 12c0 1.89.525 3.66 1.438 5.168L2 22l4.832-1.438A9.955 9.955 0 0 0 12 22c5.523 0 10-4.477 10-10S17.523 2 12 2z"/></svg></div>
+          <div class="link-text"><div class="link-title">Grup WhatsApp MANTIKULORE DC</div><div class="link-desc">Grup station Anda</div></div>
+          <div class="link-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></div>
+        </a>
+        <a href="#" class="link-card">
+          <div class="link-icon si-blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.79 19.79 0 0 1 2.12 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg></div>
+          <div class="link-text"><div class="link-title">Hubungi Admin</div><div class="link-desc">Butuh bantuan? Hubungi kami</div></div>
+          <div class="link-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></div>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ PAGE: SLIP GAJI ═══ -->
+  <div id="page-slipgaji" class="page-content">
+    <div class="page-header">
+      <button class="page-back" onclick="showPage('page-home')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg></button>
+      <div class="page-title">Slip Gaji</div>
+    </div>
+    <div class="content" style="padding-bottom:24px;">
+      <!-- Summary -->
+      <div class="slip-summary" id="slipSummary"></div>
+      <!-- List -->
+      <div class="slip-list" id="slipList"></div>
+    </div>
+  </div>
+
+  <!-- ═══ PAGE: ABSENSI ═══ -->
+  <div id="page-absensi" class="page-content">
+    <div class="page-header">
+      <button class="page-back" onclick="showPage('page-home')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg></button>
+      <div class="page-title">Absensi</div>
+    </div>
+    <div class="content" style="padding-bottom:24px;">
+      <!-- Month Selector -->
+      <div class="month-selector">
+        <button class="month-arrow" onclick="changeMonth(-1)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg></button>
+        <div class="month-label" id="monthLabel">Februari 2026</div>
+        <button class="month-arrow" onclick="changeMonth(1)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></button>
+      </div>
+      <!-- Summary per Periode -->
+      <div class="absensi-summary">
+        <div class="abs-card p1-card"><div class="abs-card-tag">Periode 1</div><div class="abs-card-num" id="absP1">0</div><div class="abs-card-label">Hari Hadir</div><div class="abs-card-gaji" id="absP1Gaji">Gaji: 25 Feb</div></div>
+        <div class="abs-card p2-card"><div class="abs-card-tag">Periode 2</div><div class="abs-card-num" id="absP2">0</div><div class="abs-card-label">Hari Hadir</div><div class="abs-card-gaji" id="absP2Gaji">Gaji: 10 Mar</div></div>
+        <div class="abs-card accent"><div class="abs-card-num" id="absTotalAll">0</div><div class="abs-card-label">Total Hadir</div></div>
+      </div>
+      <!-- Remark Banner -->
+      <div class="remark-banner" id="remarkBanner"></div>
+      <!-- Mini Calendar -->
+      <div class="mini-calendar" id="miniCalendar"></div>
+      <!-- Legend -->
+      <div class="cal-legend"><span class="legend-dot p1-dot"></span> Periode 1 (1-15) <span class="legend-dot p2-dot"></span> Periode 2 (16+)</div>
+      <!-- Attendance List -->
+      <div class="section-title" style="margin-top:20px;">Riwayat Absensi</div>
+      <div class="absensi-list" id="absensiList"></div>
+    </div>
+  </div>
+
+  <!-- ═══ PAGE: LINK GAJI ═══ -->
+  <div id="page-linkgaji" class="page-content">
+    <div class="page-header">
+      <button class="page-back" onclick="showPage('page-home')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg></button>
+      <div class="page-title">Link Pengisian Gaji</div>
+    </div>
+    <div class="gaji-instruction">
+      <strong>Instruksi Pengisian:</strong>
+      1. Pilih link sesuai station Anda<br>
+      2. Isi formulir dengan data yang benar<br>
+      3. Pastikan nomor rekening sesuai<br>
+      4. Submit dan tunggu verifikasi admin
+    </div>
+    <div class="section-title" style="margin-left:16px;">Pilih Station Anda</div>
+    <div class="gaji-links">
+      <a href="#" class="gaji-link-card"><div class="gaji-link-icon si-purple">&#127963;</div><div class="gaji-link-info"><div class="gaji-link-title">MANTIKULORE DC</div><div class="gaji-link-desc">Link gaji untuk station Mantikulore</div></div><div class="gaji-link-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></div></a>
+      <a href="#" class="gaji-link-card"><div class="gaji-link-icon si-blue">&#127963;</div><div class="gaji-link-info"><div class="gaji-link-title">KALAWAT DC</div><div class="gaji-link-desc">Link gaji untuk station Kalawat</div></div><div class="gaji-link-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></div></a>
+      <a href="#" class="gaji-link-card"><div class="gaji-link-icon si-green">&#127963;</div><div class="gaji-link-info"><div class="gaji-link-title">SUNGAI KAKAP DC</div><div class="gaji-link-desc">Link gaji untuk station Sungai Kakap</div></div><div class="gaji-link-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></div></a>
+      <a href="#" class="gaji-link-card"><div class="gaji-link-icon si-orange">&#127963;</div><div class="gaji-link-info"><div class="gaji-link-title">TANJUNG REDEB DC</div><div class="gaji-link-desc">Link gaji untuk station Tanjung Redeb</div></div><div class="gaji-link-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></div></a>
+      <a href="#" class="gaji-link-card"><div class="gaji-link-icon si-teal">&#127963;</div><div class="gaji-link-info"><div class="gaji-link-title">TAMALANREA DC</div><div class="gaji-link-desc">Link gaji untuk station Tamalanrea</div></div><div class="gaji-link-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></div></a>
+      <a href="#" class="gaji-link-card"><div class="gaji-link-icon si-pink">&#127963;</div><div class="gaji-link-info"><div class="gaji-link-title">MAROS DC</div><div class="gaji-link-desc">Link gaji untuk station Maros</div></div><div class="gaji-link-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></div></a>
+    </div>
+  </div>
+
+  <!-- ═══ PAGE: REKENING ═══ -->
+  <div id="page-rekening" class="page-content">
+    <div class="page-header">
+      <button class="page-back" onclick="showPage('page-home')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg></button>
+      <div class="page-title">Rekening</div>
+    </div>
+    <div class="content" style="padding-bottom:24px;" id="rekeningContent">
+    </div>
+  </div>
+
+  <!-- ═══ PAGE: GANTI REKENING ═══ -->
+  <div id="page-gantirek" class="page-content">
+    <div class="page-header">
+      <button class="page-back" onclick="showPage('page-rekening')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg></button>
+      <div class="page-title">Ganti Rekening</div>
+    </div>
+    <div class="content" style="padding-bottom:24px;" id="gantirekContent">
+    </div>
+  </div>
+
+  <!-- ═══ PAGE: ADUAN PUNGLI ═══ -->
+  <div id="page-aduan" class="page-content">
+    <div class="page-header">
+      <button class="page-back" onclick="showPage('page-home')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg></button>
+      <div class="page-title">Aduan Pungli</div>
+    </div>
+    <div class="content" style="padding-bottom:24px;" id="aduanContent">
+    </div>
+  </div>
+
+  <!-- ═══ PAGE: BERKAS ═══ -->
+  <div id="page-berkas" class="page-content">
+    <div class="page-header"><button class="page-back" onclick="showPage('page-home')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg></button><div class="page-title">Pemberkasan</div></div>
+    <div id="berkasContent"></div>
+  </div>
+
+  <!-- ═══ PAGE: ID CARD ═══ -->
+  <div id="page-idcard" class="page-content">
+    <div class="page-header"><button class="page-back" onclick="showPage('page-home')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg></button><div class="page-title">ID Card</div></div>
+    <div id="idcardContent"></div>
+  </div>
+
+  <!-- ═══ PAGE: LAINNYA (All Menu) ═══ -->
+  <div id="page-lainnya" class="page-content">
+    <div class="page-header">
+      <button class="page-back" onclick="showPage('page-home')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg></button>
+      <div class="page-title">Semua Menu</div>
+      <button class="edit-toggle-btn" id="editToggleBtn" onclick="toggleEditMode()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        <span>Edit</span>
+      </button>
+    </div>
+    <div class="content" style="padding-bottom:20px;">
+      <div class="services-grid" id="all-services-grid" style="margin-top:12px;">
+        <!-- Populated by JS -->
+      </div>
+      <div class="edit-hint" id="editHint" style="display:none;">
+        <p>Tahan & geser untuk mengatur urutan. 7 teratas tampil di Home.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ PAGE: SETTINGS ═══ -->
+  <div id="page-settings" class="page-content">
+    <div class="page-header"><button class="page-back" onclick="showPage('page-home')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg></button><div class="page-title">Pengaturan</div></div>
+    <div id="settingsContent"></div>
+  </div>
+
+  <!-- ═══ BOTTOM NAV ═══ -->
+  <nav class="bottom-nav">
+    <button class="nav-item active" data-page="page-home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Home</button>
+    <button class="nav-item" data-page="page-berkas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Berkas</button>
+    <button class="nav-cam-fab" onclick="BASCamera.open()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></button>
+    <button class="nav-item" data-page="page-idcard"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>ID Card</button>
+    <button class="nav-item" data-page="page-settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9c.26.604.852.997 1.51 1H21a2 2 0 0 1 0 4h-.09c-.658.003-1.25.396-1.51 1z"/></svg>Settings</button>
+  </nav>
+
+  <script src="js/utils.js?v=5"></script>
+  <script src="js/user-auth.js?v=5"></script>
+  <script src="js/logo-base64.js?v=5"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="../shared/js/bas-camera.js?v=3"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+  <script src="../shared/js/bas-idcard.js?v=7"></script>
+  <link rel="stylesheet" href="css/berkas.css?v=2">
+  <script src="js/berkas.js?v=2"></script>
+  <script src="js/dashboard-new.js?v=9"></script>
+</body>
+</html>
