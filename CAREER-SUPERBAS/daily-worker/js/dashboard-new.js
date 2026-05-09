@@ -861,6 +861,28 @@ document.addEventListener('DOMContentLoaded', async () => {
           USER_DATA.nik = CURRENT_USER.nik || '';
         }
       } catch(e) { console.warn('Failed to load candidate:', e); USER_DATA.nama = CURRENT_USER.name || ''; }
+
+      // Enrich with importrange data (station, bank, gaji status)
+      try {
+        var searchKey = USER_DATA.nik || USER_DATA.ops_id || '';
+        if (searchKey) {
+          var irRes = await fetch('./api/importrange.php?action=list&search=' + encodeURIComponent(searchKey) + '&limit=1');
+          var irData = await irRes.json();
+          if (irData.success && irData.data && irData.data.length > 0) {
+            var ir = irData.data[0];
+            // Importrange is authoritative source for operational data
+            if (ir.station) USER_DATA.station = ir.station;
+            if (ir.ops_id) USER_DATA.ops_id = ir.ops_id;
+            if (ir.bank) USER_DATA.bank = ir.bank;
+            if (ir.rekening) USER_DATA.rekening = ir.rekening;
+            if (ir.atas_nama) USER_DATA.atas_nama = ir.atas_nama;
+            if (ir.join_date) USER_DATA.join_date = ir.join_date;
+            if (ir.status_gaji) USER_DATA.status_gaji = ir.status_gaji;
+            if (!USER_DATA.nama && ir.nama) USER_DATA.nama = ir.nama;
+          }
+        }
+      } catch(e) { console.warn('Importrange enrich failed:', e); }
+
     } catch(e) { console.warn('Auth check failed:', e); }
   }
 
