@@ -867,5 +867,80 @@ document.addEventListener('DOMContentLoaded', async () => {
   renderHomeGrid();
   updateOpsCard();
   updateNotifications();
+  loadLinktree();
   document.querySelectorAll('.nav-item').forEach(b => b.addEventListener('click', () => showPage(b.dataset.page)));
 });
+
+// ══════════════════════════════════════════
+// LINKTREE — Dynamic from API
+// ══════════════════════════════════════════
+const LT_SVG = {
+  whatsapp: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 2C6.477 2 2 6.477 2 12c0 1.89.525 3.66 1.438 5.168L2 22l4.832-1.438A9.955 9.955 0 0 0 12 22c5.523 0 10-4.477 10-10S17.523 2 12 2z"/></svg>',
+  link: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>',
+  instagram: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>',
+  telegram: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.479.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg>',
+};
+const LT_CHEVRON = '<svg class="lt-group-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>';
+const LT_ARROW = '<div class="lt-link-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></div>';
+
+function ltIcon(key) { return LT_SVG[key] || LT_SVG.link; }
+function ltIconClass(key) { return ['whatsapp','instagram','tiktok','facebook','youtube','telegram'].includes(key) ? ' ic-'+key : ' ic-link'; }
+
+function renderLtLink(l) {
+  var esc = s => s ? String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;') : '';
+  return '<a href="'+esc(l.url)+'" target="_blank" rel="noopener" class="lt-link">' +
+    '<div class="lt-link-icon'+ltIconClass(l.icon_key)+'">'+ltIcon(l.icon_key)+'</div>' +
+    '<div class="lt-link-body"><div class="lt-link-title">'+esc(l.title)+'</div>' +
+    (l.description ? '<div class="lt-link-desc">'+esc(l.description)+'</div>' : '') +
+    '</div>' + LT_ARROW + '</a>';
+}
+
+async function loadLinktree() {
+  var container = document.getElementById('linktreeContainer');
+  if (!container) return;
+  try {
+    var ctrl = new AbortController();
+    var timer = setTimeout(function(){ ctrl.abort(); }, 4000);
+    var res = await fetch('api/linktree.php?action=list', { signal: ctrl.signal });
+    clearTimeout(timer);
+    var json = await res.json();
+    if (!json.ok || !json.links || json.links.length === 0) {
+      container.innerHTML = '<div style="text-align:center;padding:20px 0;color:var(--text-secondary);font-size:13px;">Belum ada link tersedia</div>';
+      return;
+    }
+    var standalone = [];
+    var groups = {};
+    json.links.forEach(function(l) {
+      if (l.group_name) {
+        if (!groups[l.group_name]) groups[l.group_name] = { order: parseInt(l.group_order)||0, items: [] };
+        groups[l.group_name].items.push(l);
+      } else {
+        standalone.push(l);
+      }
+    });
+    var sortedGroups = Object.entries(groups).sort(function(a,b){ return a[1].order - b[1].order; });
+    var html = '<div class="lt-container">';
+    // Standalone links first
+    standalone.forEach(function(l){ html += renderLtLink(l); });
+    // Grouped links
+    sortedGroups.forEach(function(entry) {
+      var name = entry[0], data = entry[1];
+      html += '<div class="lt-group">' +
+        '<div class="lt-group-header" onclick="this.parentElement.classList.toggle(\'lt-collapsed\')">' +
+          LT_CHEVRON +
+          '<span class="lt-group-title">'+name+'</span>' +
+          '<span class="lt-group-count">'+data.items.length+'</span>' +
+        '</div>' +
+        '<div class="lt-group-body">';
+      data.items.forEach(function(l){ html += renderLtLink(l); });
+      html += '</div></div>';
+    });
+    html += '</div>';
+    container.innerHTML = html;
+    // Auto-collapse groups on mobile to save space
+    container.querySelectorAll('.lt-group').forEach(function(g){ g.classList.add('lt-collapsed'); });
+  } catch(e) {
+    console.warn('Linktree load failed:', e);
+    container.innerHTML = '<div style="text-align:center;padding:20px 0;color:var(--text-secondary);font-size:13px;">Gagal memuat link</div>';
+  }
+}
