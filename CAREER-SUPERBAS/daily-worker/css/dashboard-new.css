@@ -428,23 +428,7 @@ body.dark-mode {
 .gaji-link-arrow { color: var(--text-secondary); }
 .gaji-link-arrow svg { width: 20px; height: 20px; }
 
-/* ── Demo Toggle ── */
-.demo-toggle {
-  position: fixed; top: 12px; right: 12px; z-index: 200;
-  display: flex; align-items: center; gap: 6px;
-}
-.demo-btn {
-  padding: 6px 12px; border-radius: 8px;
-  background: var(--accent); color: #fff;
-  border: none; font-size: 10px; font-weight: 600;
-  cursor: pointer; font-family: inherit;
-}
-#demo-stage {
-  font-size: 10px; font-weight: 600;
-  color: var(--text-secondary); background: var(--surface);
-  padding: 6px 10px; border-radius: 8px;
-  box-shadow: var(--card-shadow);
-}
+
 
 /* ── Placeholder Pages ── */
 .placeholder-page {

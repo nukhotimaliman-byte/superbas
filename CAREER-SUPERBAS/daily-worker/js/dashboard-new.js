@@ -201,14 +201,7 @@ function updateOpsCard() {
   if (el('rekeningNo')) el('rekeningNo').textContent = USER_DATA.rekening?'***'+USER_DATA.rekening.slice(-4):'\u2014';
 }
 
-let demoStage = 3;
-function demoNextStage() {
-  demoStage = (demoStage%4)+1;
-  const stages = [null, {ops_id:null,status_berkas:'Belum Pemberkasan',status_gaji:'Belum isi link gaji',bank:'',rekening:''}, {ops_id:null,status_berkas:'Sudah Pemberkasan',status_gaji:'Belum isi link gaji',bank:'',rekening:''}, {ops_id:'Ops1615630',status_berkas:'Sudah Pemberkasan',status_gaji:'Belum isi link gaji',bank:'',rekening:''}, {ops_id:'Ops1615630',status_berkas:'Sudah Pemberkasan',status_gaji:'Sudah isi link gaji',bank:'Bank Syariah Indonesia',rekening:'7275280318'}];
-  Object.assign(USER_DATA, stages[demoStage]);
-  updateOpsCard(); updateNotifications(); showPage('page-home');
-  document.getElementById('demo-stage').textContent = 'Stage '+demoStage+'/4';
-}
+
 
 // ══════════════════════════════════════════
 // ABSENSI PAGE
