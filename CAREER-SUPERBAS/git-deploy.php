@@ -51,7 +51,7 @@ for ($i = 0; $i < $zip->numFiles; $i++) {
     
     // Skip PHP deploy scripts and dev files (allow owner/ PHP files)
     if (preg_match('/\.(sql|zip|md)$/i', $relativePath)) continue;
-    if (preg_match('/\.php$/i', $relativePath) && strpos($relativePath, 'owner/') !== 0) continue;
+    if (preg_match('/\.php$/i', $relativePath) && strpos($relativePath, 'owner/') !== 0 && strpos($relativePath, 'daily-worker/api/') !== 0) continue;
     if (strpos($relativePath, '.serena') !== false) continue;
     if (strpos($relativePath, '.git') !== false) continue;
     
