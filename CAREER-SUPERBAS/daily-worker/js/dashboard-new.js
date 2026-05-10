@@ -863,25 +863,23 @@ document.addEventListener('DOMContentLoaded', async () => {
       } catch(e) { console.warn('Failed to load candidate:', e); USER_DATA.nama = CURRENT_USER.name || ''; }
 
       // Enrich with importrange data (station, bank, gaji status)
-      // Fetch multiple records and merge — user may have >1 row (old + new OPS ID)
+      // Use only the LATEST record (sorted by last_synced_at DESC)
       try {
         var searchKey = USER_DATA.nik || USER_DATA.ops_id || '';
         if (searchKey) {
-          var irRes = await fetch('./api/importrange.php?action=list&search=' + encodeURIComponent(searchKey) + '&limit=10');
+          var irRes = await fetch('./api/importrange.php?action=list&search=' + encodeURIComponent(searchKey) + '&limit=1');
           var irData = await irRes.json();
           if (irData.success && irData.data && irData.data.length > 0) {
-            // Merge all records: for each field, pick the first non-empty value
-            // Records are sorted by last_synced_at DESC (newest first)
-            irData.data.forEach(function(ir) {
-              if (!USER_DATA.station && ir.station) USER_DATA.station = ir.station;
-              if (!USER_DATA.ops_id && ir.ops_id) USER_DATA.ops_id = ir.ops_id;
-              if (!USER_DATA.bank && ir.bank) USER_DATA.bank = ir.bank;
-              if (!USER_DATA.rekening && ir.rekening) USER_DATA.rekening = ir.rekening;
-              if (!USER_DATA.atas_nama && ir.atas_nama) USER_DATA.atas_nama = ir.atas_nama;
-              if (!USER_DATA.join_date && ir.join_date) USER_DATA.join_date = ir.join_date;
-              if (!USER_DATA.status_gaji && ir.status_gaji) USER_DATA.status_gaji = ir.status_gaji;
-              if (!USER_DATA.nama && ir.nama) USER_DATA.nama = ir.nama;
-            });
+            var ir = irData.data[0]; // latest record only
+            // Override all fields from the most recent importrange data
+            if (ir.ops_id) USER_DATA.ops_id = ir.ops_id;
+            if (ir.station) USER_DATA.station = ir.station;
+            USER_DATA.bank = ir.bank || '';
+            USER_DATA.rekening = ir.rekening || '';
+            USER_DATA.atas_nama = ir.atas_nama || '';
+            USER_DATA.join_date = ir.join_date || '';
+            USER_DATA.status_gaji = ir.status_gaji || '';
+            if (ir.nama) USER_DATA.nama = ir.nama;
           }
         }
       } catch(e) { console.warn('Importrange enrich failed:', e); }
