@@ -874,11 +874,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             // Override all fields from the most recent importrange data
             if (ir.ops_id) USER_DATA.ops_id = ir.ops_id;
             if (ir.station) USER_DATA.station = ir.station;
-            USER_DATA.bank = ir.bank || '';
-            USER_DATA.rekening = ir.rekening || '';
-            USER_DATA.atas_nama = ir.atas_nama || '';
-            USER_DATA.join_date = ir.join_date || '';
-            USER_DATA.status_gaji = ir.status_gaji || '';
+            if (ir.bank) USER_DATA.bank = ir.bank;
+            if (ir.rekening) USER_DATA.rekening = ir.rekening;
+            if (ir.atas_nama) USER_DATA.atas_nama = ir.atas_nama;
+            if (ir.join_date) USER_DATA.join_date = ir.join_date;
+            if (ir.status_gaji) USER_DATA.status_gaji = ir.status_gaji;
             if (ir.nama) USER_DATA.nama = ir.nama;
           }
         }
