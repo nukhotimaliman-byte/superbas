@@ -380,6 +380,12 @@ document.addEventListener('DOMContentLoaded', async function () {
     if (currentAdmin) {
         document.getElementById('userName').textContent = currentAdmin.name || adminData.name;
         setGreeting();
+        // Sync adminData so getAllowedAreas() reads fresh allowed_areas from server
+        adminData.allowed_areas = currentAdmin.allowed_areas || [];
+        adminData.role = currentAdmin.role || adminData.role;
+        adminData.name = currentAdmin.name || adminData.name;
+        adminData.username = currentAdmin.username || adminData.username;
+        console.info('[BAS] Admin synced — role:', adminData.role, 'allowed_areas:', adminData.allowed_areas);
     }
 
     // Load real data from API before initializing modules
