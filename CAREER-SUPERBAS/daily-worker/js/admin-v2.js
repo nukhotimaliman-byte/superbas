@@ -92,15 +92,17 @@ let _autoRefreshTimer = null;
 function startAutoRefresh(ms) {
     ms = ms || 300000; // 5 minutes
     if (_autoRefreshTimer) clearInterval(_autoRefreshTimer);
-    _autoRefreshTimer = setInterval(function() {
+    _autoRefreshTimer = setInterval(async function() {
         if (document.hidden) return;
         console.info('[BAS] Auto-refreshing data...');
+        await loadAllData();
         if (typeof applyFilter === 'function') applyFilter();
         if (typeof initOverview === 'function') initOverview();
     }, ms);
 }
-document.addEventListener('visibilitychange', function() {
+document.addEventListener('visibilitychange', async function() {
     if (!document.hidden && adminData) {
+        await loadAllData();
         if (typeof applyFilter === 'function') applyFilter();
     }
 });
@@ -221,82 +223,61 @@ function closeModal() {
     document.getElementById('detailModal').classList.remove('show');
 }
 
-// ── DUMMY DATA ──
-const DUMMY = {
-    candidates: [
-        { id:1, given_id:'DW001', name:'Ahmad Fauzi', nik:'3209220101030001', whatsapp:'081234567890', station:'Sungai Kakap DC', status:'Belum Pemberkasan', created_at:'2026-05-10', email:'ahmad@mail.com', user_username:'ahmad01', user_password:'bas1234', user_created_at:'2026-05-09', tempat_lahir:'Pontianak', tanggal_lahir:'1998-01-15', provinsi:'Kalimantan Barat', kabupaten:'Kubu Raya', kecamatan:'Sungai Kakap', kelurahan:'Pal 9', address:'Jl. Raya Kakap No.12', pendidikan_terakhir:'SMA', pernah_kerja_spx:'Ya', surat_sehat:'Ada', paklaring:'Tidak Ada', referensi:'Teman', emergency_phone:'081299988877', emergency_name:'Siti Aisyah', emergency_relation:'Ibu', korlap_notes:'', bank_name:'BCA', bank_account_no:'1234567890', bank_account_name:'Ahmad Fauzi', location_name:'Sungai Kakap DC' },
-        { id:2, given_id:'DW002', name:'Budi Santoso', nik:'3209220101030002', whatsapp:'081234567891', station:'Pontianak DC', status:'Sudah Pemberkasan', created_at:'2026-05-09', email:'budi@mail.com', user_username:'budi02', user_password:'bas5678', user_created_at:'2026-05-08', tempat_lahir:'Singkawang', tanggal_lahir:'1995-06-20', provinsi:'Kalimantan Barat', kabupaten:'Pontianak', kecamatan:'Pontianak Selatan', kelurahan:'Akcaya', address:'Jl. Ahmad Yani No.55', pendidikan_terakhir:'D3', pernah_kerja_spx:'Tidak', surat_sehat:'Ada', paklaring:'Ada', referensi:'Iklan', emergency_phone:'081288877766', emergency_name:'Rudi Hartono', emergency_relation:'Ayah', korlap_notes:'Dokumen lengkap', bank_name:'BRI', bank_account_no:'9876543210', bank_account_name:'Budi Santoso', location_name:'Pontianak DC' },
-        { id:3, given_id:'DW003', name:'Cindy Rahayu', nik:'3209220101030003', whatsapp:'081234567892', station:'Sungai Kakap DC', status:'Lulus', created_at:'2026-05-08', email:'cindy@mail.com', user_username:'cindy03', user_password:'bas9012', user_created_at:'2026-05-07', tempat_lahir:'Mempawah', tanggal_lahir:'2000-03-10', provinsi:'Kalimantan Barat', kabupaten:'Mempawah', kecamatan:'Mempawah Hilir', kelurahan:'Terusan', address:'Jl. Merdeka No.8', pendidikan_terakhir:'SMA', pernah_kerja_spx:'Ya', surat_sehat:'Ada', paklaring:'Ada', referensi:'Walk-in', emergency_phone:'081277766655', emergency_name:'Agus Rahayu', emergency_relation:'Ayah', korlap_notes:'Kandidat rajin', bank_name:'Mandiri', bank_account_no:'1122334455', bank_account_name:'Cindy Rahayu', location_name:'Sungai Kakap DC' },
-        { id:4, given_id:'DW004', name:'Dedi Kurniawan', nik:'3209220101030004', whatsapp:'081234567893', station:'Makassar DC', status:'Tidak Lulus', created_at:'2026-05-08', email:'dedi@mail.com', user_username:'dedi04', user_password:'bas3456', user_created_at:'2026-05-07', tempat_lahir:'Makassar', tanggal_lahir:'1997-11-25', provinsi:'Sulawesi Selatan', kabupaten:'Makassar', kecamatan:'Tamalate', kelurahan:'Rappocini', address:'Jl. Sultan Alauddin No.12', pendidikan_terakhir:'SMP', pernah_kerja_spx:'Tidak', surat_sehat:'Tidak Ada', paklaring:'Tidak Ada', referensi:'Media Sosial', emergency_phone:'081266655544', emergency_name:'Rina Kurniawan', emergency_relation:'Istri', korlap_notes:'Gagal test', bank_name:'BNI', bank_account_no:'5566778899', bank_account_name:'Dedi Kurniawan', location_name:'Makassar DC' },
-        { id:5, given_id:'DW005', name:'Eka Pratama', nik:'3209220101030005', whatsapp:'081234567894', station:'Pontianak DC', status:'Belum Pemberkasan', created_at:'2026-05-07', email:'eka@mail.com', user_username:'eka05', user_password:'bas7890', user_created_at:'2026-05-06', tempat_lahir:'Ketapang', tanggal_lahir:'1999-08-05', provinsi:'Kalimantan Barat', kabupaten:'Ketapang', kecamatan:'Delta Pawan', kelurahan:'Sampit', address:'Jl. Diponegoro No.3', pendidikan_terakhir:'S1', pernah_kerja_spx:'Tidak', surat_sehat:'Ada', paklaring:'Ada', referensi:'LinkedIn', emergency_phone:'081255544433', emergency_name:'Maya Pratama', emergency_relation:'Ibu', korlap_notes:'', bank_name:'SEABANK', bank_account_no:'9988776655', bank_account_name:'Eka Pratama', location_name:'Pontianak DC' },
-        { id:6, given_id:'DW006', name:'Fitri Handayani', nik:'3209220101030006', whatsapp:'081234567895', station:'Balikpapan DC', status:'Lulus', created_at:'2026-05-07', email:'fitri@mail.com', user_username:'fitri06', user_password:'bas2345', user_created_at:'2026-05-06', tempat_lahir:'Balikpapan', tanggal_lahir:'2001-02-14', provinsi:'Kalimantan Timur', kabupaten:'Balikpapan', kecamatan:'Balikpapan Selatan', kelurahan:'Klandasan', address:'Jl. MT Haryono No.8', pendidikan_terakhir:'SMA', pernah_kerja_spx:'Ya', surat_sehat:'Ada', paklaring:'Ada', referensi:'Teman', emergency_phone:'081244433322', emergency_name:'Dewi Handayani', emergency_relation:'Kakak', korlap_notes:'Sangat potensial', bank_name:'BCA', bank_account_no:'1122334456', bank_account_name:'Fitri Handayani', location_name:'Balikpapan DC' },
-        { id:7, given_id:'DW007', name:'Gilang Ramadhan', nik:'3209220101030007', whatsapp:'081234567896', station:'Sungai Kakap DC', status:'Sudah Pemberkasan', created_at:'2026-05-06', email:'gilang@mail.com', user_username:'gilang07', user_password:'bas6789', user_created_at:'2026-05-05', tempat_lahir:'Sambas', tanggal_lahir:'1996-12-01', provinsi:'Kalimantan Barat', kabupaten:'Sambas', kecamatan:'Sambas', kelurahan:'Durian', address:'Jl. Tanjungpura No.20', pendidikan_terakhir:'D3', pernah_kerja_spx:'Ya', surat_sehat:'Ada', paklaring:'Ada', referensi:'Walk-in', emergency_phone:'081233322211', emergency_name:'Hendra Ramadhan', emergency_relation:'Ayah', korlap_notes:'Proses interview', bank_name:'BRI', bank_account_no:'6655443322', bank_account_name:'Gilang Ramadhan', location_name:'Sungai Kakap DC' },
-        { id:8, given_id:'DW008', name:'Hana Salsabila', nik:'3209220101030008', whatsapp:'081234567897', station:'Makassar DC', status:'Belum Pemberkasan', created_at:'2026-05-06', email:'hana@mail.com', user_username:'hana08', user_password:'bas0123', user_created_at:'2026-05-05', tempat_lahir:'Gowa', tanggal_lahir:'2000-07-18', provinsi:'Sulawesi Selatan', kabupaten:'Gowa', kecamatan:'Somba Opu', kelurahan:'Sungguminasa', address:'Jl. Poros Malino No.5', pendidikan_terakhir:'SMA', pernah_kerja_spx:'Tidak', surat_sehat:'Ada', paklaring:'Tidak Ada', referensi:'Iklan', emergency_phone:'081222211100', emergency_name:'Yusuf Salsabila', emergency_relation:'Ayah', korlap_notes:'', bank_name:'Mandiri', bank_account_no:'7788990011', bank_account_name:'Hana Salsabila', location_name:'Makassar DC' },
-        { id:9, given_id:'DW009', name:'Irfan Maulana', nik:'3209220101030009', whatsapp:'081234567898', station:'Balikpapan DC', status:'Tidak Lulus', created_at:'2026-05-05', email:'irfan@mail.com', user_username:'irfan09', user_password:'bas4567', user_created_at:'2026-05-04', tempat_lahir:'Samarinda', tanggal_lahir:'1998-09-30', provinsi:'Kalimantan Timur', kabupaten:'Samarinda', kecamatan:'Samarinda Ulu', kelurahan:'Air Hitam', address:'Jl. KH Wahid Hasyim No.15', pendidikan_terakhir:'SMP', pernah_kerja_spx:'Tidak', surat_sehat:'Tidak Ada', paklaring:'Tidak Ada', referensi:'Media Sosial', emergency_phone:'081211100099', emergency_name:'Sari Maulana', emergency_relation:'Istri', korlap_notes:'Tidak lolos test', bank_name:'BNI', bank_account_no:'3344556677', bank_account_name:'Irfan Maulana', location_name:'Balikpapan DC' },
-        { id:10, given_id:'DW010', name:'Joko Susanto', nik:'3209220101030010', whatsapp:'081234567899', station:'Pontianak DC', status:'Lulus', created_at:'2026-05-05', email:'joko@mail.com', user_username:'joko10', user_password:'bas8901', user_created_at:'2026-05-04', tempat_lahir:'Pontianak', tanggal_lahir:'1997-04-22', provinsi:'Kalimantan Barat', kabupaten:'Pontianak', kecamatan:'Pontianak Barat', kelurahan:'Siantan Hulu', address:'Jl. Gusti Hamzah No.7', pendidikan_terakhir:'S1', pernah_kerja_spx:'Ya', surat_sehat:'Ada', paklaring:'Ada', referensi:'LinkedIn', emergency_phone:'081200099988', emergency_name:'Ani Susanto', emergency_relation:'Ibu', korlap_notes:'Top candidate', bank_name:'BCA', bank_account_no:'1029384756', bank_account_name:'Joko Susanto', location_name:'Pontianak DC' },
-    ],
-    stations: ['Sungai Kakap DC', 'Pontianak DC', 'Makassar DC', 'Balikpapan DC'],
-    statuses: ['Belum Pemberkasan', 'Sudah Pemberkasan', 'Lulus', 'Tidak Lulus'],
-    korlaps: [
-        { id: 1, username: 'korlap_skp', name: 'Budi Korlap', role: 'korlap_interview', allowed_provinces: [] },
-        { id: 2, username: 'korlap_td1', name: 'Sari TD', role: 'korlap_td', allowed_provinces: [] },
-    ],
-    locations: [
-        { id: 1, name: 'Sungai Kakap DC', address: 'Jl. Raya Sungai Kakap No.1', maps_link: '' },
-        { id: 2, name: 'Pontianak DC', address: 'Jl. Ahmad Yani No.55', maps_link: '' },
-        { id: 3, name: 'Makassar DC', address: 'Jl. Sultan Alauddin No.12', maps_link: '' },
-        { id: 4, name: 'Balikpapan DC', address: 'Jl. MT Haryono No.8', maps_link: '' },
-    ],
-    chatConversations: [
-        {candidateId:1,name:'Ahmad Fauzi',givenId:'DW001',station:'Sungai Kakap DC',kabupaten:'Kubu Raya',provinsi:'Kalimantan Barat',status:'Sudah Pemberkasan',project:'dw',lastMessage:'Kapan jadwal interview?',lastTime:'2026-05-11 13:30:00',unread:2,online:'online'},
-        {candidateId:2,name:'Budi Santoso',givenId:'DW002',station:'Pontianak DC',kabupaten:'Pontianak',provinsi:'Kalimantan Barat',status:'Lulus',project:'dw',lastMessage:'Terima kasih infonya',lastTime:'2026-05-11 12:15:00',unread:0,online:'away'},
-        {candidateId:3,name:'Cindy Rahayu',givenId:'DW003',station:'Sungai Kakap DC',kabupaten:'Mempawah',provinsi:'Kalimantan Barat',status:'Belum Pemberkasan',project:'dw',lastMessage:'Foto KTP sudah saya kirim',lastTime:'2026-05-10 18:45:00',unread:1,online:'offline'},
-        {candidateId:4,name:'Dedi Kurniawan',givenId:'DW004',station:'Makassar DC',kabupaten:'Makassar',provinsi:'Sulawesi Selatan',status:'Tidak Lulus',project:'dw',lastMessage:'Min saya mau tanya dong',lastTime:'2026-05-10 10:00:00',unread:3,online:'offline'},
-    ],
-    chatMessages: {
-        1:[
-            {id:1,sender_type:'user',sender_name:'Ahmad Fauzi',message_type:'text',message:'Halo admin, saya mau tanya',created_at:'2026-05-11 13:25:00',is_read:1},
-            {id:2,sender_type:'admin',sender_name:'Admin BAS',message_type:'text',message:'Halo Ahmad, silakan ada yang bisa dibantu?',created_at:'2026-05-11 13:26:00',is_read:1},
-            {id:3,sender_type:'user',sender_name:'Ahmad Fauzi',message_type:'text',message:'Kapan jadwal interview? Saya sudah lengkapi berkas',created_at:'2026-05-11 13:28:00',is_read:0},
-            {id:4,sender_type:'user',sender_name:'Ahmad Fauzi',message_type:'text',message:'Cek link ini https://super-bas.com/daily-worker/berkas untuk referensi',created_at:'2026-05-11 13:30:00',is_read:0},
-        ],
-        2:[
-            {id:1,sender_type:'admin',sender_name:'Admin BAS',message_type:'text',message:'Selamat Budi, Anda lolos seleksi',created_at:'2026-05-11 12:10:00',is_read:1},
-            {id:2,sender_type:'user',sender_name:'Budi Santoso',message_type:'text',message:'Terima kasih infonya',created_at:'2026-05-11 12:15:00',is_read:1},
-        ],
-        3:[
-            {id:1,sender_type:'user',sender_name:'Cindy Rahayu',message_type:'text',message:'Min, saya mau kirim foto KTP',created_at:'2026-05-10 18:40:00',is_read:1},
-            {id:2,sender_type:'user',sender_name:'Cindy Rahayu',message_type:'image',message:'',file_name:'ktp_cindy.jpg',file_path:'#',file_size:245000,created_at:'2026-05-10 18:45:00',is_read:0},
-        ],
-        4:[
-            {id:1,sender_type:'user',sender_name:'Dedi Kurniawan',message_type:'text',message:'Min saya mau tanya dong',created_at:'2026-05-10 10:00:00',is_read:0},
-            {id:2,sender_type:'user',sender_name:'Dedi Kurniawan',message_type:'location',message:'Lokasi saya',latitude:-5.1477,longitude:119.4327,created_at:'2026-05-10 10:02:00',is_read:0},
-            {id:3,sender_type:'user',sender_name:'Dedi Kurniawan',message_type:'text',message:'Kenapa status saya tidak lulus?',created_at:'2026-05-10 10:05:00',is_read:0},
-        ],
-    },
-    menuConfig: {
-        '_default': ['berkas','absensi','slipgaji','linkgaji','chat','lokasi','idcard','rekening','gantirek','aduan'],
-        'Kalimantan Barat': ['berkas','absensi','slipgaji','linkgaji','chat','lokasi','idcard','rekening'],
-        'Sulawesi Selatan': ['berkas','absensi','slipgaji','chat','lokasi','idcard'],
-    },
-    linktreeCategories: ['Kalimantan', 'Sulawesi', 'Umum'],
-    linktree: [
-        { id:1, title:'Grup WA Kalbar', url:'https://chat.whatsapp.com/abc123', icon:'whatsapp', category:'Kalimantan', active:true, order:1 },
-        { id:2, title:'Grup WA Sulsel', url:'https://chat.whatsapp.com/def456', icon:'whatsapp', category:'Sulawesi', active:true, order:2 },
-        { id:3, title:'Instagram BAS', url:'https://instagram.com/superbas_id', icon:'instagram', category:'Umum', active:true, order:3 },
-        { id:4, title:'Telegram Info', url:'https://t.me/bas_info', icon:'telegram', category:'Umum', active:false, order:4 },
-        { id:5, title:'Grup WA Pontianak', url:'https://chat.whatsapp.com/ghi789', icon:'whatsapp', category:'Kalimantan', active:true, order:5 },
-    ],
+// ── DATA STORE (populated from API) ──
+let DUMMY = {
+    candidates: [],
+    stations: [],
+    statuses: ['Belum Pemberkasan','Sudah Pemberkasan','Menunggu Test Drive','Jadwal Test Drive','Hadir','Tidak Hadir','Lulus','Tidak Lulus'],
+    korlaps: [],
+    locations: [],
+    chatConversations: [],
+    chatMessages: {},
+    menuConfig: {},
+    linktreeCategories: [],
+    linktree: [],
     dropdownOpts: {
         status: ['Belum Pemberkasan','Sudah Pemberkasan','Menunggu Test Drive','Jadwal Test Drive','Hadir','Tidak Hadir','Lulus','Tidak Lulus'],
-        station: ['Sungai Kakap DC','Pontianak DC','Makassar DC','Balikpapan DC'],
+        station: [],
         pendidikan: ['SD','SMP','SMA/SMK','D3','S1','S2'],
     },
-    blacklists: [
-        { id: 1, nik: '3209221234560001', name: 'Tersangka A', reason: 'Fraud', created_at: '2026-04-15' },
-        { id: 2, nik: '3209221234560002', name: 'Tersangka B', reason: 'Mangkir berulang', created_at: '2026-04-20' },
-    ]
+    blacklists: []
 };
+
+// ── Load all data from API into DUMMY store ──
+async function loadAllData() {
+    try {
+        const [candRes, locRes] = await Promise.all([
+            fetch(API_BASE + 'admin.php', { credentials: 'same-origin' }).then(r => r.json()).catch(() => ({ candidates: [] })),
+            fetch(API_BASE + 'locations.php', { credentials: 'same-origin' }).then(r => r.json()).catch(() => ({ locations: [] })),
+        ]);
+        // Populate candidates with station alias
+        DUMMY.candidates = (candRes.candidates || []).map(c => ({
+            ...c,
+            station: c.location_name || c.display_location || '',
+            user_created_at: c.user_created_at || c.created_at
+        }));
+        // Populate locations & stations
+        DUMMY.locations = locRes.locations || [];
+        DUMMY.stations = DUMMY.locations.map(l => l.name);
+        DUMMY.dropdownOpts.station = DUMMY.stations;
+        // Try to load dropdown settings
+        try {
+            const settRes = await fetch(API_BASE + 'settings.php?action=options').then(r => r.json());
+            if (settRes.ok && settRes.options) {
+                if (settRes.options.status) {
+                    DUMMY.statuses = settRes.options.status.map(s => s.value || s.label);
+                    DUMMY.dropdownOpts.status = DUMMY.statuses;
+                }
+                if (settRes.options.pendidikan) {
+                    DUMMY.dropdownOpts.pendidikan = settRes.options.pendidikan.map(s => s.value || s.label);
+                }
+            }
+        } catch(e) { console.warn('Settings load skipped:', e); }
+        console.info('[BAS] Data loaded:', DUMMY.candidates.length, 'candidates,', DUMMY.locations.length, 'locations');
+    } catch (err) {
+        console.error('[BAS] Failed to load data:', err);
+    }
+}
 
 // ── Chart Theme Helper ──
 function getChartColors() {
@@ -353,7 +334,7 @@ function filterByProvince(data) {
 
 // ── Init all pages ──
 document.addEventListener('DOMContentLoaded', async function () {
-    // Run auth check (non-blocking for dummy mode)
+    // Run auth check
     const authOk = await initAuth();
     if (!authOk && !USE_DUMMY) {
         localStorage.removeItem('dw_admin_v2');
@@ -366,6 +347,9 @@ document.addEventListener('DOMContentLoaded', async function () {
         document.getElementById('userName').textContent = currentAdmin.name || adminData.name;
         setGreeting();
     }
+
+    // Load real data from API before initializing modules
+    await loadAllData();
 
     if (typeof initOverview === 'function') initOverview();
     if (typeof initCandidates === 'function') initCandidates();

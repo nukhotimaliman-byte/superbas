@@ -324,8 +324,9 @@ function initAI() {
 }
 
 // ═══ KORLAP ═══
-function initKorlap() {
+async function initKorlap() {
     buildProvCheckboxes('klProvinceList', 'kl-prov-cb', 'kl');
+    await loadKorlapData();
     renderKorlap();
 }
 
@@ -379,30 +380,26 @@ function renderKorlap() {
     </tr>`;
     }).join('');
 }
-function createKorlap() {
+async function createKorlap() {
     const u = document.getElementById('klUser').value.trim();
     const n = document.getElementById('klName').value.trim();
     const p = document.getElementById('klPass').value.trim();
     if (!u || !n || !p) { showToast('Isi semua field', 'error'); return; }
-    const allCbs = document.querySelectorAll('.kl-prov-cb');
-    const checkedCbs = document.querySelectorAll('.kl-prov-cb:checked');
-    // If all checked or none checked = empty array (all access)
-    const checkedProvs = (checkedCbs.length === 0 || checkedCbs.length === allCbs.length)
-        ? [] : [...checkedCbs].map(cb => cb.value);
-    DUMMY.korlaps.push({
-        id: DUMMY.korlaps.length + 10,
-        username: u, name: n, role: document.getElementById('klRole').value,
-        allowed_provinces: checkedProvs
-    });
-    document.getElementById('klUser').value = '';
-    document.getElementById('klName').value = '';
-    document.getElementById('klPass').value = '';
-    document.querySelectorAll('.kl-prov-cb').forEach(cb => cb.checked = false);
-    document.getElementById('klProvAll').checked = false;
-    updateProvLabel('kl');
-    document.getElementById('klProvDrop').style.display = 'none';
-    renderKorlap();
-    showToast('Korlap berhasil dibuat');
+    try {
+        const res = await fetch(API_BASE + 'korlap.php?action=create', {
+            method: 'POST', credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username: u, name: n, password: p, role: document.getElementById('klRole').value, location_id: 0 })
+        });
+        const data = await res.json();
+        if (!data.success) { showToast(data.error || 'Gagal membuat korlap', 'error'); return; }
+        document.getElementById('klUser').value = '';
+        document.getElementById('klName').value = '';
+        document.getElementById('klPass').value = '';
+        await loadKorlapData();
+        renderKorlap();
+        showToast('Korlap berhasil dibuat');
+    } catch(e) { showToast('Error: ' + e.message, 'error'); }
 }
 function editKorlap(id) {
     const k = DUMMY.korlaps.find(x => x.id === id);
@@ -432,14 +429,36 @@ function saveKorlapEdit() {
 function updateEditProvCount() {
     // Optional: visual feedback in edit modal
 }
-function deleteKorlap(id) {
-    DUMMY.korlaps = DUMMY.korlaps.filter(k => k.id !== id);
-    renderKorlap();
-    showToast('Korlap dihapus');
+async function deleteKorlap(id) {
+    if (!confirm('Hapus korlap ini?')) return;
+    try {
+        const res = await fetch(API_BASE + 'korlap.php?action=delete&id=' + id, {
+            method: 'DELETE', credentials: 'same-origin'
+        });
+        const data = await res.json();
+        if (!data.success) { showToast(data.error || 'Gagal menghapus', 'error'); return; }
+        DUMMY.korlaps = DUMMY.korlaps.filter(k => k.id !== id);
+        renderKorlap();
+        showToast('Korlap dihapus');
+    } catch(e) { showToast('Error: ' + e.message, 'error'); }
+}
+async function loadKorlapData() {
+    try {
+        const res = await fetch(API_BASE + 'korlap.php?action=list', { credentials: 'same-origin' });
+        const data = await res.json();
+        DUMMY.korlaps = data.korlaps || [];
+    } catch(e) { console.warn('Load korlap failed:', e); }
 }
 
 // ═══ LOCATIONS ═══
-function initLocations() { renderLocations(); }
+async function initLocations() {
+    try {
+        const res = await fetch(API_BASE + 'locations.php', { credentials: 'same-origin' });
+        const data = await res.json();
+        DUMMY.locations = data.locations || [];
+    } catch(e) { console.warn('Load locations failed:', e); }
+    renderLocations();
+}
 function renderLocations() {
     const tbody = document.getElementById('locTable');
     const data = DUMMY.locations;
@@ -450,24 +469,49 @@ function renderLocations() {
         <td><button class="act-btn" onclick="deleteLocation(${l.id})" title="Hapus"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button></td>
     </tr>`).join('');
 }
-function createLocation() {
+async function createLocation() {
     const n = document.getElementById('locName').value.trim();
     if (!n) { showToast('Nama lokasi wajib diisi', 'error'); return; }
-    DUMMY.locations.push({ id: DUMMY.locations.length + 10, name: n, address: document.getElementById('locAddr').value.trim(), maps_link: document.getElementById('locMaps').value.trim() });
-    document.getElementById('locName').value = '';
-    document.getElementById('locAddr').value = '';
-    document.getElementById('locMaps').value = '';
-    renderLocations();
-    showToast('Lokasi berhasil ditambahkan');
+    try {
+        const res = await fetch(API_BASE + 'locations.php', {
+            method: 'POST', credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: n, address: document.getElementById('locAddr').value.trim(), maps_link: document.getElementById('locMaps').value.trim() })
+        });
+        const data = await res.json();
+        if (!data.success) { showToast(data.error || 'Gagal menambah lokasi', 'error'); return; }
+        document.getElementById('locName').value = '';
+        document.getElementById('locAddr').value = '';
+        document.getElementById('locMaps').value = '';
+        await initLocations();
+        showToast('Lokasi berhasil ditambahkan');
+    } catch(e) { showToast('Error: ' + e.message, 'error'); }
 }
-function deleteLocation(id) {
-    DUMMY.locations = DUMMY.locations.filter(l => l.id !== id);
-    renderLocations();
-    showToast('Lokasi dihapus');
+async function deleteLocation(id) {
+    if (!confirm('Hapus lokasi ini?')) return;
+    try {
+        const res = await fetch(API_BASE + 'locations.php', {
+            method: 'DELETE', credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: id })
+        });
+        const data = await res.json();
+        if (!data.success) { showToast(data.error || 'Gagal menghapus', 'error'); return; }
+        DUMMY.locations = DUMMY.locations.filter(l => l.id !== id);
+        renderLocations();
+        showToast('Lokasi dihapus');
+    } catch(e) { showToast('Error: ' + e.message, 'error'); }
 }
 
 // ═══ BLACKLIST ═══
-function initBlacklist() { renderBlacklist(); }
+async function initBlacklist() {
+    try {
+        const res = await fetch(API_BASE + 'blacklist.php', { credentials: 'same-origin' });
+        const data = await res.json();
+        DUMMY.blacklists = (data.blacklists || []).map(b => ({ ...b, name: b.candidate_name || 'Unknown' }));
+    } catch(e) { console.warn('Load blacklist failed:', e); }
+    renderBlacklist();
+}
 function renderBlacklist() {
     const tbody = document.getElementById('blTable');
     const data = DUMMY.blacklists;
@@ -477,20 +521,38 @@ function renderBlacklist() {
         <td><button class="act-btn" onclick="deleteBlacklist(${b.id})" title="Hapus"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button></td>
     </tr>`).join('');
 }
-function addBlacklist() {
+async function addBlacklist() {
     const nik = document.getElementById('blNik').value.trim();
     const reason = document.getElementById('blReason').value.trim();
     if (!nik || !reason) { showToast('NIK dan alasan wajib diisi', 'error'); return; }
-    DUMMY.blacklists.push({ id: DUMMY.blacklists.length + 10, nik: nik, name: 'Unknown', reason: reason, created_at: new Date().toISOString().split('T')[0] });
-    document.getElementById('blNik').value = '';
-    document.getElementById('blReason').value = '';
-    renderBlacklist();
-    showToast('NIK berhasil di-blacklist');
+    try {
+        const res = await fetch(API_BASE + 'blacklist.php', {
+            method: 'POST', credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ nik: nik, reason: reason })
+        });
+        const data = await res.json();
+        if (!data.success) { showToast(data.error || 'Gagal blacklist', 'error'); return; }
+        document.getElementById('blNik').value = '';
+        document.getElementById('blReason').value = '';
+        await initBlacklist();
+        showToast('NIK berhasil di-blacklist');
+    } catch(e) { showToast('Error: ' + e.message, 'error'); }
 }
-function deleteBlacklist(id) {
-    DUMMY.blacklists = DUMMY.blacklists.filter(b => b.id !== id);
-    renderBlacklist();
-    showToast('Blacklist dihapus');
+async function deleteBlacklist(id) {
+    if (!confirm('Hapus blacklist ini?')) return;
+    try {
+        const res = await fetch(API_BASE + 'blacklist.php', {
+            method: 'DELETE', credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: id })
+        });
+        const data = await res.json();
+        if (!data.success) { showToast(data.error || 'Gagal menghapus', 'error'); return; }
+        DUMMY.blacklists = DUMMY.blacklists.filter(b => b.id !== id);
+        renderBlacklist();
+        showToast('Blacklist dihapus');
+    } catch(e) { showToast('Error: ' + e.message, 'error'); }
 }
 
 // ═══ SETTINGS ═══
