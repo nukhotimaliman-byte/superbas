@@ -556,7 +556,7 @@ async function deleteBlacklist(id) {
 }
 
 // ═══ SETTINGS ═══
-function initSettings() {
+async function initSettings() {
     // Sub-tab navigation
     const nav = document.getElementById('settingsNav');
     if (!nav) return;
@@ -570,7 +570,8 @@ function initSettings() {
         if (panel) panel.classList.add('active');
     });
 
-    // Init linktree
+    // Load linktree data from API
+    await loadLinktreeData();
     renderGroups();
     populateCategoryDropdowns();
     renderLinktree();
@@ -582,6 +583,29 @@ function initSettings() {
     const storageSize = JSON.stringify(localStorage).length;
     const sysStorage = document.getElementById('sysStorage');
     if (sysStorage) sysStorage.textContent = (storageSize / 1024).toFixed(1) + ' KB used';
+}
+
+async function loadLinktreeData() {
+    try {
+        const [linksRes, groupsRes] = await Promise.all([
+            fetch(API_BASE + 'linktree.php?action=all', { credentials: 'same-origin', headers: { 'X-Admin-Token': 'bas-owner-2026' } }).then(r => r.json()),
+            fetch(API_BASE + 'linktree.php?action=groups', { credentials: 'same-origin', headers: { 'X-Admin-Token': 'bas-owner-2026' } }).then(r => r.json()),
+        ]);
+        // Map API model to v2 model
+        DUMMY.linktree = (linksRes.links || []).map(l => ({
+            id: l.id,
+            title: l.title,
+            url: l.url,
+            icon: l.icon_key || 'link',
+            category: l.group_name || 'Umum',
+            active: l.is_active == 1,
+            order: l.sort_order || 0,
+            description: l.description || '',
+        }));
+        DUMMY.linktreeCategories = (groupsRes.groups || []).map(g => g.group_name);
+        if (DUMMY.linktreeCategories.indexOf('Umum') === -1) DUMMY.linktreeCategories.push('Umum');
+        console.info('[BAS] Linktree loaded:', DUMMY.linktree.length, 'links,', DUMMY.linktreeCategories.length, 'groups');
+    } catch(e) { console.warn('Load linktree failed:', e); }
 }
 
 // ── Maintenance ──
@@ -615,11 +639,12 @@ function populateCategoryDropdowns() {
     }
 }
 
-function addGroup() {
+async function addGroup() {
     var name = document.getElementById('newGroupName').value.trim();
     if (!name) { showToast('Masukkan nama grup', 'error'); return; }
-    if (!DUMMY.linktreeCategories) DUMMY.linktreeCategories = [];
     if (DUMMY.linktreeCategories.indexOf(name) !== -1) { showToast('Grup sudah ada', 'error'); return; }
+    // API doesn't have a dedicated "add group" — groups are created implicitly via links
+    // Just add locally for now
     DUMMY.linktreeCategories.push(name);
     document.getElementById('newGroupName').value = '';
     renderGroups();
@@ -627,28 +652,46 @@ function addGroup() {
     showToast('Grup ditambahkan');
 }
 
-function editGroup(oldName) {
+async function editGroup(oldName) {
     var newName = prompt('Rename grup "' + oldName + '" menjadi:', oldName);
     if (!newName || newName.trim() === '' || newName === oldName) return;
     newName = newName.trim();
-    var idx = DUMMY.linktreeCategories.indexOf(oldName);
-    if (idx !== -1) DUMMY.linktreeCategories[idx] = newName;
-    (DUMMY.linktree || []).forEach(function(lt) { if (lt.category === oldName) lt.category = newName; });
-    renderGroups();
-    populateCategoryDropdowns();
-    renderLinktree();
-    showToast('Grup diperbarui');
+    try {
+        const res = await fetch(API_BASE + 'linktree.php?action=rename-group', {
+            method: 'POST', credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/json', 'X-Admin-Token': 'bas-owner-2026' },
+            body: JSON.stringify({ old_name: oldName, new_name: newName })
+        });
+        const data = await res.json();
+        if (!data.ok) { showToast(data.error || 'Gagal rename', 'error'); return; }
+        var idx = DUMMY.linktreeCategories.indexOf(oldName);
+        if (idx !== -1) DUMMY.linktreeCategories[idx] = newName;
+        (DUMMY.linktree || []).forEach(function(lt) { if (lt.category === oldName) lt.category = newName; });
+        renderGroups();
+        populateCategoryDropdowns();
+        renderLinktree();
+        showToast('Grup diperbarui');
+    } catch(e) { showToast('Error: ' + e.message, 'error'); }
 }
 
-function deleteGroup(name) {
+async function deleteGroup(name) {
     if (name === 'Umum') { showToast('Grup Umum tidak bisa dihapus', 'error'); return; }
-    if (!confirm('Hapus grup "' + name + '"? Link akan dipindah ke Umum.')) return;
-    DUMMY.linktreeCategories = DUMMY.linktreeCategories.filter(function(c) { return c !== name; });
-    (DUMMY.linktree || []).forEach(function(lt) { if (lt.category === name) lt.category = 'Umum'; });
-    renderGroups();
-    populateCategoryDropdowns();
-    renderLinktree();
-    showToast('Grup dihapus');
+    if (!confirm('Hapus grup "' + name + '"? Link akan menjadi standalone.')) return;
+    try {
+        const res = await fetch(API_BASE + 'linktree.php?action=delete-group', {
+            method: 'POST', credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/json', 'X-Admin-Token': 'bas-owner-2026' },
+            body: JSON.stringify({ group_name: name })
+        });
+        const data = await res.json();
+        if (!data.ok) { showToast(data.error || 'Gagal hapus', 'error'); return; }
+        DUMMY.linktreeCategories = DUMMY.linktreeCategories.filter(function(c) { return c !== name; });
+        (DUMMY.linktree || []).forEach(function(lt) { if (lt.category === name) lt.category = 'Umum'; });
+        renderGroups();
+        populateCategoryDropdowns();
+        renderLinktree();
+        showToast('Grup dihapus');
+    } catch(e) { showToast('Error: ' + e.message, 'error'); }
 }
 
 // ── Linktree Manager ──
@@ -685,24 +728,26 @@ function renderLinktree() {
     }).join('');
 }
 
-function addLinktree() {
+async function addLinktree() {
     const title = document.getElementById('ltTitle').value.trim();
     const url = document.getElementById('ltUrl').value.trim();
     if (!title || !url) { showToast('Isi judul dan URL', 'error'); return; }
-    if (!DUMMY.linktree) DUMMY.linktree = [];
-    const maxId = DUMMY.linktree.reduce((m, x) => Math.max(m, x.id), 0);
-    DUMMY.linktree.push({
-        id: maxId + 1,
-        title: title, url: url,
-        icon: document.getElementById('ltIcon').value,
-        category: document.getElementById('ltCategory').value,
-        active: true,
-        order: DUMMY.linktree.length + 1,
-    });
-    document.getElementById('ltTitle').value = '';
-    document.getElementById('ltUrl').value = '';
-    renderLinktree();
-    showToast('Link berhasil ditambahkan');
+    const iconKey = document.getElementById('ltIcon').value;
+    const groupName = document.getElementById('ltCategory').value;
+    try {
+        const res = await fetch(API_BASE + 'linktree.php?action=add', {
+            method: 'POST', credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/json', 'X-Admin-Token': 'bas-owner-2026' },
+            body: JSON.stringify({ title: title, url: url, icon_key: iconKey, icon: iconKey, group_name: groupName === 'Umum' ? null : groupName, description: '' })
+        });
+        const data = await res.json();
+        if (!data.ok) { showToast(data.error || 'Gagal menambah link', 'error'); return; }
+        document.getElementById('ltTitle').value = '';
+        document.getElementById('ltUrl').value = '';
+        await loadLinktreeData();
+        renderLinktree();
+        showToast('Link berhasil ditambahkan');
+    } catch(e) { showToast('Error: ' + e.message, 'error'); }
 }
 
 function editLinktree(id) {
@@ -724,27 +769,56 @@ function editLinktree(id) {
     openModal(html);
 }
 
-function saveLinktreeEdit(id) {
-    const lt = (DUMMY.linktree || []).find(function(x) { return x.id === id; });
-    if (!lt) return;
-    lt.title = document.getElementById('editLtTitle').value.trim();
-    lt.url = document.getElementById('editLtUrl').value.trim();
-    lt.icon = document.getElementById('editLtIcon').value;
-    lt.category = document.getElementById('editLtCategory').value;
-    closeModal();
-    renderLinktree();
-    showToast('Link berhasil diperbarui');
+async function saveLinktreeEdit(id) {
+    const title = document.getElementById('editLtTitle').value.trim();
+    const url = document.getElementById('editLtUrl').value.trim();
+    const iconKey = document.getElementById('editLtIcon').value;
+    const groupName = document.getElementById('editLtCategory').value;
+    try {
+        const res = await fetch(API_BASE + 'linktree.php?action=update', {
+            method: 'POST', credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/json', 'X-Admin-Token': 'bas-owner-2026' },
+            body: JSON.stringify({ id: id, title: title, url: url, icon_key: iconKey, icon: iconKey, group_name: groupName === 'Umum' ? null : groupName, description: '' })
+        });
+        const data = await res.json();
+        if (!data.ok) { showToast(data.error || 'Gagal memperbarui', 'error'); return; }
+        closeModal();
+        await loadLinktreeData();
+        renderLinktree();
+        showToast('Link berhasil diperbarui');
+    } catch(e) { showToast('Error: ' + e.message, 'error'); }
 }
 
-function toggleLinktree(id) {
-    const lt = (DUMMY.linktree || []).find(function(x) { return x.id === id; });
-    if (lt) { lt.active = !lt.active; renderLinktree(); showToast(lt.active ? 'Link diaktifkan' : 'Link dinonaktifkan'); }
+async function toggleLinktree(id) {
+    try {
+        const res = await fetch(API_BASE + 'linktree.php?action=toggle', {
+            method: 'POST', credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/json', 'X-Admin-Token': 'bas-owner-2026' },
+            body: JSON.stringify({ id: id })
+        });
+        const data = await res.json();
+        if (!data.ok) { showToast(data.error || 'Gagal toggle', 'error'); return; }
+        const lt = (DUMMY.linktree || []).find(function(x) { return x.id === id; });
+        if (lt) lt.active = !lt.active;
+        renderLinktree();
+        showToast(lt && lt.active ? 'Link diaktifkan' : 'Link dinonaktifkan');
+    } catch(e) { showToast('Error: ' + e.message, 'error'); }
 }
 
-function deleteLinktree(id) {
-    DUMMY.linktree = (DUMMY.linktree || []).filter(function(x) { return x.id !== id; });
-    renderLinktree();
-    showToast('Link dihapus');
+async function deleteLinktree(id) {
+    if (!confirm('Hapus link ini?')) return;
+    try {
+        const res = await fetch(API_BASE + 'linktree.php?action=delete', {
+            method: 'POST', credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/json', 'X-Admin-Token': 'bas-owner-2026' },
+            body: JSON.stringify({ id: id })
+        });
+        const data = await res.json();
+        if (!data.ok) { showToast(data.error || 'Gagal menghapus', 'error'); return; }
+        DUMMY.linktree = (DUMMY.linktree || []).filter(function(x) { return x.id !== id; });
+        renderLinktree();
+        showToast('Link dihapus');
+    } catch(e) { showToast('Error: ' + e.message, 'error'); }
 }
 
 // ── Menu Layanan per Provinsi ──
