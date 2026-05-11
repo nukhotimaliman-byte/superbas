@@ -90,7 +90,7 @@
           <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="10" width="36" height="28" rx="3"/><circle cx="18" cy="22" r="4"/><path d="M42 38l-10-10-8 8-4-4-14 6"/></svg>
         </div>
         <p class="photo-upload-text">Klik atau seret foto ke sini</p>
-        <p class="photo-upload-hint">JPG / PNG, maksimal 2MB</p>
+        <p class="photo-upload-hint">JPG / PNG, maksimal 10MB</p>
         <img class="photo-upload-preview" id="photoPreview" alt="Preview">
         <p class="photo-upload-change">Klik untuk ganti foto</p>
       </div>
@@ -555,8 +555,9 @@ function handlePhotoSelect() {
     photoInput.value = '';
     return;
   }
-  if (file.size > 2 * 1024 * 1024) {
-    showToast('Ukuran file maksimal 2MB', 'error');
+  // Limit upload size to 10MB (to prevent browser crash)
+  if (file.size > 10 * 1024 * 1024) {
+    showToast('Ukuran file maksimal 10MB', 'error');
     photoInput.value = '';
     return;
   }
