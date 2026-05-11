@@ -133,8 +133,57 @@ function bkBuildAddr(){var d=document.getElementById('bkAddrDetail').value.trim(
 
 // ── Document Upload ──
 function bkTriggerUpload(k){document.getElementById('bkFile-'+k).click();}
-function bkHandleUpload(k,evt){var f=evt.target.files[0];if(!f)return;bkUploadFile(k,f);}
-function bkCamUpload(k){if(typeof BASCamera==='undefined'){alert('Kamera tidak tersedia');return;}BASCamera.open(function(dataUrl){var blob=bkDataUrlToBlob(dataUrl);var file=new File([blob],k+'_photo.jpg',{type:'image/jpeg'});bkUploadFile(k,file);});}
+function bkHandleUpload(k,evt){var f=evt.target.files[0];if(!f)return;bkCompressAndUpload(k,f);}
+
+// ── Auto Compress if image > 1MB ──
+function bkCompressAndUpload(k, file) {
+  var maxSize = 1 * 1024 * 1024; // 1MB target
+  var ext = file.name.split('.').pop().toLowerCase();
+  // Only compress images, not PDF
+  if (['jpg','jpeg','png'].indexOf(ext) < 0 || file.size <= maxSize) {
+    bkUploadFile(k, file);
+    return;
+  }
+  var st = document.getElementById('bkStat-' + k);
+  if (st) st.textContent = 'Mengompres...';
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var img = new Image();
+    img.onload = function() {
+      var canvas = document.createElement('canvas');
+      var maxDim = 1920;
+      var w = img.width, h = img.height;
+      if (w > maxDim || h > maxDim) {
+        var ratio = Math.min(maxDim / w, maxDim / h);
+        w = Math.round(w * ratio);
+        h = Math.round(h * ratio);
+      }
+      canvas.width = w; canvas.height = h;
+      var ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, w, h);
+      // Find quality that gets us under maxSize
+      var quality = 0.85;
+      var blob;
+      (function tryCompress() {
+        canvas.toBlob(function(b) {
+          if (b.size > maxSize && quality > 0.3) {
+            quality -= 0.1;
+            tryCompress();
+          } else {
+            var origKB = Math.round(file.size / 1024);
+            var newKB = Math.round(b.size / 1024);
+            console.info('[BAS] Compressed ' + origKB + 'KB → ' + newKB + 'KB (q=' + quality.toFixed(2) + ')');
+            var compressed = new File([b], file.name, { type: 'image/jpeg' });
+            bkUploadFile(k, compressed);
+          }
+        }, 'image/jpeg', quality);
+      })();
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+function bkCamUpload(k){if(typeof BASCamera==='undefined'){alert('Kamera tidak tersedia');return;}BASCamera.open(function(dataUrl){var blob=bkDataUrlToBlob(dataUrl);var file=new File([blob],k+'_photo.jpg',{type:'image/jpeg'});bkCompressAndUpload(k,file);});}
 function bkDataUrlToBlob(du){var p=du.split(',');var m=p[0].match(/:(.*?);/)[1];var b=atob(p[1]);var a=new Uint8Array(b.length);for(var i=0;i<b.length;i++)a[i]=b.charCodeAt(i);return new Blob([a],{type:m});}
 async function bkUploadFile(k,file){
   var doc=BK_DOCS.find(function(d){return d.key===k;});if(!doc)return;
