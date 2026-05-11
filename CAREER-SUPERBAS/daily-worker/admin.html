@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,100..900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/admin-v2.css?v=2.5">
+<link rel="stylesheet" href="css/admin-v2.css?v=2.6">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </head>
@@ -160,7 +160,7 @@
     <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;align-items:center;">
         <select class="table-select" id="candStationFilter"><option value="">Semua Station</option></select>
         <select class="table-select" id="candStatusFilter"><option value="">Semua Status</option></select>
-        <select class="table-select" id="candProvinsiFilter"><option value="">Semua Provinsi</option></select>
+        <select class="table-select" id="candProvinsiFilter"><option value="">Semua Area</option></select>
         <input type="text" class="table-search" id="candSearch" placeholder="Cari nama / NIK / WA..." style="flex:1;min-width:180px;">
         <div style="position:relative;">
             <button class="s-btn" style="background:#6366F1;color:#fff;border:none;font-size:.7rem;" onclick="toggleColPanel()">Kolom</button>
@@ -309,26 +309,11 @@
             <div><label class="s-form-label">Password</label><input class="s-input" id="klPass" placeholder="Min 6 karakter"></div>
             <div><label class="s-form-label">Role</label><select class="s-input" id="klRole"><option value="korlap_interview">Korlap Interview</option><option value="korlap_td">Korlap TD</option></select></div>
         </div>
-        <div style="margin-top:14px;grid-column:1/-1;">
-            <label class="s-form-label">Akses Provinsi</label>
-            <div style="position:relative;">
-                <button type="button" class="s-input" style="text-align:left;cursor:pointer;display:flex;justify-content:space-between;align-items:center;" onclick="toggleProvDropdown('klProvDrop')">
-                    <span id="klProvLabel" style="font-size:.78rem;color:var(--t2);">Semua Provinsi</span>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="6 9 12 15 18 9"/></svg>
-                </button>
-                <div id="klProvDrop" style="display:none;position:absolute;left:0;right:0;top:100%;margin-top:4px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:10px;max-height:280px;overflow-y:auto;z-index:50;box-shadow:0 8px 30px rgba(0,0,0,.3);">
-                    <label style="display:flex;align-items:center;gap:8px;padding:6px 4px;font-size:.75rem;font-weight:700;color:var(--accent);cursor:pointer;border-bottom:1px solid var(--border);margin-bottom:6px;">
-                        <input type="checkbox" id="klProvAll" onchange="toggleAllProv(this.checked,'kl')"> Semua Provinsi
-                    </label>
-                    <div id="klProvinceList"></div>
-                </div>
-            </div>
-        </div>
         <button class="s-btn s-btn--primary" style="margin-top:16px;" onclick="createKorlap()">Buat Akun</button>
     </div>
     <div class="table-wrap">
         <table class="tbl">
-            <thead><tr><th>ID</th><th>Username</th><th>Nama</th><th>Role</th><th>Akses Provinsi</th><th>Aksi</th></tr></thead>
+            <thead><tr><th>ID</th><th>Username</th><th>Nama</th><th>Role</th><th>Akses Area</th><th>Aksi</th></tr></thead>
             <tbody id="korlapTable"><tr><td colspan="6" class="tbl-empty">Memuat...</td></tr></tbody>
         </table>
     </div>
@@ -338,13 +323,13 @@
 <div class="modal-overlay" id="editKorlapModal">
     <div class="modal">
         <div class="modal-header">
-            <div class="modal-title">Edit Akses Provinsi</div>
+            <div class="modal-title">Edit Akses Area</div>
             <button class="modal-close" onclick="document.getElementById('editKorlapModal').classList.remove('show')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
         </div>
         <div class="modal-body">
             <input type="hidden" id="editKlId">
             <p style="font-size:.75rem;font-weight:600;margin-bottom:12px;" id="editKlName"></p>
-            <p style="font-size:.65rem;color:var(--t3);margin-bottom:8px;">Kosongkan semua = akses semua provinsi</p>
+            <p style="font-size:.65rem;color:var(--t3);margin-bottom:8px;">Kosongkan semua = akses semua area</p>
             <div id="editKlProvinces" style="display:flex;flex-wrap:wrap;gap:8px;"></div>
             <button class="s-btn s-btn--primary" style="margin-top:16px;" onclick="saveKorlapEdit()">Simpan</button>
         </div>
@@ -472,11 +457,11 @@
             <!-- Menu Layanan -->
             <div class="settings-panel" id="s-menulayanan">
                 <div class="settings-card">
-                    <div class="settings-title">Menu Layanan per Provinsi</div>
-                    <p style="font-size:.7rem;color:var(--t3);margin-bottom:16px;">Pilih provinsi untuk mengatur menu layanan apa saja yang akan ditampilkan di dashboard user pada provinsi tersebut.</p>
+                    <div class="settings-title">Menu Layanan per Area</div>
+                    <p style="font-size:.7rem;color:var(--t3);margin-bottom:16px;">Pilih area untuk mengatur menu layanan apa saja yang akan ditampilkan di dashboard user pada area tersebut.</p>
                     
                     <div style="margin-bottom:20px;">
-                        <label class="s-form-label">Pilih Provinsi</label>
+                        <label class="s-form-label">Pilih Area</label>
                         <select class="s-input" id="menuProvSelect" onchange="loadMenuConfig(this.value)" style="max-width:300px;">
                             <!-- Populated by JS -->
                         </select>
@@ -596,12 +581,12 @@
     </div>
 </div>
 
-<script src="js/admin-v2.js?v=2.5"></script>
-<script src="js/admin-v2-overview.js?v=2.5"></script>
-<script src="js/admin-v2-candidates.js?v=2.5"></script>
-<link rel="stylesheet" href="../shared/css/bas-chat.css?v=2.5">
-<script src="../shared/js/bas-chat.js?v=2.5"></script>
-<script src="../shared/js/bas-chat-admin.js?v=2.5"></script>
-<script src="js/admin-v2-modules.js?v=2.5"></script>
+<script src="js/admin-v2.js?v=2.6"></script>
+<script src="js/admin-v2-overview.js?v=2.6"></script>
+<script src="js/admin-v2-candidates.js?v=2.6"></script>
+<link rel="stylesheet" href="../shared/css/bas-chat.css?v=2.6">
+<script src="../shared/js/bas-chat.js?v=2.6"></script>
+<script src="../shared/js/bas-chat-admin.js?v=2.6"></script>
+<script src="js/admin-v2-modules.js?v=2.6"></script>
 </body>
 </html>

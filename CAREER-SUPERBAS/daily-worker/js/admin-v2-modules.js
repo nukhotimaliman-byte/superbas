@@ -325,17 +325,16 @@ function initAI() {
 
 // ═══ KORLAP ═══
 async function initKorlap() {
-    buildProvCheckboxes('klProvinceList', 'kl-prov-cb', 'kl');
     await loadKorlapData();
     renderKorlap();
 }
 
-function buildProvCheckboxes(containerId, cbClass, prefix) {
+function buildAreaCheckboxes(containerId, cbClass, prefix) {
     const list = document.getElementById(containerId);
     if (!list) return;
-    list.innerHTML = ALL_PROVINCES.map(p =>
+    list.innerHTML = ALL_AREAS.map(a =>
         '<label style="display:flex;align-items:center;gap:6px;font-size:.72rem;color:var(--t2);cursor:pointer;padding:3px 4px;">' +
-        '<input type="checkbox" class="' + cbClass + '" value="' + p + '" onchange="updateProvLabel(\'' + prefix + '\')"> ' + p + '</label>'
+        '<input type="checkbox" class="' + cbClass + '" value="' + a + '" onchange="updateAreaLabel(\'' + prefix + '\')"> ' + a + '</label>'
     ).join('');
 }
 
@@ -345,36 +344,38 @@ function toggleProvDropdown(id) {
 }
 
 function toggleAllProv(checked, prefix) {
-    const cls = prefix === 'kl' ? 'kl-prov-cb' : 'edit-prov-cb';
+    const cls = prefix === 'kl' ? 'kl-area-cb' : 'edit-area-cb';
     document.querySelectorAll('.' + cls).forEach(cb => cb.checked = checked);
-    updateProvLabel(prefix);
+    updateAreaLabel(prefix);
 }
 
-function updateProvLabel(prefix) {
-    const cls = prefix === 'kl' ? 'kl-prov-cb' : 'edit-prov-cb';
+function updateAreaLabel(prefix) {
+    const cls = prefix === 'kl' ? 'kl-area-cb' : 'edit-area-cb';
     const all = document.querySelectorAll('.' + cls);
     const checked = document.querySelectorAll('.' + cls + ':checked');
     const labelEl = document.getElementById(prefix + 'ProvLabel');
     const allCb = document.getElementById(prefix + 'ProvAll');
     if (allCb) allCb.checked = checked.length === all.length;
     if (!labelEl) return;
-    if (checked.length === 0 || checked.length === all.length) labelEl.textContent = 'Semua Provinsi';
-    else labelEl.textContent = checked.length + ' provinsi dipilih';
+    if (checked.length === 0 || checked.length === all.length) labelEl.textContent = 'Semua Area';
+    else labelEl.textContent = checked.length + ' area dipilih';
 }
+function updateProvLabel(prefix) { updateAreaLabel(prefix); }
 function renderKorlap() {
     const tbody = document.getElementById('korlapTable');
     const data = DUMMY.korlaps;
     if (data.length === 0) { tbody.innerHTML = '<tr><td colspan="6" class="tbl-empty">Belum ada korlap</td></tr>'; return; }
     tbody.innerHTML = data.map(k => {
-        const provText = (!k.allowed_provinces || k.allowed_provinces.length === 0)
-            ? '<span class="badge" style="background:rgba(34,197,94,.15);color:#22C55E;">Semua Provinsi</span>'
-            : k.allowed_provinces.map(p => '<span class="badge" style="background:var(--accent-d);color:var(--accent);margin:2px;">' + p + '</span>').join('');
+        const areas = k.allowed_areas || k.allowed_provinces || [];
+        const areaText = (areas.length === 0)
+            ? '<span class="badge" style="background:rgba(34,197,94,.15);color:#22C55E;">Semua Area</span>'
+            : areas.map(a => '<span class="badge" style="background:var(--accent-d);color:var(--accent);margin:2px;">' + a + '</span>').join('');
         return `<tr>
         <td>${k.id}</td><td>${k.username}</td><td>${k.name}</td>
         <td><span class="badge badge-${k.role === 'korlap_interview' ? 'interview' : 'proses'}">${k.role}</span></td>
-        <td>${provText}</td>
+        <td>${areaText}</td>
         <td style="display:flex;gap:6px;">
-            <button class="act-btn" onclick="editKorlap(${k.id})" title="Edit Provinsi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+            <button class="act-btn" onclick="editKorlap(${k.id})" title="Edit Area"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
             <button class="act-btn" onclick="deleteKorlap(${k.id})" title="Hapus"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
         </td>
     </tr>`;
@@ -407,11 +408,12 @@ function editKorlap(id) {
     document.getElementById('editKlId').value = id;
     document.getElementById('editKlName').textContent = k.name + ' (' + k.username + ')';
     const cont = document.getElementById('editKlProvinces');
-    cont.innerHTML = ALL_PROVINCES.map(p =>
+    const currentAreas = k.allowed_areas || k.allowed_provinces || [];
+    cont.innerHTML = ALL_AREAS.map(a =>
         '<label style="display:flex;align-items:center;gap:6px;font-size:.72rem;color:var(--t2);cursor:pointer;padding:3px 4px;">' +
-        '<input type="checkbox" class="edit-prov-cb" value="' + p + '"' +
-        ((!k.allowed_provinces || k.allowed_provinces.length === 0 || k.allowed_provinces.includes(p)) ? ' checked' : '') +
-        ' onchange="updateEditProvCount()"> ' + p + '</label>'
+        '<input type="checkbox" class="edit-area-cb" value="' + a + '"' +
+        ((currentAreas.length === 0 || currentAreas.includes(a)) ? ' checked' : '') +
+        ' onchange="updateEditProvCount()"> ' + a + '</label>'
     ).join('');
     document.getElementById('editKorlapModal').classList.add('show');
 }
@@ -419,12 +421,13 @@ function saveKorlapEdit() {
     const id = +document.getElementById('editKlId').value;
     const k = DUMMY.korlaps.find(x => x.id === id);
     if (!k) return;
-    const allCbs = document.querySelectorAll('.edit-prov-cb');
-    const checked = [...document.querySelectorAll('.edit-prov-cb:checked')].map(cb => cb.value);
-    k.allowed_provinces = (checked.length === allCbs.length) ? [] : checked;
+    const allCbs = document.querySelectorAll('.edit-area-cb');
+    const checked = [...document.querySelectorAll('.edit-area-cb:checked')].map(cb => cb.value);
+    k.allowed_areas = (checked.length === allCbs.length) ? [] : checked;
+    k.allowed_provinces = k.allowed_areas; // backward compat
     document.getElementById('editKorlapModal').classList.remove('show');
     renderKorlap();
-    showToast('Akses provinsi diperbarui');
+    showToast('Akses area diperbarui');
 }
 function updateEditProvCount() {
     // Optional: visual feedback in edit modal
@@ -900,14 +903,14 @@ async function deleteLinktree(id) {
     } catch(e) { showToast('Error: ' + e.message, 'error'); }
 }
 
-// ── Menu Layanan per Provinsi ──
+// ── Menu Layanan per Area ──
 function initMenuConfig() {
     var sel = document.getElementById('menuProvSelect');
     if (!sel) return;
-    sel.innerHTML = '<option value="_default">Default (Semua Provinsi)</option><option value="Jabodetabek">Jabodetabek</option>';
-    ALL_PROVINCES.forEach(function(p) {
+    sel.innerHTML = '<option value="_default">Default (Semua Area)</option>';
+    ALL_AREAS.forEach(function(a) {
         var opt = document.createElement('option');
-        opt.value = p; opt.textContent = p;
+        opt.value = a; opt.textContent = a;
         sel.appendChild(opt);
     });
     loadMenuConfig('_default');
@@ -1016,7 +1019,7 @@ function trackNik() {
         var html = '<div class="settings-card" style="padding:0;overflow:hidden;">';
         html += '<div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;"><div><div style="font-weight:700;font-size:.92rem;color:var(--t1);">' + (c.name||'') + '</div><div style="font-size:.72rem;color:var(--t3);">' + (c.given_id||'') + ' · ' + (c.station||'') + '</div></div><span class="badge" style="background:' + sc + '20;color:' + sc + ';">' + c.status + '</span></div>';
         html += '<div style="padding:16px 20px;display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:.75rem;">';
-        [['WhatsApp',c.whatsapp],['Provinsi',c.provinsi],['Kab/Kota',c.kabupaten],['Pendaftaran',c.created_at],['Email',c.email],['Pendidikan',c.pendidikan_terakhir]].forEach(function(f){
+        [['WhatsApp',c.whatsapp],['Area',getAreaForCandidate(c)],['Kab/Kota',c.kabupaten],['Pendaftaran',c.created_at],['Email',c.email],['Pendidikan',c.pendidikan_terakhir]].forEach(function(f){
             html += '<div><span style="color:var(--t3);">' + f[0] + '</span><br><strong style="color:var(--t1);">' + (f[1]||'-') + '</strong></div>';
         });
         html += '</div>';

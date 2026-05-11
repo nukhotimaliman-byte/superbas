@@ -19,7 +19,7 @@ const COLUMNS = [
     { key:'status', label:'Status', sortable:true, editable:'dropdown' },
     { key:'tempat_lahir', label:'Tempat Lahir', sortable:true },
     { key:'tanggal_lahir', label:'Tgl Lahir', sortable:true },
-    { key:'provinsi', label:'Provinsi', sortable:true },
+    { key:'area', label:'Area', sortable:true },
     { key:'kabupaten', label:'Kab/Kota', sortable:true },
     { key:'kecamatan', label:'Kecamatan', sortable:true },
     { key:'kelurahan', label:'Kelurahan' },
@@ -65,10 +65,9 @@ function initCandidates() {
     const stationSel = document.getElementById('candStationFilter');
     DUMMY.stations.forEach(s => stationSel.add(new Option(s, s)));
     
-    // Provinsi filter
+    // Area filter
     const provSel = document.getElementById('candProvinsiFilter');
-    const provs = [...new Set(candData.map(c => c.provinsi).filter(Boolean))].sort();
-    provs.forEach(p => provSel.add(new Option(p, p)));
+    ALL_AREAS.forEach(a => provSel.add(new Option(a, a)));
 
     // Events
     document.getElementById('candSearch').addEventListener('input', () => { candPage = 1; applyFilter(); });
@@ -98,20 +97,20 @@ function applyFilter() {
     const q = document.getElementById('candSearch').value.toLowerCase();
     const status = document.getElementById('candStatusFilter').value;
     const station = document.getElementById('candStationFilter').value;
-    const prov = document.getElementById('candProvinsiFilter').value;
+    const area = document.getElementById('candProvinsiFilter').value;
 
     candFiltered = candData.filter(c => {
         if (q && !(c.name||'').toLowerCase().includes(q) && !(c.nik||'').includes(q) && !(c.whatsapp||'').includes(q)) return false;
         if (status && c.status !== status) return false;
         if (station && c.station !== station) return false;
-        if (prov && c.provinsi !== prov) return false;
+        if (area && getAreaForCandidate(c) !== area) return false;
         return true;
     });
 
     if (candSort.key) {
         candFiltered.sort((a, b) => {
-            const va = (a[candSort.key] || '').toString().toLowerCase();
-            const vb = (b[candSort.key] || '').toString().toLowerCase();
+            const va = (candSort.key === 'area' ? getAreaForCandidate(a) : (a[candSort.key] || '')).toString().toLowerCase();
+            const vb = (candSort.key === 'area' ? getAreaForCandidate(b) : (b[candSort.key] || '')).toString().toLowerCase();
             const cmp = va < vb ? -1 : va > vb ? 1 : 0;
             return candSort.dir === 'asc' ? cmp : -cmp;
         });
@@ -214,6 +213,8 @@ function renderBody() {
                     '<button class="pw-toggle-btn" onclick="event.stopPropagation();toggleTablePw(this)" title="Tampilkan" style="padding:2px 4px;line-height:1;">' +
                     '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>' +
                     '</button></span>';
+            } else if (col.key === 'area') {
+                td.textContent = getAreaForCandidate(c);
             } else if (col.editable === true) {
                 td.textContent = c[col.key] || '-';
                 td.style.cursor = 'pointer';
@@ -535,6 +536,7 @@ function showDetail(id) {
             (c.kecamatan ? '<span style="font-size:.75rem;color:var(--t3);">Kec. </span>' + escHtml(c.kecamatan) : '') +
             (c.kabupaten ? '<div><span style="font-size:.75rem;color:var(--t3);">Kab/Kota </span>' + escHtml(c.kabupaten) + '</div>' : '') +
             (c.provinsi ? '<div><span style="font-size:.75rem;color:var(--t3);">Prov. </span>' + escHtml(c.provinsi) + '</div>' : '') +
+            '<div><span style="font-size:.75rem;color:var(--t3);">Area </span><span style="font-weight:600;color:var(--accent);">' + escHtml(getAreaForCandidate(c)) + '</span></div>' +
             '</div>' +
             (mapsUrl ? '<a href="' + mapsUrl + '" target="_blank" class="detail-maps-btn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg> Buka di Google Maps</a>' : '') +
             '</div>';

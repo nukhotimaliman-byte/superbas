@@ -319,18 +319,52 @@ const ALL_SERVICE_MENUS = [
     { key:'gantirek', label:'Ganti Rek' },
     { key:'aduan', label:'Aduan Pungli' },
 ];
+// ── Area mapping (provinsi → area) ──
+const AREA_MAP = {
+    'Sumatra': ['Aceh','Sumatera Utara','Sumatera Barat','Riau','Kepulauan Riau','Jambi','Sumatera Selatan','Bengkulu','Lampung','Kepulauan Bangka Belitung'],
+    'Jabodetabek - Banten': ['DKI Jakarta','Banten'],
+    'Jawa Barat': ['Jawa Barat'],
+    'Jawa Tengah': ['Jawa Tengah','DI Yogyakarta'],
+    'Jawa Timur': ['Jawa Timur'],
+    'Bali - Nusa Tenggara': ['Bali','Nusa Tenggara Barat','Nusa Tenggara Timur'],
+    'Kalimantan': ['Kalimantan Barat','Kalimantan Tengah','Kalimantan Selatan','Kalimantan Timur','Kalimantan Utara'],
+    'Sulawesi - Papua': ['Sulawesi Utara','Sulawesi Tengah','Sulawesi Selatan','Sulawesi Tenggara','Gorontalo','Sulawesi Barat','Maluku','Maluku Utara','Papua','Papua Barat','Papua Selatan','Papua Tengah','Papua Pegunungan','Papua Barat Daya']
+};
+const ALL_AREAS = Object.keys(AREA_MAP);
+// Keep ALL_PROVINCES for backward compat (registration etc.)
+const ALL_PROVINCES = Object.values(AREA_MAP).flat();
+// Kota/Kab in Jawa Barat province that belong to Jabodetabek
+const JABODETABEK_KABUPATEN = ['Bekasi','Bogor','Depok','Kota Bekasi','Kota Bogor','Kota Depok','Kabupaten Bekasi','Kabupaten Bogor'];
 
-const ALL_PROVINCES = ['Aceh','Sumatera Utara','Sumatera Barat','Riau','Jambi','Sumatera Selatan','Bengkulu','Lampung','Kepulauan Bangka Belitung','Kepulauan Riau','DKI Jakarta','Jawa Barat','Jawa Tengah','DI Yogyakarta','Jawa Timur','Banten','Bali','Nusa Tenggara Barat','Nusa Tenggara Timur','Kalimantan Barat','Kalimantan Tengah','Kalimantan Selatan','Kalimantan Timur','Kalimantan Utara','Sulawesi Utara','Sulawesi Tengah','Sulawesi Selatan','Sulawesi Tenggara','Gorontalo','Sulawesi Barat','Maluku','Maluku Utara','Papua','Papua Barat','Papua Selatan','Papua Tengah','Papua Pegunungan','Papua Barat Daya'];
-function getAllowedProvinces() {
+function getAreaForCandidate(c) {
+    if (!c || !c.provinsi) return '-';
+    const prov = c.provinsi;
+    // Special case: Jawa Barat province — check kabupaten for Jabodetabek cities
+    if (prov === 'Jawa Barat' && c.kabupaten) {
+        const kab = c.kabupaten;
+        if (JABODETABEK_KABUPATEN.some(k => kab.toLowerCase().includes(k.toLowerCase()))) {
+            return 'Jabodetabek - Banten';
+        }
+    }
+    for (const [area, provs] of Object.entries(AREA_MAP)) {
+        if (provs.includes(prov)) return area;
+    }
+    return '-';
+}
+
+function getAllowedAreas() {
     if (adminData.role === 'owner') return []; // empty = all
-    const ap = adminData.allowed_provinces || [];
-    return ap.length === 0 ? [] : ap; // empty = all
+    const aa = adminData.allowed_areas || adminData.allowed_provinces || [];
+    return aa.length === 0 ? [] : aa;
 }
-function filterByProvince(data) {
-    const ap = getAllowedProvinces();
-    if (ap.length === 0) return data; // all access
-    return data.filter(c => ap.includes(c.provinsi));
+function filterByArea(data) {
+    const aa = getAllowedAreas();
+    if (aa.length === 0) return data; // all access
+    return data.filter(c => aa.includes(getAreaForCandidate(c)));
 }
+// Backward compat aliases
+function getAllowedProvinces() { return getAllowedAreas(); }
+function filterByProvince(data) { return filterByArea(data); }
 
 // ── Init all pages ──
 document.addEventListener('DOMContentLoaded', async function () {
