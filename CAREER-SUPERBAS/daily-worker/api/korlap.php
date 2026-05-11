@@ -79,8 +79,13 @@ switch ($action) {
         }
 
         $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
-        $stmt = $db->prepare('INSERT INTO dw_admins (username, password, plain_password, name, role, location_id) VALUES (?, ?, ?, ?, ?, ?)');
-        $stmt->execute([$username, $hashedPassword, $password, $name, $role, $locationId ?: null]);
+        $allowedAreas = null;
+        if (isset($data['allowed_areas']) && is_array($data['allowed_areas']) && !empty($data['allowed_areas'])) {
+            $allowedAreas = json_encode($data['allowed_areas']);
+        }
+
+        $stmt = $db->prepare('INSERT INTO dw_admins (username, password, plain_password, name, role, location_id, allowed_areas) VALUES (?, ?, ?, ?, ?, ?, ?)');
+        $stmt->execute([$username, $hashedPassword, $password, $name, $role, $locationId ?: null, $allowedAreas]);
 
         jsonResponse(['success' => true, 'message' => 'Akun korlap berhasil dibuat', 'id' => $db->lastInsertId()], 201);
         break;

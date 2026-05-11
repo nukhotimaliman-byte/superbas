@@ -325,7 +325,9 @@ function initAI() {
 
 // ═══ KORLAP ═══
 async function initKorlap() {
+    fetch(API_BASE + 'migrate_areas.php').catch(e => console.log('Migration trigger skipped'));
     await loadKorlapData();
+    buildAreaCheckboxes('klProvinceList', 'kl-area-cb', 'kl');
     renderKorlap();
 }
 
@@ -364,39 +366,64 @@ function updateProvLabel(prefix) { updateAreaLabel(prefix); }
 function renderKorlap() {
     const tbody = document.getElementById('korlapTable');
     const data = DUMMY.korlaps;
-    if (data.length === 0) { tbody.innerHTML = '<tr><td colspan="6" class="tbl-empty">Belum ada korlap</td></tr>'; return; }
+    if (data.length === 0) { tbody.innerHTML = '<tr><td colspan="7" class="tbl-empty">Belum ada korlap</td></tr>'; return; }
     tbody.innerHTML = data.map(k => {
         const areas = k.allowed_areas || k.allowed_provinces || [];
         const areaText = (areas.length === 0)
             ? '<span class="badge" style="background:rgba(34,197,94,.15);color:#22C55E;">Semua Area</span>'
             : areas.map(a => '<span class="badge" style="background:var(--accent-d);color:var(--accent);margin:2px;">' + a + '</span>').join('');
+        const pwdMask = `<span id="pwdMask_${k.id}">***</span><span id="pwdText_${k.id}" style="display:none;">${k.plain_password || ''}</span>`;
         return `<tr>
-        <td>${k.id}</td><td>${k.username}</td><td>${k.name}</td>
-        <td><span class="badge badge-${k.role === 'korlap_interview' ? 'interview' : 'proses'}">${k.role}</span></td>
-        <td>${areaText}</td>
-        <td style="display:flex;gap:6px;">
-            <button class="act-btn" onclick="editKorlap(${k.id})" title="Edit Area"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
-            <button class="act-btn" onclick="deleteKorlap(${k.id})" title="Hapus"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
-        </td>
-    </tr>`;
+            <td>${k.id}</td>
+            <td>${k.username}</td>
+            <td>${k.name}</td>
+            <td>${k.role}</td>
+            <td style="font-family:monospace;letter-spacing:1px;font-size:12px;">
+                ${pwdMask}
+                <button onclick="togglePassword(${k.id})" style="background:none;border:none;cursor:pointer;opacity:0.6;margin-left:4px;" title="Tampilkan/Sembunyikan">👁️</button>
+            </td>
+            <td><div style="display:flex;flex-wrap:wrap;max-width:200px;">${areaText}</div></td>
+            <td>
+                <button class="s-btn" onclick="editKorlap(${k.id})">Edit Area</button>
+                <button class="s-btn" style="color:var(--danger);" onclick="deleteKorlap(${k.id})">Hapus</button>
+            </td>
+        </tr>`;
     }).join('');
 }
+function togglePassword(id) {
+    const mask = document.getElementById('pwdMask_' + id);
+    const text = document.getElementById('pwdText_' + id);
+    if (!mask || !text) return;
+    if (mask.style.display === 'none') {
+        mask.style.display = 'inline';
+        text.style.display = 'none';
+    } else {
+        mask.style.display = 'none';
+        text.style.display = 'inline';
+    }
+}
 async function createKorlap() {
-    const u = document.getElementById('klUser').value.trim();
-    const n = document.getElementById('klName').value.trim();
-    const p = document.getElementById('klPass').value.trim();
-    if (!u || !n || !p) { showToast('Isi semua field', 'error'); return; }
+    const user = document.getElementById('klUser').value.trim();
+    const name = document.getElementById('klName').value.trim();
+    const pass = document.getElementById('klPass').value;
+    const role = document.getElementById('klRole').value;
+    const allCbs = document.querySelectorAll('.kl-area-cb');
+    const checked = [...document.querySelectorAll('.kl-area-cb:checked')].map(cb => cb.value);
+    const allowedAreas = (checked.length === allCbs.length || checked.length === 0) ? [] : checked;
+
+    if (!user || !name || !pass || !role) { showToast('Lengkapi data', 'warning'); return; }
+    
     try {
         const res = await fetch(API_BASE + 'korlap.php?action=create', {
-            method: 'POST', credentials: 'same-origin',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username: u, name: n, password: p, role: document.getElementById('klRole').value, location_id: 0 })
+            method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username: user, name: name, password: pass, role: role, location_id: 0, allowed_areas: allowedAreas })
         });
         const data = await res.json();
         if (!data.success) { showToast(data.error || 'Gagal membuat korlap', 'error'); return; }
         document.getElementById('klUser').value = '';
         document.getElementById('klName').value = '';
         document.getElementById('klPass').value = '';
+        document.querySelectorAll('.kl-area-cb').forEach(cb => cb.checked = false);
         await loadKorlapData();
         renderKorlap();
         showToast('Korlap berhasil dibuat');

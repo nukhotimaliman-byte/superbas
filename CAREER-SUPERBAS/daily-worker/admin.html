@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,100..900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/admin-v2.css?v=2.7">
+<link rel="stylesheet" href="css/admin-v2.css?v=2.8">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </head>
@@ -309,12 +309,17 @@
             <div><label class="s-form-label">Password</label><input class="s-input" id="klPass" placeholder="Min 6 karakter"></div>
             <div><label class="s-form-label">Role</label><select class="s-input" id="klRole"><option value="korlap_interview">Korlap Interview</option><option value="korlap_td">Korlap TD</option></select></div>
         </div>
+        <div style="margin-top:14px;grid-column:1/-1;">
+            <label class="s-form-label">Akses Area</label>
+            <p style="font-size:.65rem;color:var(--t3);margin-bottom:8px;">Kosongkan semua = akses semua area</p>
+            <div id="klProvinceList" style="display:flex;flex-wrap:wrap;gap:8px;"></div>
+        </div>
         <button class="s-btn s-btn--primary" style="margin-top:16px;" onclick="createKorlap()">Buat Akun</button>
     </div>
     <div class="table-wrap">
         <table class="tbl">
-            <thead><tr><th>ID</th><th>Username</th><th>Nama</th><th>Role</th><th>Akses Area</th><th>Aksi</th></tr></thead>
-            <tbody id="korlapTable"><tr><td colspan="6" class="tbl-empty">Memuat...</td></tr></tbody>
+            <thead><tr><th>ID</th><th>Username</th><th>Nama</th><th>Role</th><th>Password</th><th>Akses Area</th><th>Aksi</th></tr></thead>
+            <tbody id="korlapTable"><tr><td colspan="7" class="tbl-empty">Memuat...</td></tr></tbody>
         </table>
     </div>
 </div>
@@ -581,12 +586,12 @@
     </div>
 </div>
 
-<script src="js/admin-v2.js?v=2.7"></script>
-<script src="js/admin-v2-overview.js?v=2.7"></script>
-<script src="js/admin-v2-candidates.js?v=2.7"></script>
-<link rel="stylesheet" href="../shared/css/bas-chat.css?v=2.7">
-<script src="../shared/js/bas-chat.js?v=2.7"></script>
-<script src="../shared/js/bas-chat-admin.js?v=2.7"></script>
-<script src="js/admin-v2-modules.js?v=2.7"></script>
+<script src="js/admin-v2.js?v=2.8"></script>
+<script src="js/admin-v2-overview.js?v=2.8"></script>
+<script src="js/admin-v2-candidates.js?v=2.8"></script>
+<link rel="stylesheet" href="../shared/css/bas-chat.css?v=2.8">
+<script src="../shared/js/bas-chat.js?v=2.8"></script>
+<script src="../shared/js/bas-chat-admin.js?v=2.8"></script>
+<script src="js/admin-v2-modules.js?v=2.8"></script>
 </body>
 </html>
