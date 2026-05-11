@@ -602,7 +602,10 @@ async function loadLinktreeData() {
             order: l.sort_order || 0,
             description: l.description || '',
         }));
-        DUMMY.linktreeCategories = (groupsRes.groups || []).map(g => g.group_name);
+        // Store groups with their order
+        DUMMY.linktreeGroupOrders = {};
+        (groupsRes.groups || []).forEach(g => { DUMMY.linktreeGroupOrders[g.group_name] = parseInt(g.group_order) || 0; });
+        DUMMY.linktreeCategories = (groupsRes.groups || []).sort((a,b) => (parseInt(a.group_order)||0) - (parseInt(b.group_order)||0)).map(g => g.group_name);
         if (DUMMY.linktreeCategories.indexOf('Umum') === -1) DUMMY.linktreeCategories.push('Umum');
         console.info('[BAS] Linktree loaded:', DUMMY.linktree.length, 'links,', DUMMY.linktreeCategories.length, 'groups');
     } catch(e) { console.warn('Load linktree failed:', e); }
@@ -620,14 +623,54 @@ function saveMaintenance() {
 function renderGroups() {
     var list = document.getElementById('groupList');
     if (!list) return;
-    var cats = DUMMY.linktreeCategories || [];
-    list.innerHTML = cats.map(function(g) {
-        return '<div style="display:flex;align-items:center;gap:6px;padding:6px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;">' +
-            '<span style="font-size:.75rem;font-weight:600;" id="grp_' + g.replace(/\s/g,'_') + '">' + g + '</span>' +
-            '<button class="act-btn" onclick="editGroup(\'' + g + '\')" title="Rename"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>' +
-            '<button class="act-btn" onclick="deleteGroup(\'' + g + '\')" title="Hapus"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>' +
+    var cats = (DUMMY.linktreeCategories || []).filter(function(c) { return c !== 'Umum'; });
+    // Sort by group_order
+    var orders = DUMMY.linktreeGroupOrders || {};
+    cats.sort(function(a, b) { return (orders[a] || 0) - (orders[b] || 0); });
+    list.innerHTML = cats.map(function(g, idx) {
+        var esc = g.replace(/'/g, "\\'");
+        return '<div style="display:flex;align-items:center;gap:6px;padding:8px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;">' +
+            '<span class="lt-admin-count" style="margin:0;min-width:22px;text-align:center;">' + (idx + 1) + '</span>' +
+            '<span style="font-size:.75rem;font-weight:600;flex:1;">' + g + '</span>' +
+            '<button class="act-btn" onclick="moveGroup(\'' + esc + '\', -1)" title="Naik"' + (idx === 0 ? ' disabled style="opacity:.3;pointer-events:none;"' : '') + '><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><polyline points="18 15 12 9 6 15"/></svg></button>' +
+            '<button class="act-btn" onclick="moveGroup(\'' + esc + '\', 1)" title="Turun"' + (idx === cats.length - 1 ? ' disabled style="opacity:.3;pointer-events:none;"' : '') + '><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><polyline points="6 9 12 15 18 9"/></svg></button>' +
+            '<button class="act-btn" onclick="editGroup(\'' + esc + '\')" title="Rename"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>' +
+            '<button class="act-btn" onclick="deleteGroup(\'' + esc + '\')" title="Hapus"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>' +
         '</div>';
     }).join('');
+}
+
+async function moveGroup(name, direction) {
+    var orders = DUMMY.linktreeGroupOrders || {};
+    var cats = Object.keys(orders).sort(function(a, b) { return (orders[a] || 0) - (orders[b] || 0); });
+    var idx = cats.indexOf(name);
+    if (idx === -1) return;
+    var swapIdx = idx + direction;
+    if (swapIdx < 0 || swapIdx >= cats.length) return;
+    // Swap orders
+    var tmp = orders[cats[idx]];
+    orders[cats[idx]] = orders[cats[swapIdx]];
+    orders[cats[swapIdx]] = tmp;
+    // If they had same order, assign sequential
+    var allSame = cats.every(function(c) { return orders[c] === orders[cats[0]]; });
+    if (allSame) { cats.forEach(function(c, i) { orders[c] = i; }); }
+    // Build payload
+    var payload = Object.keys(orders).map(function(g) { return { group_name: g, group_order: orders[g] }; });
+    try {
+        var res = await fetch(API_BASE + 'linktree.php?action=reorder-groups', {
+            method: 'POST', credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/json', 'X-Admin-Token': 'bas-owner-2026' },
+            body: JSON.stringify({ groups: payload })
+        });
+        var data = await res.json();
+        if (!data.ok) { showToast(data.error || 'Gagal reorder', 'error'); return; }
+        // Re-sort categories array
+        DUMMY.linktreeCategories = Object.keys(orders).sort(function(a, b) { return orders[a] - orders[b]; });
+        if (DUMMY.linktreeCategories.indexOf('Umum') === -1) DUMMY.linktreeCategories.push('Umum');
+        renderGroups();
+        renderLinktree();
+        showToast('Posisi grup diperbarui');
+    } catch(e) { showToast('Error: ' + e.message, 'error'); }
 }
 
 function populateCategoryDropdowns() {
@@ -748,9 +791,10 @@ function renderLinktree() {
         standalone.forEach(function(lt) { html += renderItem(lt); });
         html += '</div></div>';
     }
-    // Grouped
-    var sortedKeys = Object.keys(groups).sort();
-    sortedKeys.forEach(function(cat) {
+    // Grouped — sort by group_order
+    var orders = DUMMY.linktreeGroupOrders || {};
+    var sortedKeys = Object.keys(groups).sort(function(a, b) { return (orders[a] || 0) - (orders[b] || 0); });
+    sortedKeys.forEach(function(cat, idx) {
         html += '<div class="lt-admin-group">';
         html += '<div class="lt-admin-group-header" onclick="this.parentElement.classList.toggle(\'lt-collapsed\')">';
         html += '<svg class="lt-admin-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="6 9 12 15 18 9"/></svg>';
