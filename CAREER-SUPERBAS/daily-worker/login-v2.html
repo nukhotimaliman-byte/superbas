@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" type="image/png" href="favicon-bas.png">
+<title>BAS DW Admin &mdash; Login</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,100..900&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#06060a;--card:#0d0d14;--border:rgba(56,189,248,.12);--accent:#38BDF8;--accent-d:rgba(56,189,248,.15);--accent-g:rgba(56,189,248,.06);--t1:#f0f0f0;--t2:rgba(255,255,255,.5);--danger:#EF4444;--r:16px;--font:'Inter',system-ui,sans-serif}
+html{height:100%}
+body{font-family:var(--font);background:var(--bg);color:var(--t1);min-height:100vh;display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative}
+.particles{position:fixed;inset:0;pointer-events:none;z-index:0}
+.particle{position:absolute;width:2px;height:2px;background:var(--accent);border-radius:50%;opacity:.12;animation:drift linear infinite}
+@keyframes drift{0%{transform:translateY(0) translateX(0);opacity:.12}50%{opacity:.25}100%{transform:translateY(-100vh) translateX(30px);opacity:0}}
+body::before{content:'';position:fixed;top:30%;left:50%;transform:translate(-50%,-50%);width:600px;height:600px;background:radial-gradient(circle,rgba(56,189,248,.04),transparent 70%);pointer-events:none;z-index:0}
+.login-wrap{position:relative;z-index:2;width:100%;max-width:400px;padding:0 20px}
+.login-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:48px 36px 40px;backdrop-filter:blur(20px);box-shadow:0 24px 80px rgba(0,0,0,.5)}
+.login-logo{display:flex;justify-content:center;margin-bottom:32px}
+.login-logo img{height:48px;filter:invert(1) brightness(2);opacity:.9}
+.login-title{text-align:center;font-size:1.1rem;font-weight:700;margin-bottom:4px;letter-spacing:-.01em}
+.login-subtitle{text-align:center;font-size:.75rem;color:var(--t2);margin-bottom:36px}
+.form-group{margin-bottom:20px}
+.form-label{display:block;font-size:.7rem;font-weight:600;color:var(--t2);text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px}
+.form-input{width:100%;padding:12px 16px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:10px;color:var(--t1);font-size:.88rem;font-family:var(--font);outline:none;transition:.3s ease}
+.form-input:focus{border-color:var(--accent);background:rgba(56,189,248,.04);box-shadow:0 0 0 3px var(--accent-d)}
+.form-input::placeholder{color:rgba(255,255,255,.2)}
+.login-btn{width:100%;padding:13px;background:var(--accent);color:#000;font-size:.82rem;font-weight:700;border:none;border-radius:10px;cursor:pointer;font-family:var(--font);letter-spacing:.02em;transition:.3s ease;margin-top:8px}
+.login-btn:hover{filter:brightness(1.15);box-shadow:0 8px 30px var(--accent-d);transform:translateY(-1px)}
+.login-btn:active{transform:translateY(0)}
+.login-btn:disabled{opacity:.5;cursor:not-allowed;transform:none;filter:none}
+.login-error{display:none;margin-top:16px;padding:10px 14px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);border-radius:8px;font-size:.75rem;color:var(--danger);text-align:center}
+.login-error.show{display:block;animation:shake .4s ease}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.login-footer{text-align:center;margin-top:32px;font-size:.62rem;color:rgba(255,255,255,.15)}
+</style>
+</head>
+<body>
+
+<div class="particles" id="particles"></div>
+
+<div class="login-wrap">
+    <div class="login-card">
+        <div class="login-logo">
+            <img src="LogoBas.png" alt="BAS">
+        </div>
+        <h1 class="login-title">DW Command Center</h1>
+        <p class="login-subtitle">Admin & Owner Access Only</p>
+
+        <form id="loginForm" autocomplete="off">
+            <div class="form-group">
+                <label class="form-label" for="username">Username</label>
+                <input class="form-input" type="text" id="username" name="username" placeholder="Enter username" required autocomplete="username">
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="password">Password</label>
+                <input class="form-input" type="password" id="password" name="password" placeholder="Enter password" required autocomplete="current-password">
+            </div>
+            <button class="login-btn" type="submit" id="loginBtn">Sign In</button>
+            <div class="login-error" id="loginError"></div>
+        </form>
+
+        <div class="login-footer">&copy; 2026 PT Barokah Amanah Sentosa</div>
+    </div>
+</div>
+
+<script>
+// Particles
+(function(){
+    const c=document.getElementById('particles');
+    for(let i=0;i<30;i++){
+        const p=document.createElement('div');
+        p.className='particle';
+        p.style.left=Math.random()*100+'%';
+        p.style.top=Math.random()*100+'%';
+        p.style.animationDuration=(8+Math.random()*12)+'s';
+        p.style.animationDelay=Math.random()*8+'s';
+        c.appendChild(p);
+    }
+})();
+
+// ── DUMMY MODE ──
+const USE_DUMMY = true;
+
+document.getElementById('loginForm').addEventListener('submit', async function(e){
+    e.preventDefault();
+    const btn=document.getElementById('loginBtn');
+    const err=document.getElementById('loginError');
+    const user=document.getElementById('username').value.trim();
+    const pass=document.getElementById('password').value;
+
+    btn.disabled=true;
+    btn.textContent='Signing in...';
+    err.classList.remove('show');
+
+    if(USE_DUMMY){
+        // Dummy login — accept admin/admin or owner/owner
+        await new Promise(r=>setTimeout(r,800));
+        if((user==='admin'&&pass==='admin')||(user==='owner'&&pass==='owner')||(user==='korlap'&&pass==='korlap')){
+            const roles = {owner:{name:'Owner BAS',role:'owner',allowed_provinces:[]},admin:{name:'Admin Korlap',role:'korlap_interview',allowed_provinces:[]},korlap:{name:'Budi Korlap',role:'korlap_interview',allowed_provinces:['Kalimantan Barat']}};
+            const r = roles[user];
+            localStorage.setItem('dw_admin_v2',JSON.stringify({name:r.name,role:r.role,username:user,allowed_provinces:r.allowed_provinces}));
+            window.location.href='admin-v2.html';
+        }else{
+            err.textContent='Username atau password salah';
+            err.classList.add('show');
+            btn.disabled=false;
+            btn.textContent='Sign In';
+        }
+        return;
+    }
+
+    try{
+        const r=await fetch('api/owner.php',{
+            method:'POST',
+            credentials:'include',
+            headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({action:'login',username:user,password:pass})
+        });
+        const d=await r.json();
+        if(d.success){
+            localStorage.setItem('dw_admin_v2',JSON.stringify(d.admin));
+            window.location.href='admin-v2.html';
+        }else{
+            err.textContent=d.error||'Login gagal';
+            err.classList.add('show');
+            btn.disabled=false;
+            btn.textContent='Sign In';
+        }
+    }catch(ex){
+        err.textContent='Koneksi gagal. Coba lagi.';
+        err.classList.add('show');
+        btn.disabled=false;
+        btn.textContent='Sign In';
+    }
+});
+</script>
+</body>
+</html>
