@@ -1023,8 +1023,32 @@ body.sidebar-collapsed .main { margin-left: var(--sidebar-collapsed); }
     .stat-grid { grid-template-columns: 1fr; }
     .qa-grid { grid-template-columns: 1fr; }
     .hdr-clock, .hdr-user, .hdr-divider:last-of-type { display: none; }
-    .main { padding: 16px; }
+    .main { padding: 12px; }
     .table-toolbar { flex-direction: column; align-items: stretch; }
     .detail-actions { flex-direction: column; }
+
+    /* Kandidat panel header — stack title and buttons */
+    #panel-candidates > .panel-header { flex-direction: column !important; align-items: stretch !important; gap: 12px !important; }
+    #panel-candidates > .panel-header > div:last-child { display: grid !important; grid-template-columns: 1fr 1fr !important; gap: 6px !important; }
+    #panel-candidates > .panel-header .s-btn { font-size: .68rem !important; padding: 8px 10px !important; text-align: center; }
+    #panel-candidates > .panel-header .candidate-count { grid-column: 1 / -1; }
+
+    /* Kandidat filters — stack vertically */
+    #panel-candidates > div:nth-child(3) { flex-direction: column !important; gap: 8px !important; }
+    #panel-candidates .table-select { width: 100%; }
+    #panel-candidates .table-search { min-width: 0 !important; width: 100%; }
+
+    /* Table font + scroll */
+    .tbl { font-size: .68rem; }
+    .tbl th, .tbl td { padding: 8px 10px; }
+    .table-footer { flex-direction: column; align-items: stretch; gap: 8px; }
+
+    /* Panel headers */
+    .panel-title { font-size: 1.1rem; }
+    .panel-desc { font-size: .72rem; }
+    .panel-header { padding: 0 0 12px; }
+
+    /* Generic buttons */
+    .s-btn { padding: 8px 12px; font-size: .7rem; }
 }
 
