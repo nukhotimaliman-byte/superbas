@@ -32,16 +32,17 @@ h+=bkF('Nama Lengkap','<input class="bk-input" id="bkName" readonly>');
 h+=bkF('NIK <span style="font-weight:400;color:var(--text-secondary)">(16 digit)</span>','<input class="bk-input" id="bkNIK" placeholder="Nomor Induk Kependudukan" maxlength="16" inputmode="numeric" oninput="bkUpdate()">');
 h+=bkF('Email','<input class="bk-input" type="email" id="bkEmail" placeholder="email@contoh.com" oninput="bkUpdate()">');
 h+=bkF('No. WhatsApp','<input class="bk-input" type="tel" id="bkWA" placeholder="08xxxxxxxxxx" maxlength="15" oninput="bkUpdate()">');
+h+='<div class="bk-divider"><div class="bk-divider-label">Alamat Domisili</div></div>';
+h+='<div class="bk-row">'+bkF('Provinsi','<select class="bk-input" id="bkProv" onchange="bkLoadReg(this.value)"><option value="">— Pilih —</option></select>')+bkF('Kabupaten/Kota','<select class="bk-input" id="bkKab" onchange="bkLoadDist(this.value)" disabled><option value="">— Pilih —</option></select>')+'</div>';
+h+='<div class="bk-row">'+bkF('Kecamatan','<select class="bk-input" id="bkKec" onchange="bkLoadVil(this.value)" disabled><option value="">— Pilih —</option></select>')+bkF('Kelurahan','<select class="bk-input" id="bkKel" onchange="bkBuildAddr()" disabled><option value="">— Pilih —</option></select>')+'</div>';
+h+=bkF('Detail Alamat <span style="font-weight:400;color:var(--text-secondary)">(RT/RW, Jalan)</span>','<textarea class="bk-input" id="bkAddrDetail" rows="2" placeholder="Jl. Merpati No. 5, RT 01/RW 02" oninput="bkBuildAddr()"></textarea><input type="hidden" id="bkAddr">');
 h+='</div></div>';
 
 // Step 2 — Data Pribadi
 h+='<div class="bk-card"><div class="bk-card-head"><div class="bk-card-num">2</div><div class="bk-card-title">Data Pribadi</div><div class="bk-card-check" id="bkCheck2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></div></div><div class="bk-fields">';
 h+='<div class="bk-row">'+bkF('Tempat Lahir','<input class="bk-input" id="bkBirthPlace" placeholder="Jakarta" oninput="bkUpdate()">')+bkF('Tanggal Lahir','<input class="bk-input" type="date" id="bkBirthDate" onchange="bkUpdate()">')+'</div>';
-h+='<div class="bk-row">'+bkF('Provinsi','<select class="bk-input" id="bkProv" onchange="bkLoadReg(this.value)"><option value="">— Pilih —</option></select>')+bkF('Kabupaten/Kota','<select class="bk-input" id="bkKab" onchange="bkLoadDist(this.value)" disabled><option value="">— Pilih —</option></select>')+'</div>';
-h+='<div class="bk-row">'+bkF('Kecamatan','<select class="bk-input" id="bkKec" onchange="bkLoadVil(this.value)" disabled><option value="">— Pilih —</option></select>')+bkF('Kelurahan','<select class="bk-input" id="bkKel" onchange="bkBuildAddr()" disabled><option value="">— Pilih —</option></select>')+'</div>';
-h+=bkF('Detail Alamat <span style="font-weight:400;color:var(--text-secondary)">(RT/RW, Jalan)</span>','<textarea class="bk-input" id="bkAddrDetail" rows="2" placeholder="Jl. Merpati No. 5, RT 01/RW 02" oninput="bkBuildAddr()"></textarea><input type="hidden" id="bkAddr">');
-h+=bkF('Pendidikan Terakhir',bkRadios('bk_edu',BK_EDU));
-h+=bkF('Pernah Bekerja di SPX?',bkRadios('bk_spx',['Ya','Tidak']));
+h+='<div class="bk-field"><label>Pendidikan Terakhir</label>'+bkRadios('bk_edu',BK_EDU)+'</div>';
+h+='<div class="bk-field"><label>Pernah Bekerja di SPX?</label>'+bkRadios('bk_spx',['Ya','Tidak'])+'</div>';
 h+=bkF('Referensi <span style="font-weight:400;color:var(--text-secondary)">(Opsional)</span>','<input class="bk-input" id="bkRef" placeholder="Dari Facebook / Diajak teman" oninput="bkUpdate()">');
 h+='</div></div>';
 
@@ -265,11 +266,11 @@ function bkCalcProgress(){
   var t=0,f=0;
   var v=function(id){return(document.getElementById(id)||{}).value||'';};
   var rv=function(n){var r=document.querySelector('input[name="'+n+'"]:checked');return r?r.value:'';};
-  // Step 1: Identitas (4)
-  var f1=[v('bkNIK'),v('bkEmail'),v('bkWA')];
+  // Step 1: Identitas + Alamat (4)
+  var f1=[v('bkNIK'),v('bkEmail'),v('bkWA'),v('bkAddr')];
   t+=f1.length;f1.forEach(function(x){if(x)f++;});
-  // Step 2: Data Pribadi (5 required)
-  var f2=[v('bkBirthPlace'),v('bkBirthDate'),v('bkAddr'),rv('bk_edu'),rv('bk_spx')];
+  // Step 2: Data Pribadi (4 required)
+  var f2=[v('bkBirthPlace'),v('bkBirthDate'),rv('bk_edu'),rv('bk_spx')];
   t+=f2.length;f2.forEach(function(x){if(x)f++;});
   // Step 3: Kontak Darurat (3)
   var f3=[v('bkEmName'),v('bkEmPhone'),v('bkEmRel')];
@@ -287,8 +288,8 @@ function bkCalcProgress(){
   if(fill)fill.style.width=pct+'%';if(pe)pe.textContent=pct+'%';
   // Check icons per step
   var ck=function(id,done){var el=document.getElementById(id);if(el)el.classList.toggle('done',done);};
-  ck('bkCheck1',!!(v('bkNIK')&&v('bkEmail')&&v('bkWA')));
-  ck('bkCheck2',!!(v('bkBirthPlace')&&v('bkBirthDate')&&v('bkAddr')&&rv('bk_edu')&&rv('bk_spx')));
+  ck('bkCheck1',!!(v('bkNIK')&&v('bkEmail')&&v('bkWA')&&v('bkAddr')));
+  ck('bkCheck2',!!(v('bkBirthPlace')&&v('bkBirthDate')&&rv('bk_edu')&&rv('bk_spx')));
   ck('bkCheck3',!!(v('bkEmName')&&v('bkEmPhone')&&v('bkEmRel')));
   ck('bkCheck4',reqDocs.every(function(k){return BK.docs[k];}));
   ck('bkCheck5',!!(v('bkBank')&&v('bkBankNo')&&v('bkBankName')));
