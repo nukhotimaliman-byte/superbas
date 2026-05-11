@@ -710,7 +710,18 @@ function renderLinktree() {
     if (!list) return;
     const data = (DUMMY.linktree || []).sort((a,b) => a.order - b.order);
     if (data.length === 0) { list.innerHTML = '<p style="color:var(--t3);font-size:.75rem;text-align:center;padding:20px;">Belum ada link</p>'; return; }
-    list.innerHTML = data.map(lt => {
+    // Group by category
+    var standalone = [];
+    var groups = {};
+    data.forEach(function(lt) {
+        var cat = lt.category || 'Umum';
+        if (cat === 'Umum') { standalone.push(lt); }
+        else {
+            if (!groups[cat]) groups[cat] = [];
+            groups[cat].push(lt);
+        }
+    });
+    function renderItem(lt) {
         const color = ICON_COLORS[lt.icon] || '#38BDF8';
         const opacity = lt.active ? '1' : '.4';
         return '<div class="linktree-item" style="opacity:' + opacity + '">' +
@@ -720,12 +731,36 @@ function renderLinktree() {
                 '<div class="linktree-item-url">' + lt.url + '</div>' +
             '</div>' +
             '<span class="linktree-item-badge" style="background:' + (lt.active?'rgba(34,197,94,.15)':'rgba(239,68,68,.15)') + ';color:' + (lt.active?'#22C55E':'#EF4444') + '">' + (lt.active?'Aktif':'Nonaktif') + '</span>' +
-            '<span class="badge" style="background:var(--accent-d);color:var(--accent);">' + lt.category + '</span>' +
             '<button class="act-btn" onclick="editLinktree(' + lt.id + ')" title="Edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>' +
             '<button class="act-btn" onclick="toggleLinktree(' + lt.id + ')" title="Toggle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>' +
             '<button class="act-btn" onclick="deleteLinktree(' + lt.id + ')" title="Hapus"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>' +
         '</div>';
-    }).join('');
+    }
+    var html = '';
+    // Standalone (Umum) first
+    if (standalone.length > 0) {
+        html += '<div class="lt-admin-group">';
+        html += '<div class="lt-admin-group-header" onclick="this.parentElement.classList.toggle(\'lt-collapsed\')">';
+        html += '<svg class="lt-admin-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="6 9 12 15 18 9"/></svg>';
+        html += '<span style="font-weight:700;font-size:.8rem;">UMUM</span>';
+        html += '<span class="lt-admin-count">' + standalone.length + '</span>';
+        html += '</div><div class="lt-admin-group-body">';
+        standalone.forEach(function(lt) { html += renderItem(lt); });
+        html += '</div></div>';
+    }
+    // Grouped
+    var sortedKeys = Object.keys(groups).sort();
+    sortedKeys.forEach(function(cat) {
+        html += '<div class="lt-admin-group">';
+        html += '<div class="lt-admin-group-header" onclick="this.parentElement.classList.toggle(\'lt-collapsed\')">';
+        html += '<svg class="lt-admin-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="6 9 12 15 18 9"/></svg>';
+        html += '<span style="font-weight:700;font-size:.8rem;">' + cat + '</span>';
+        html += '<span class="lt-admin-count">' + groups[cat].length + '</span>';
+        html += '</div><div class="lt-admin-group-body">';
+        groups[cat].forEach(function(lt) { html += renderItem(lt); });
+        html += '</div></div>';
+    });
+    list.innerHTML = html;
 }
 
 async function addLinktree() {

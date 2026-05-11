@@ -764,6 +764,16 @@ body.sidebar-collapsed .main { margin-left: var(--sidebar-collapsed); }
 .linktree-item-url { font-size: .62rem; color: var(--t3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .linktree-item-badge { font-size: .6rem; padding: 2px 8px; border-radius: 20px; }
 
+/* Admin Linktree Grouping */
+.lt-admin-group { margin-bottom: 16px; border: 1px solid var(--border); border-radius: var(--r); overflow: hidden; background: var(--bg2); }
+.lt-admin-group-header { display: flex; align-items: center; gap: 10px; padding: 12px 16px; cursor: pointer; user-select: none; background: var(--bg3); border-bottom: 1px solid var(--border); transition: background .2s var(--ease); }
+.lt-admin-group-header:hover { background: var(--bg4); }
+.lt-admin-chevron { transition: transform .25s var(--ease); color: var(--accent); flex-shrink: 0; }
+.lt-admin-group.lt-collapsed .lt-admin-chevron { transform: rotate(-90deg); }
+.lt-admin-group-body { padding: 8px; transition: max-height .3s var(--ease); }
+.lt-admin-group.lt-collapsed .lt-admin-group-body { display: none; }
+.lt-admin-count { font-size: .65rem; background: var(--accent-d); color: var(--accent); padding: 2px 8px; border-radius: 12px; margin-left: auto; font-weight: 600; }
+
 /* ══════════════════════════════════════════════════════
    ANALYTICS CALENDAR WIDGET (Jarvis-style)
    ══════════════════════════════════════════════════════ */

@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="css/dashboard-new.css?v=12">
   <link rel="stylesheet" href="../shared/css/bas-camera.css?v=1">
   <link rel="stylesheet" href="../shared/css/bas-idcard.css?v=2">
+  <link rel="stylesheet" href="../shared/css/bas-chat.css?v=1">
 </head>
 <body>
 
@@ -223,6 +224,15 @@
     <div id="settingsContent"></div>
   </div>
 
+  <!-- ═══ PAGE: CHAT ═══ -->
+  <div id="page-chat" class="page-content">
+    <div class="page-header">
+      <button class="page-back" onclick="showPage('page-home')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg></button>
+      <div class="page-title">Chat Admin</div>
+    </div>
+    <div id="userChatContainer" style="height:calc(100vh - 120px);overflow:hidden;"></div>
+  </div>
+
   <!-- ═══ BOTTOM NAV ═══ -->
   <nav class="bottom-nav">
     <button class="nav-item active" data-page="page-home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Home</button>
@@ -239,8 +249,10 @@
   <script src="../shared/js/bas-camera.js?v=3"></script>
   <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
   <script src="../shared/js/bas-idcard.js?v=7"></script>
+  <script src="../shared/js/bas-chat.js?v=1"></script>
+  <script src="js/user-chat.js?v=1"></script>
   <link rel="stylesheet" href="css/berkas.css?v=2">
   <script src="js/berkas.js?v=2"></script>
-  <script src="js/dashboard-new.js?v=16"></script>
+  <script src="js/dashboard-new.js?v=17"></script>
 </body>
 </html>
