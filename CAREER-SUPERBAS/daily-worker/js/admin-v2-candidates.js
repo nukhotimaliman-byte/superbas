@@ -195,6 +195,14 @@ function renderBody() {
                 btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
                 btn.onclick = () => showDetail(c.id);
                 td.appendChild(btn);
+                // Berkas button
+                const btnDoc = document.createElement('button');
+                btnDoc.className = 'act-btn';
+                btnDoc.title = 'Lihat Berkas';
+                btnDoc.style.marginLeft = '2px';
+                btnDoc.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>';
+                btnDoc.onclick = () => viewCandidateDocs(c.id);
+                td.appendChild(btnDoc);
             } else if (col.key === 'status') {
                 const bc = STATUS_COLORS[c.status] || '#8B5CF6';
                 td.innerHTML = '<span class="badge" style="background:' + bc + '20;color:' + bc + ';cursor:pointer;" onclick="inlineEditStatus(this,' + c.id + ')">' + (c.status||'-') + '</span>';
@@ -620,6 +628,43 @@ function toggleTablePw(btn) {
         span.textContent = '•••••';
         btn.title = 'Tampilkan';
         btn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
+    }
+}
+
+// ── View Candidate Documents ──
+async function viewCandidateDocs(candidateId) {
+    openModal('<div style="text-align:center;padding:30px;color:var(--t2);">Memuat berkas...</div>');
+    try {
+        const res = await fetch(API_BASE + 'candidates.php?id=' + candidateId, { credentials: 'same-origin' });
+        const data = await res.json();
+        const docs = data.documents || [];
+        const c = data.candidate || {};
+        let html = '<div style="padding:4px;">';
+        html += '<div class="detail-section-title">📄 BERKAS KANDIDAT</div>';
+        html += '<p style="font-size:.82rem;color:var(--t2);margin:4px 0 16px;">' + (c.name || 'Kandidat #' + candidateId) + '</p>';
+        if (docs.length === 0) {
+            html += '<div style="text-align:center;padding:24px;color:var(--t3);font-size:.82rem;">Belum ada berkas yang diupload</div>';
+        } else {
+            html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;">';
+            docs.forEach(function(d) {
+                const ext = (d.file_path || '').split('.').pop().toLowerCase();
+                const isImg = ['jpg','jpeg','png'].indexOf(ext) >= 0;
+                const thumb = isImg
+                    ? '<img src="uploads/' + d.file_path + '?t=' + Date.now() + '" style="width:100%;height:100px;object-fit:cover;border-radius:6px;">'
+                    : '<div style="height:100px;display:flex;align-items:center;justify-content:center;background:var(--bg-secondary);border-radius:6px;font-size:2rem;">📄</div>';
+                html += '<div style="border:1px solid var(--border);border-radius:8px;overflow:hidden;cursor:pointer;" onclick="window.open(\'api/documents.php?id=' + d.id + '\',\'_blank\')">';
+                html += thumb;
+                html += '<div style="padding:6px 8px;font-size:.72rem;font-weight:600;color:var(--t1);">' + (d.doc_type || '-') + '</div>';
+                html += '<div style="padding:0 8px 6px;font-size:.65rem;color:var(--t3);">' + (d.uploaded_at || '-') + '</div>';
+                html += '</div>';
+            });
+            html += '</div>';
+        }
+        html += '<div class="detail-actions" style="margin-top:16px;"><button class="detail-action-btn" onclick="closeModal()" style="background:var(--card);border:1px solid var(--border);color:var(--t2);flex:1;">Tutup</button></div>';
+        html += '</div>';
+        openModal(html);
+    } catch(e) {
+        openModal('<div style="text-align:center;padding:30px;color:var(--danger);">Gagal memuat berkas</div>');
     }
 }
 

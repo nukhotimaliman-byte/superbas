@@ -213,7 +213,11 @@ var BASCamera = (function() {
     var finalSize = Math.round((result.length - 'data:image/jpeg;base64,'.length) * 0.75);
     if (finalSize < targetMin) {
       result = canvas.toDataURL('image/jpeg', 0.98);
+      finalSize = Math.round((result.length - 'data:image/jpeg;base64,'.length) * 0.75);
     }
+
+    var sizeKB = Math.round(finalSize / 1024);
+    _photoData = result;
 
     // Show preview
     var previewEl = document.getElementById('basCamPreview');

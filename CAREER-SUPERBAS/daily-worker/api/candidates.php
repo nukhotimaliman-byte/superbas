@@ -419,6 +419,27 @@ if ($method === 'POST') {
 } elseif ($method === 'GET') {
     $db = getDB();
 
+    // ── Admin: Get by candidate id ─────────────
+    $cand_id = intval($_GET['id'] ?? 0);
+    if ($cand_id) {
+        $stmt = $db->prepare('
+            SELECT c.id, c.given_id, c.name, c.nik, c.whatsapp, c.status,
+                   c.provinsi, c.kabupaten, c.created_at,
+                   l.name AS location_name
+            FROM dw_candidates c
+            LEFT JOIN dw_locations l ON c.location_id = l.id
+            WHERE c.id = ? LIMIT 1
+        ');
+        $stmt->execute([$cand_id]);
+        $candidate = $stmt->fetch();
+        if (!$candidate) { jsonResponse(['candidate' => null, 'documents' => []]); }
+
+        $stmt = $db->prepare('SELECT id, doc_type, file_path, original_name, file_size, uploaded_at FROM dw_documents WHERE candidate_id = ?');
+        $stmt->execute([$cand_id]);
+        $docs = $stmt->fetchAll();
+        jsonResponse(['candidate' => $candidate, 'documents' => $docs]);
+    }
+
     // ── Dashboard: Get by user_id ───────────────
     $user_id = intval($_GET['user_id'] ?? 0);
     if ($user_id) {
