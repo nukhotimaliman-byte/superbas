@@ -471,8 +471,8 @@ if ($method === 'POST') {
         $stmt->execute([$candidate['id']]);
         $docs = $stmt->fetchAll();
 
-        // Get user info
-        $stmt = $db->prepare('SELECT name, email, picture FROM dw_users WHERE id = ?');
+        // Get user info (include nik, email, phone for berkas lock logic)
+        $stmt = $db->prepare('SELECT name, email, nik, phone, picture, google_id FROM dw_users WHERE id = ?');
         $stmt->execute([$user_id]);
         $user = $stmt->fetch();
 
