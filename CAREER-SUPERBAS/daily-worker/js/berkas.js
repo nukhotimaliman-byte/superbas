@@ -78,7 +78,7 @@ function renderBerkas(){
 // ── Data Loading ──
 async function bkLoadData(){
   try{
-    var r=await fetch('./api/user-auth.php',{credentials:'same-origin'});
+    var r=await fetch('./api/user-auth.php?action=check',{credentials:'same-origin'});
     var u=await r.json();
     if(u&&u.user){
       var r2=await fetch('./api/candidates.php?user_id='+u.user.id);
