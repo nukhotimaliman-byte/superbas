@@ -41,8 +41,7 @@ h+='</div></div>';
 // Step 2 — Data Pribadi
 h+='<div class="bk-card"><div class="bk-card-head"><div class="bk-card-num">2</div><div class="bk-card-title">Data Pribadi</div><div class="bk-card-check" id="bkCheck2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></div></div><div class="bk-fields">';
 h+='<div class="bk-row">'+bkF('Tempat Lahir','<input class="bk-input" id="bkBirthPlace" placeholder="Jakarta" oninput="bkUpdate()">')+bkF('Tanggal Lahir','<input class="bk-input" type="date" id="bkBirthDate" onchange="bkUpdate()">')+'</div>';
-h+='<div class="bk-field"><label>Pendidikan Terakhir</label>'+bkRadios('bk_edu',BK_EDU)+'</div>';
-h+='<div class="bk-field"><label>Pernah Bekerja di SPX?</label>'+bkRadios('bk_spx',['Ya','Tidak'])+'</div>';
+h+='<div class="bk-row"><div class="bk-field"><label>Pendidikan Terakhir</label>'+bkRadios('bk_edu',BK_EDU)+'</div><div class="bk-field"><label>Pernah Bekerja di SPX?</label>'+bkRadios('bk_spx',['Ya','Tidak'])+'</div></div>';
 h+=bkF('Referensi <span style="font-weight:400;color:var(--text-secondary)">(Opsional)</span>','<input class="bk-input" id="bkRef" placeholder="Dari Facebook / Diajak teman" oninput="bkUpdate()">');
 h+='</div></div>';
 
@@ -159,7 +158,45 @@ function bkTC(s){return s.toLowerCase().replace(/\b\w/g,function(c){return c.toU
 async function bkFW(ep){if(_bkWC[ep])return _bkWC[ep];try{var r=await fetch(BK_WIL+'/'+ep);var d=await r.json();_bkWC[ep]=d;return d;}catch(e){return [];}}
 function bkPopSel(id,items,ph){var s=document.getElementById(id);s.innerHTML='<option value="">— '+ph+' —</option>'+items.map(function(i){return '<option value="'+i.id+'" data-name="'+i.name+'">'+bkTC(i.name)+'</option>';}).join('');s.disabled=false;}
 function bkResSel(id,ph){var s=document.getElementById(id);s.innerHTML='<option value="">— '+ph+' —</option>';s.disabled=true;}
-async function bkLoadProv(){var d=await bkFW('provinces.json');bkPopSel('bkProv',d,'Pilih Provinsi');if(BK.addrLocked&&BK.candidate){bkLockAddr();}}
+async function bkLoadProv(){
+  var d=await bkFW('provinces.json');bkPopSel('bkProv',d,'Pilih Provinsi');
+  // Auto-select saved address from candidate data
+  var c=BK.candidate;
+  if(c&&c.provinsi){
+    var provId=bkFindByName('bkProv',c.provinsi);
+    if(provId){
+      document.getElementById('bkProv').value=provId;
+      var kabs=await bkFW('regencies/'+provId+'.json');bkPopSel('bkKab',kabs,'Pilih Kabupaten');
+      if(c.kabupaten){
+        var kabId=bkFindByName('bkKab',c.kabupaten);
+        if(kabId){
+          document.getElementById('bkKab').value=kabId;
+          var kecs=await bkFW('districts/'+kabId+'.json');bkPopSel('bkKec',kecs,'Pilih Kecamatan');
+          if(c.kecamatan){
+            var kecId=bkFindByName('bkKec',c.kecamatan);
+            if(kecId){
+              document.getElementById('bkKec').value=kecId;
+              var kels=await bkFW('villages/'+kecId+'.json');bkPopSel('bkKel',kels,'Pilih Kelurahan');
+              if(c.kelurahan){bkFindByName('bkKel',c.kelurahan);}
+            }
+          }
+        }
+      }
+    }
+    bkBuildAddr();
+    if(BK.addrLocked){bkLockAddr();}
+  }
+}
+function bkFindByName(selId,name){
+  if(!name)return null;
+  var sel=document.getElementById(selId);if(!sel)return null;
+  var nm=name.toUpperCase();
+  for(var i=0;i<sel.options.length;i++){
+    var opt=sel.options[i];
+    if(opt.dataset.name&&opt.dataset.name.toUpperCase()===nm){sel.selectedIndex=i;return opt.value;}
+  }
+  return null;
+}
 function bkLockAddr(){
   ['bkProv','bkKab','bkKec','bkKel'].forEach(function(id){bkLock(id);});
   bkLock('bkAddrDetail');
