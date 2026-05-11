@@ -410,14 +410,28 @@ switch ($action) {
     // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
     case 'check':
         if (!empty($_SESSION['admin_id'])) {
+            // Ensure allowed_areas is always fresh from DB
+            $allowedAreas = $_SESSION['admin_allowed_areas'] ?? null;
+            if ($allowedAreas === null) {
+                try {
+                    $db = getDB();
+                    $stmt = $db->prepare('SELECT allowed_areas FROM dw_admins WHERE id = ?');
+                    $stmt->execute([$_SESSION['admin_id']]);
+                    $row = $stmt->fetch();
+                    $allowedAreas = ($row && $row['allowed_areas']) ? json_decode($row['allowed_areas'], true) : [];
+                    $_SESSION['admin_allowed_areas'] = $allowedAreas;
+                } catch (Exception $e) {
+                    $allowedAreas = [];
+                }
+            }
             jsonResponse([
                 'authenticated' => true,
                 'user' => [
-                    'id'          => $_SESSION['admin_id'],
-                    'name'        => $_SESSION['admin_name'],
+                    'id'            => $_SESSION['admin_id'],
+                    'name'          => $_SESSION['admin_name'],
                     'role'          => $_SESSION['admin_role'],
                     'location_id'   => $_SESSION['admin_location_id'] ?? null,
-                    'allowed_areas' => $_SESSION['admin_allowed_areas'] ?? []
+                    'allowed_areas' => $allowedAreas
                 ]
             ]);
         } elseif (!empty($_SESSION['user_id'])) {
