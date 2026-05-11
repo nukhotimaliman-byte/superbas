@@ -127,7 +127,7 @@ switch ($action) {
         $db = getDB();
 
         // 1. Check dw_admins table (username only)
-        $stmt = $db->prepare('SELECT id, username, password, name, role, location_id FROM dw_admins WHERE username = ?');
+        $stmt = $db->prepare('SELECT id, username, password, name, role, location_id, allowed_areas FROM dw_admins WHERE username = ?');
         $stmt->execute([$identifier]);
         $admin = $stmt->fetch();
 
@@ -138,14 +138,16 @@ switch ($action) {
             $_SESSION['admin_name']        = $admin['name'];
             $_SESSION['admin_role']        = $admin['role'];
             $_SESSION['admin_location_id'] = $admin['location_id'];
+            $_SESSION['admin_allowed_areas'] = $admin['allowed_areas'] ? json_decode($admin['allowed_areas'], true) : [];
     
             jsonResponse([
                 'success' => true,
                 'user' => [
-                    'id'          => $admin['id'],
-                    'name'        => $admin['name'],
-                    'role'        => $admin['role'],
-                    'location_id' => $admin['location_id']
+                    'id'            => $admin['id'],
+                    'name'          => $admin['name'],
+                    'role'          => $admin['role'],
+                    'location_id'   => $admin['location_id'],
+                    'allowed_areas' => $_SESSION['admin_allowed_areas']
                 ]
             ]);
             break;
@@ -172,7 +174,7 @@ switch ($action) {
         if ($user && password_verify($password, $user['password'])) {
             $db->prepare('UPDATE dw_users SET last_login = NOW() WHERE id = ?')->execute([$user['id']]);
 
-                unset($_SESSION['admin_id'], $_SESSION['admin_name'], $_SESSION['admin_role'], $_SESSION['admin_location_id']);
+                unset($_SESSION['admin_id'], $_SESSION['admin_name'], $_SESSION['admin_role'], $_SESSION['admin_location_id'], $_SESSION['admin_allowed_areas']);
 
             $_SESSION['user_id']   = $user['id'];
             $_SESSION['user_name'] = $user['name'];
@@ -283,7 +285,7 @@ switch ($action) {
             $db->prepare('UPDATE dw_users SET name = ?, email = ?, picture = ?, last_login = NOW() WHERE id = ?')
                ->execute([$name, $email, $picture, $existing['id']]);
 
-                unset($_SESSION['admin_id'], $_SESSION['admin_name'], $_SESSION['admin_role'], $_SESSION['admin_location_id']);
+                unset($_SESSION['admin_id'], $_SESSION['admin_name'], $_SESSION['admin_role'], $_SESSION['admin_location_id'], $_SESSION['admin_allowed_areas']);
             $_SESSION['user_id']   = $existing['id'];
             $_SESSION['user_name'] = $name;
             $_SESSION['user_role'] = 'user';
@@ -304,7 +306,7 @@ switch ($action) {
             $db->prepare('UPDATE dw_users SET google_id = ?, picture = ?, last_login = NOW() WHERE id = ?')
                ->execute([$googleId, $picture, $emailUser['id']]);
 
-                unset($_SESSION['admin_id'], $_SESSION['admin_name'], $_SESSION['admin_role'], $_SESSION['admin_location_id']);
+                unset($_SESSION['admin_id'], $_SESSION['admin_name'], $_SESSION['admin_role'], $_SESSION['admin_location_id'], $_SESSION['admin_allowed_areas']);
             $_SESSION['user_id']   = $emailUser['id'];
             $_SESSION['user_name'] = $name;
             $_SESSION['user_role'] = 'user';
@@ -392,7 +394,7 @@ switch ($action) {
         $stmt = $db->prepare('INSERT INTO dw_candidates (user_id, nik, nama, nomor_telepon, location_id, status) VALUES (?, ?, ?, ?, ?, ?)');
         $stmt->execute([$userId, $nik, $name, $phone, null, 'Belum Pemberkasan']);
 
-        unset($_SESSION['admin_id'], $_SESSION['admin_name'], $_SESSION['admin_role'], $_SESSION['admin_location_id']);
+        unset($_SESSION['admin_id'], $_SESSION['admin_name'], $_SESSION['admin_role'], $_SESSION['admin_location_id'], $_SESSION['admin_allowed_areas']);
         $_SESSION['user_id']   = $userId;
         $_SESSION['user_name'] = $name;
         $_SESSION['user_role'] = 'user';
@@ -413,8 +415,9 @@ switch ($action) {
                 'user' => [
                     'id'          => $_SESSION['admin_id'],
                     'name'        => $_SESSION['admin_name'],
-                    'role'        => $_SESSION['admin_role'],
-                    'location_id' => $_SESSION['admin_location_id'] ?? null
+                    'role'          => $_SESSION['admin_role'],
+                    'location_id'   => $_SESSION['admin_location_id'] ?? null,
+                    'allowed_areas' => $_SESSION['admin_allowed_areas'] ?? []
                 ]
             ]);
         } elseif (!empty($_SESSION['user_id'])) {

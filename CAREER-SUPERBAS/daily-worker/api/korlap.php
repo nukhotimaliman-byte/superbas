@@ -22,7 +22,7 @@ switch ($action) {
     // ═══ LIST ALL KORLAP ═══════════════════════
     case 'list':
         $stmt = $db->query("
-            SELECT a.id, a.username, a.name, a.role, a.location_id, a.plain_password,
+            SELECT a.id, a.username, a.name, a.role, a.location_id, a.plain_password, a.allowed_areas,
                    l.name AS location_name
             FROM dw_admins a
             LEFT JOIN dw_locations l ON a.location_id = l.id
@@ -146,6 +146,16 @@ switch ($action) {
             $updates[] = 'password = ?, plain_password = ?';
             $params[] = password_hash($data['password'], PASSWORD_DEFAULT);
             $params[] = $data['password'];
+        }
+
+        // Allowed Areas
+        if (isset($data['allowed_areas'])) {
+            $updates[] = 'allowed_areas = ?';
+            if (is_array($data['allowed_areas']) && !empty($data['allowed_areas'])) {
+                $params[] = json_encode($data['allowed_areas']);
+            } else {
+                $params[] = null;
+            }
         }
 
         if (empty($updates)) {

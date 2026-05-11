@@ -41,6 +41,7 @@ $tables = [
         name VARCHAR(100) NOT NULL,
         role ENUM('owner','korlap','admin') DEFAULT 'admin',
         location_id INT DEFAULT NULL,
+        allowed_areas TEXT DEFAULT NULL,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         UNIQUE KEY unique_username (username)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",

@@ -120,7 +120,8 @@ function requireAuth(): array {
         'id'   => $_SESSION['admin_id'],
         'name' => $_SESSION['admin_name'],
         'role' => $_SESSION['admin_role'],
-        'location_id' => $_SESSION['admin_location_id'] ?? null
+        'location_id' => $_SESSION['admin_location_id'] ?? null,
+        'allowed_areas' => $_SESSION['admin_allowed_areas'] ?? []
     ];
 }
 

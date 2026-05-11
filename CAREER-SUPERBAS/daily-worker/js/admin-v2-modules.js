@@ -417,17 +417,40 @@ function editKorlap(id) {
     ).join('');
     document.getElementById('editKorlapModal').classList.add('show');
 }
-function saveKorlapEdit() {
+async function saveKorlapEdit() {
     const id = +document.getElementById('editKlId').value;
     const k = DUMMY.korlaps.find(x => x.id === id);
     if (!k) return;
     const allCbs = document.querySelectorAll('.edit-area-cb');
     const checked = [...document.querySelectorAll('.edit-area-cb:checked')].map(cb => cb.value);
-    k.allowed_areas = (checked.length === allCbs.length) ? [] : checked;
-    k.allowed_provinces = k.allowed_areas; // backward compat
-    document.getElementById('editKorlapModal').classList.remove('show');
-    renderKorlap();
-    showToast('Akses area diperbarui');
+    const newAreas = (checked.length === allCbs.length) ? [] : checked;
+
+    const btn = document.querySelector('#editKorlapModal .s-btn--primary');
+    const oldText = btn.textContent;
+    btn.textContent = 'Menyimpan...';
+    btn.disabled = true;
+
+    try {
+        const res = await fetch(API_BASE + 'korlap.php?action=update', {
+            method: 'PUT',
+            credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: id, allowed_areas: newAreas })
+        });
+        const data = await res.json();
+        if (!data.success) throw new Error(data.error || 'Gagal menyimpan');
+
+        k.allowed_areas = newAreas;
+        k.allowed_provinces = newAreas; // backward compat
+        document.getElementById('editKorlapModal').classList.remove('show');
+        renderKorlap();
+        showToast('Akses area diperbarui');
+    } catch (e) {
+        showToast('Error: ' + e.message, 'error');
+    } finally {
+        btn.textContent = oldText;
+        btn.disabled = false;
+    }
 }
 function updateEditProvCount() {
     // Optional: visual feedback in edit modal
@@ -449,7 +472,16 @@ async function loadKorlapData() {
     try {
         const res = await fetch(API_BASE + 'korlap.php?action=list', { credentials: 'same-origin' });
         const data = await res.json();
-        DUMMY.korlaps = data.korlaps || [];
+        let korlaps = data.korlaps || [];
+        korlaps = korlaps.map(k => {
+            if (typeof k.allowed_areas === 'string') {
+                try { k.allowed_areas = JSON.parse(k.allowed_areas); } catch(e) { k.allowed_areas = []; }
+            }
+            if (!k.allowed_areas) k.allowed_areas = [];
+            k.allowed_provinces = k.allowed_areas; // backward compat
+            return k;
+        });
+        DUMMY.korlaps = korlaps;
     } catch(e) { console.warn('Load korlap failed:', e); }
 }
 
