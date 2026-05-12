@@ -424,3 +424,62 @@ function parseTanggal(raw) {
   }
   return '';
 }
+
+
+// ═══════════════════════════════════════════════════════
+// WEB APP — doGet / doPost (untuk trigger via URL)
+// ═══════════════════════════════════════════════════════
+function doGet(e) {
+  var action = (e && e.parameter && e.parameter.action) ? e.parameter.action : 'status';
+  try {
+    switch (action) {
+      case 'sync':
+        syncAll();
+        return jsonOut({ success: true, message: 'Full sync triggered!' });
+      case 'syncKaryawan':
+        syncKaryawan();
+        return jsonOut({ success: true, message: 'Karyawan synced!' });
+      case 'syncAbsensi':
+        syncAbsensi();
+        return jsonOut({ success: true, message: 'Absensi synced!' });
+      case 'syncGantiRek':
+        syncGantiRekening();
+        return jsonOut({ success: true, message: 'Ganti Rekening synced!' });
+      case 'status':
+        var ss = SpreadsheetApp.getActive();
+        var detected = [];
+        if (ss.getSheetByName(CONFIG.SHEET_KARYAWAN))  detected.push('KARYAWAN');
+        if (ss.getSheetByName(CONFIG.SHEET_ABSENSI))   detected.push('ABSENSI');
+        if (ss.getSheetByName(CONFIG.SHEET_GANTI_REK)) detected.push('GANTI_REKENING');
+        var triggers = ScriptApp.getProjectTriggers();
+        return jsonOut({
+          success: true,
+          spreadsheet: ss.getName(),
+          sheets_detected: detected,
+          auto_sync: triggers.length > 0,
+          triggers_count: triggers.length
+        });
+      default:
+        return jsonOut({ success: false, error: 'Unknown action: ' + action });
+    }
+  } catch (error) {
+    return jsonOut({ success: false, error: error.message });
+  }
+}
+
+function doPost(e) {
+  try {
+    var data = JSON.parse(e.postData.contents);
+    if (data.action === 'sync') {
+      syncAll();
+      return jsonOut({ success: true, message: 'Full sync completed!' });
+    }
+    return jsonOut({ success: false, error: 'Unknown action' });
+  } catch (error) {
+    return jsonOut({ success: false, error: error.message });
+  }
+}
+
+function jsonOut(data) {
+  return ContentService.createTextOutput(JSON.stringify(data)).setMimeType(ContentService.MimeType.JSON);
+}
