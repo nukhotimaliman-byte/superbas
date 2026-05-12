@@ -1,13 +1,16 @@
 /**
- * BAS Admin Chat Panel
- * Shared admin chat UI with conversation list + chat window
+ * BAS Admin Chat Panel — Connected to Real API
+ * Uses chat.php for all data operations
  */
 const AdminChat = (() => {
     let _cfg = {};
     let _activeId = null;
+    let _conversations = [];
+    let _messages = {};
     let _pinnedIds = [];
     let _labels = {};
     let _notes = {};
+    let _pollTimer = null;
     let _cannedResponses = [
         {cmd:'/jadwal', text:'Jadwal interview akan diinformasikan melalui pesan ini. Mohon standby.'},
         {cmd:'/lokasi', text:'Lokasi DC dapat dilihat di menu Lokasi DC pada dashboard Anda.'},
@@ -15,8 +18,6 @@ const AdminChat = (() => {
         {cmd:'/lulus', text:'Selamat! Anda telah lolos seleksi. Silakan lengkapi pemberkasan Anda.'},
         {cmd:'/berkas', text:'Silakan lengkapi dokumen pemberkasan melalui menu Pemberkasan di dashboard.'},
     ];
-    let _searchInChatTerm = '';
-    let _autoReply = {enabled:false, message:'Pesan Anda sudah diterima. Admin akan merespon segera.'};
 
     const PROJECT_LABELS = {dw:'DW',driver:'DR',kurir:'KR'};
     const PROJECT_CLASS = {dw:'dw',driver:'driver',kurir:'kurir'};
@@ -30,9 +31,9 @@ const AdminChat = (() => {
 
     function init(config) {
         _cfg = config;
+        _cfg.apiBase = _cfg.apiBase || './api/chat.php';
         renderLayout();
-        renderConversationList();
-        initSwipeOnMessages();
+        loadConversations();
     }
 
     function renderLayout() {
@@ -43,16 +44,8 @@ const AdminChat = (() => {
                 '<div class="chat-sidebar">' +
                     '<div class="chat-sidebar-header">' +
                         '<input class="chat-search" placeholder="Cari kandidat..." oninput="AdminChat.filterList(this.value)">' +
-                        '<div class="chat-filter-row">' +
-                            '<select onchange="AdminChat.filterProject(this.value)" id="chatFilterProject">' +
-                                '<option value="">Semua Project</option>' +
-                                '<option value="dw">Daily Worker</option>' +
-                                '<option value="driver">Driver</option>' +
-                                '<option value="kurir">Kurir</option>' +
-                            '</select>' +
-                        '</div>' +
                     '</div>' +
-                    '<div class="chat-conv-list" id="chatConvList"></div>' +
+                    '<div class="chat-conv-list" id="chatConvList"><div style="padding:40px;text-align:center;color:var(--t3);font-size:.75rem">Memuat...</div></div>' +
                 '</div>' +
                 '<div class="chat-main">' +
                     '<div class="chat-main-empty" id="chatEmpty">' +
@@ -75,11 +68,9 @@ const AdminChat = (() => {
                         '<div style="position:relative">' +
                             '<div class="chat-canned" id="chatCanned"></div>' +
                         '</div>' +
-                        '<div class="chat-input-bar" id="chatInputBar">' +
+                        '<div class="chat-input-bar" id="chatInputBar" style="position:relative;left:auto;transform:none;max-width:none">' +
                             '<div class="chat-input-actions">' +
                                 '<button onclick="AdminChat.triggerFileUpload()" title="Lampiran">' + ChatEngine.ICONS.attach + '</button>' +
-                                '<button onclick="AdminChat.sendLoc()" title="Lokasi">' + ChatEngine.ICONS.location + '</button>' +
-                                '<button onclick="AdminChat.toggleVoice()" title="Voice Note">' + ChatEngine.ICONS.mic + '</button>' +
                             '</div>' +
                             '<textarea class="chat-input-text" id="chatInput" rows="1" placeholder="Ketik pesan..." oninput="AdminChat.onInputChange(this)"></textarea>' +
                             '<button class="chat-input-send" onclick="AdminChat.send()">' + ChatEngine.ICONS.send + '</button>' +
@@ -90,64 +81,64 @@ const AdminChat = (() => {
             '</div>';
     }
 
-    /* ── Conversation List ── */
-    function renderConversationList(filter, projectFilter) {
+    /* ── Load Conversations from API ── */
+    async function loadConversations(filter) {
+        try {
+            var url = _cfg.apiBase + '?action=conversations';
+            if (filter) url += '&search=' + encodeURIComponent(filter);
+            var r = await fetch(url, {credentials:'same-origin'});
+            var d = await r.json();
+            if (d && d.conversations) {
+                _conversations = d.conversations;
+                renderConversationList(filter);
+            }
+        } catch(e) {
+            console.error('[AdminChat] loadConversations error:', e);
+        }
+    }
+
+    function renderConversationList(filter) {
         var list = document.getElementById('chatConvList');
         if (!list) return;
-        var convs = _cfg.dummyData.chatConversations || [];
+        var convs = _conversations;
 
-        // Role filter
-        if (_cfg.role === 'korlap' && _cfg.allowedProvinces) {
-            convs = convs.filter(function(c) { return _cfg.allowedProvinces.indexOf(c.provinsi) !== -1; });
-        }
-        if (_cfg.role !== 'superowner') {
-            convs = convs.filter(function(c) { return c.project === _cfg.project; });
-        }
-        // Search filter
-        if (filter) {
-            var f = filter.toLowerCase();
-            convs = convs.filter(function(c) { return c.name.toLowerCase().indexOf(f) !== -1 || (c.givenId||'').toLowerCase().indexOf(f) !== -1; });
-        }
-        if (projectFilter) {
-            convs = convs.filter(function(c) { return c.project === projectFilter; });
-        }
-
-        // Sort: pinned first, then by time
+        // Sort: pinned first, then by last_msg_id desc
         convs.sort(function(a,b) {
-            var pa = _pinnedIds.indexOf(a.candidateId) !== -1 ? 0 : 1;
-            var pb = _pinnedIds.indexOf(b.candidateId) !== -1 ? 0 : 1;
+            var pa = _pinnedIds.indexOf(parseInt(a.candidate_id)) !== -1 ? 0 : 1;
+            var pb = _pinnedIds.indexOf(parseInt(b.candidate_id)) !== -1 ? 0 : 1;
             if (pa !== pb) return pa - pb;
-            return new Date(b.lastTime) - new Date(a.lastTime);
+            return (b.last_msg_id || 0) - (a.last_msg_id || 0);
         });
 
         var html = '';
-        var hadPinned = false;
         convs.forEach(function(c) {
-            var isPinned = _pinnedIds.indexOf(c.candidateId) !== -1;
-            if (isPinned && !hadPinned) { html += '<div class="chat-conv-separator">Pinned</div>'; hadPinned = true; }
-            if (!isPinned && hadPinned) { html += '<div class="chat-conv-separator">Semua Chat</div>'; hadPinned = false; }
-
-            var initials = c.name.split(' ').map(function(w){return w[0];}).join('').substring(0,2).toUpperCase();
-            var onlineClass = c.online === 'online' ? 'online' : (c.online === 'away' ? 'away' : 'offline');
+            var cid = parseInt(c.candidate_id);
+            var isPinned = _pinnedIds.indexOf(cid) !== -1;
+            var name = c.candidate_name || 'Kandidat #' + cid;
+            var initials = name.split(' ').map(function(w){return w[0]||'';}).join('').substring(0,2).toUpperCase();
             var statusStyle = STATUS_COLORS[c.status] || 'background:var(--bg3);color:var(--t3)';
-            var labelDot = _labels[c.candidateId] ? '<span class="chat-conv-label" style="background:' + _labels[c.candidateId] + '"></span>' : '';
+            var lastMsg = c.last_message || '';
+            if (c.last_msg_type === 'image') lastMsg = '📷 Foto';
+            if (c.last_msg_type === 'file') lastMsg = '📎 File';
+            if (c.last_msg_type === 'location') lastMsg = '📍 Lokasi';
+            var unread = parseInt(c.unread_count) || 0;
+            var time = c.last_msg_time ? ChatEngine.formatTime(c.last_msg_time) : '';
+            var location = [c.kecamatan, c.kabupaten].filter(Boolean).join(', ');
 
-            html += '<div class="chat-conv-item' + (_activeId===c.candidateId?' active':'') + (isPinned?' pinned':'') + '" onclick="AdminChat.openChat(' + c.candidateId + ')" oncontextmenu="AdminChat.showConvMenu(event,' + c.candidateId + ')">' +
+            html += '<div class="chat-conv-item' + (_activeId===cid?' active':'') + (isPinned?' pinned':'') + '" onclick="AdminChat.openChat(' + cid + ')">' +
                 (isPinned ? '<span class="chat-conv-pin">PIN</span>' : '') +
-                '<div class="chat-conv-avatar">' + initials + '<span class="online-dot ' + onlineClass + '"></span></div>' +
+                '<div class="chat-conv-avatar">' + initials + '</div>' +
                 '<div class="chat-conv-body">' +
                     '<div class="chat-conv-top">' +
-                        '<span class="chat-conv-name">' + ChatEngine.escHtml(c.name) + '</span>' +
-                        '<span class="chat-conv-project ' + PROJECT_CLASS[c.project] + '">' + PROJECT_LABELS[c.project] + '</span>' +
+                        '<span class="chat-conv-name">' + ChatEngine.escHtml(name) + '</span>' +
                     '</div>' +
-                    '<div class="chat-conv-location">' + ChatEngine.escHtml(c.kabupaten + ', ' + c.provinsi) + '</div>' +
-                    '<span class="chat-conv-status" style="' + statusStyle + '">' + c.status + '</span>' +
-                    '<div class="chat-conv-preview">' + ChatEngine.escHtml(c.lastMessage) + '</div>' +
+                    (location ? '<div class="chat-conv-location">' + ChatEngine.escHtml(location) + '</div>' : '') +
+                    (c.status ? '<span class="chat-conv-status" style="' + statusStyle + '">' + c.status + '</span>' : '') +
+                    '<div class="chat-conv-preview">' + ChatEngine.escHtml(lastMsg.substring(0,60)) + '</div>' +
                 '</div>' +
                 '<div class="chat-conv-meta">' +
-                    '<span class="chat-conv-time">' + ChatEngine.formatTime(c.lastTime) + '</span>' +
-                    (c.unread > 0 ? '<span class="chat-conv-unread">' + c.unread + '</span>' : '') +
-                    labelDot +
+                    '<span class="chat-conv-time">' + time + '</span>' +
+                    (unread > 0 ? '<span class="chat-conv-unread">' + unread + '</span>' : '') +
                 '</div>' +
             '</div>';
         });
@@ -157,97 +148,183 @@ const AdminChat = (() => {
         updateNavBadge();
     }
 
-    function filterList(val) { renderConversationList(val, document.getElementById('chatFilterProject').value); }
-    function filterProject(val) { renderConversationList(document.querySelector('.chat-search')?.value, val); }
+    function filterList(val) { loadConversations(val); }
 
-    /* ── Open Chat ── */
-    function openChat(candidateId) {
+    /* ── Open Chat — Load from API ── */
+    async function openChat(candidateId) {
         _activeId = candidateId;
-        var conv = (_cfg.dummyData.chatConversations||[]).find(function(c){return c.candidateId===candidateId;});
-        if (!conv) return;
-
-        // Mark read
-        conv.unread = 0;
+        var conv = _conversations.find(function(c){return parseInt(c.candidate_id)===candidateId;});
 
         document.getElementById('chatEmpty').style.display = 'none';
         var active = document.getElementById('chatActive');
         active.style.display = 'flex';
 
         // Header
+        var name = conv ? (conv.candidate_name || 'Kandidat') : 'Kandidat #' + candidateId;
+        var initials = name.split(' ').map(function(w){return w[0]||'';}).join('').substring(0,2).toUpperCase();
+        var location = conv ? [conv.kecamatan, conv.kabupaten].filter(Boolean).join(', ') : '';
         var statusOpts = ['Belum Pemberkasan','Sudah Pemberkasan','Lulus','Tidak Lulus','Blacklist'].map(function(s) {
-            return '<option value="'+s+'"'+(s===conv.status?' selected':'')+'>'+s+'</option>';
+            return '<option value="'+s+'"'+(conv && s===conv.status?' selected':'')+'>'+s+'</option>';
         }).join('');
-        var onlineTxt = conv.online==='online'?'Online':(conv.online==='away'?'Baru aktif':'Offline');
 
         document.getElementById('chatHeader').innerHTML =
-            '<div class="chat-conv-avatar" style="width:36px;height:36px;min-width:36px;font-size:.7rem">' + conv.name.split(' ').map(function(w){return w[0];}).join('').substring(0,2).toUpperCase() +
-                '<span class="online-dot '+(conv.online||'offline')+'"></span></div>' +
+            '<div style="display:flex;align-items:center;gap:8px;cursor:pointer" onclick="AdminChat.goBack()">' +
+                '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>' +
+                '<div class="chat-conv-avatar" style="width:36px;height:36px;min-width:36px;font-size:.7rem">' + initials + '</div>' +
+            '</div>' +
             '<div class="chat-header-info">' +
-                '<div class="chat-header-name">' + ChatEngine.escHtml(conv.name) + ' &middot; ' + ChatEngine.escHtml(conv.givenId) + '</div>' +
-                '<div class="chat-header-detail">' +
-                    '<span class="chat-conv-project '+PROJECT_CLASS[conv.project]+'">' + PROJECT_LABELS[conv.project] + '</span> ' +
-                    ChatEngine.escHtml(conv.kabupaten+', '+conv.provinsi) + ' &middot; ' + onlineTxt +
-                '</div>' +
-                '<div class="chat-header-status"><select onchange="AdminChat.updateStatus('+candidateId+',this.value)">' + statusOpts + '</select></div>' +
+                '<div class="chat-header-name">' + ChatEngine.escHtml(name) + '</div>' +
+                '<div class="chat-header-detail">' + ChatEngine.escHtml(location) + '</div>' +
             '</div>' +
             '<div class="chat-header-actions">' +
                 '<button onclick="AdminChat.toggleSearchBar()" title="Cari">' + ChatEngine.ICONS.search + '</button>' +
                 '<button onclick="AdminChat.toggleNotes()" title="Catatan">' + ChatEngine.ICONS.note + '</button>' +
                 '<button onclick="AdminChat.togglePin('+candidateId+')" title="Pin">' + ChatEngine.ICONS.pin + '</button>' +
-                '<button onclick="AdminChat.exportChat('+candidateId+')" title="Export">' + ChatEngine.ICONS.export + '</button>' +
             '</div>';
 
-        // Messages
-        var msgs = (_cfg.dummyData.chatMessages||{})[candidateId] || [];
-        ChatEngine.init({candidateId:candidateId, role:'admin', container:active});
-        ChatEngine.renderMessages(msgs, false);
+        // Load messages from API
+        var chatMsgs = document.getElementById('chatMsgs');
+        if (chatMsgs) chatMsgs.innerHTML = '<div style="padding:40px;text-align:center;color:var(--t3);font-size:.75rem">Memuat pesan...</div>';
 
-        // Init swipe
-        var msgsEl = document.getElementById('chatMsgs');
-        if (msgsEl) ChatEngine.initSwipeReply(msgsEl);
+        ChatEngine.init({candidateId:candidateId, role:'admin', container:active});
+
+        try {
+            var r = await fetch(_cfg.apiBase + '?action=history&candidate_id=' + candidateId, {credentials:'same-origin'});
+            var d = await r.json();
+            if (d && d.messages) {
+                _messages[candidateId] = d.messages;
+                ChatEngine.renderMessages(d.messages, false);
+                // Mark as read
+                fetch(_cfg.apiBase + '?action=mark_read', {
+                    method:'POST', credentials:'same-origin',
+                    headers:{'Content-Type':'application/json'},
+                    body: JSON.stringify({candidate_id: candidateId})
+                });
+                // Update unread in sidebar
+                if (conv) conv.unread_count = 0;
+                renderConversationList();
+            }
+        } catch(e) {
+            console.error('[AdminChat] openChat error:', e);
+            if (chatMsgs) chatMsgs.innerHTML = '<div style="padding:40px;text-align:center;color:var(--t3)">Gagal memuat pesan</div>';
+        }
 
         // Notes
         var noteArea = document.getElementById('chatNotes');
         var ta = noteArea ? noteArea.querySelector('textarea') : null;
         if (ta) ta.value = _notes[candidateId] || '';
 
-        // Refresh sidebar
-        renderConversationList();
-
         // Mobile: show chat
         var layout = document.getElementById('chatLayout');
         if (layout) layout.classList.add('conv-open');
+
+        // Start polling
+        _startPoll(candidateId);
     }
 
-    /* ── Send Message ── */
-    function send() {
+    /* ── Poll for new messages ── */
+    function _startPoll(candidateId) {
+        if (_pollTimer) clearInterval(_pollTimer);
+        _pollTimer = setInterval(async function() {
+            if (_activeId !== candidateId) { clearInterval(_pollTimer); return; }
+            var msgs = _messages[candidateId] || [];
+            var lastId = msgs.length > 0 ? msgs[msgs.length-1].id : 0;
+            try {
+                var r = await fetch(_cfg.apiBase + '?action=poll&candidate_id=' + candidateId + '&after_id=' + lastId, {credentials:'same-origin'});
+                var d = await r.json();
+                if (d && d.messages && d.messages.length > 0) {
+                    d.messages.forEach(function(m) { msgs.push(m); });
+                    _messages[candidateId] = msgs;
+                    ChatEngine.renderMessages(d.messages, true);
+                    // Mark as read
+                    fetch(_cfg.apiBase + '?action=mark_read', {
+                        method:'POST', credentials:'same-origin',
+                        headers:{'Content-Type':'application/json'},
+                        body: JSON.stringify({candidate_id: candidateId})
+                    });
+                }
+            } catch(e) {}
+        }, 12000);
+    }
+
+    /* ── Send Message via API ── */
+    async function send() {
         var input = document.getElementById('chatInput');
         if (!input || !_activeId) return;
         var text = input.value.trim();
         if (!text) return;
 
-        var msgs = _cfg.dummyData.chatMessages[_activeId];
-        if (!msgs) { _cfg.dummyData.chatMessages[_activeId] = []; msgs = _cfg.dummyData.chatMessages[_activeId]; }
-        var maxId = msgs.reduce(function(m,x){return Math.max(m,x.id);},0);
-
-        var newMsg = {
-            id: maxId+1, sender_type:'admin', sender_name:'Admin BAS',
-            message_type:'text', message:text, is_read:0,
-            created_at: new Date().toISOString().replace('T',' ').substring(0,19),
-            reply_to_id: ChatEngine.getReplyTo()?.id || null,
-            reply_preview: ChatEngine.getReplyTo() || null,
-        };
-        msgs.push(newMsg);
-        ChatEngine.renderMessages([newMsg], true);
-        ChatEngine.clearReply();
         input.value = '';
         input.style.height = 'auto';
         hideCanned();
 
-        // Update conversation
-        var conv = (_cfg.dummyData.chatConversations||[]).find(function(c){return c.candidateId===_activeId;});
-        if (conv) { conv.lastMessage = text; conv.lastTime = newMsg.created_at; }
-        renderConversationList();
+        try {
+            var replyTo = null;
+            try { replyTo = ChatEngine.getReplyTo(); } catch(e){}
+
+            var r = await fetch(_cfg.apiBase + '?action=send', {
+                method: 'POST', credentials: 'same-origin',
+                headers: {'Content-Type':'application/json'},
+                body: JSON.stringify({
+                    candidate_id: _activeId,
+                    message: text,
+                    reply_to_id: replyTo ? replyTo.id : null
+                })
+            });
+            var d = await r.json();
+            if (d && d.ok) {
+                var newMsg = {
+                    id: d.id, sender_type:'admin', sender_name:'Admin BAS',
+                    message_type:'text', message:text, is_read:0,
+                    created_at: d.created_at || new Date().toISOString().replace('T',' ').substring(0,19)
+                };
+                if (!_messages[_activeId]) _messages[_activeId] = [];
+                _messages[_activeId].push(newMsg);
+                ChatEngine.renderMessages([newMsg], true);
+                try { ChatEngine.clearReply(); } catch(e){}
+                // Update sidebar
+                var conv = _conversations.find(function(c){return parseInt(c.candidate_id)===_activeId;});
+                if (conv) { conv.last_message = text; conv.last_msg_time = newMsg.created_at; }
+                renderConversationList();
+            } else {
+                showToast('Gagal kirim: ' + (d.error||''), 'error');
+            }
+        } catch(e) {
+            console.error('[AdminChat] send error:', e);
+            showToast('Koneksi gagal', 'error');
+        }
+    }
+
+    /* ── File Upload via API ── */
+    function triggerFileUpload() { document.getElementById('chatFileInput').click(); }
+    async function onFileSelected(input) {
+        if (!input.files[0] || !_activeId) return;
+        var file = input.files[0];
+        var fd = new FormData();
+        fd.append('candidate_id', _activeId);
+        fd.append('file', file);
+
+        try {
+            var r = await fetch(_cfg.apiBase + '?action=upload', {
+                method:'POST', credentials:'same-origin', body: fd
+            });
+            var d = await r.json();
+            if (d && d.ok) {
+                var isImg = file.type.startsWith('image/');
+                var msg = {
+                    id: d.id, sender_type:'admin', sender_name:'Admin BAS',
+                    message_type: isImg?'image':'file', message:'',
+                    file_name: file.name, file_size: d.file_size||file.size,
+                    file_path: d.file_path||'',
+                    is_read:0, created_at: new Date().toISOString().replace('T',' ').substring(0,19)
+                };
+                if (!_messages[_activeId]) _messages[_activeId] = [];
+                _messages[_activeId].push(msg);
+                ChatEngine.renderMessages([msg], true);
+                showToast('File terkirim');
+            }
+        } catch(e) { showToast('Upload gagal', 'error'); }
+        input.value = '';
     }
 
     /* ── Canned Responses ── */
@@ -269,7 +346,6 @@ const AdminChat = (() => {
         }
         hideCanned();
     }
-
     function useCanned(cmd) {
         var r = _cannedResponses.find(function(x){return x.cmd===cmd;});
         if (r) { document.getElementById('chatInput').value = r.text; }
@@ -285,22 +361,6 @@ const AdminChat = (() => {
         else { showToast('Maksimal 3 pin', 'error'); return; }
         renderConversationList();
     }
-
-    /* ── Labels ── */
-    function showConvMenu(e, id) {
-        e.preventDefault();
-        var colors = {'#EF4444':'Urgent','#EAB308':'Follow-up','#22C55E':'Done','':'Hapus Label'};
-        var html = Object.keys(colors).map(function(c) {
-            return '<div class="chat-canned-item" onclick="AdminChat.setLabel('+id+',\''+c+'\')">' +
-                (c ? '<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:'+c+';margin-right:6px"></span>' : '') +
-                colors[c] + '</div>';
-        }).join('');
-        var popup = document.getElementById('chatCanned');
-        popup.innerHTML = html;
-        popup.classList.add('show');
-        setTimeout(function(){document.addEventListener('click',function h(){popup.classList.remove('show');document.removeEventListener('click',h);});},10);
-    }
-    function setLabel(id, color) { _labels[id] = color || undefined; hideCanned(); renderConversationList(); }
 
     /* ── Notes ── */
     function toggleNotes() {
@@ -326,87 +386,9 @@ const AdminChat = (() => {
         document.getElementById('chatSearchNav').textContent = found + ' ditemukan';
     }
 
-    /* ── Quick Status Update ── */
-    function updateStatus(id, status) {
-        var conv = (_cfg.dummyData.chatConversations||[]).find(function(c){return c.candidateId===id;});
-        if (conv) { conv.status = status; renderConversationList(); showToast('Status diperbarui'); }
-    }
-
-    /* ── Share Location ── */
-    function sendLoc() {
-        if (!_activeId) return;
-        if (!navigator.geolocation) { showToast('GPS tidak didukung browser', 'error'); return; }
-        navigator.geolocation.getCurrentPosition(function(pos) {
-            var msgs = _cfg.dummyData.chatMessages[_activeId] || [];
-            var maxId = msgs.reduce(function(m,x){return Math.max(m,x.id);},0);
-            msgs.push({
-                id:maxId+1, sender_type:'admin', sender_name:'Admin BAS',
-                message_type:'location', message:'Lokasi saya',
-                latitude:pos.coords.latitude, longitude:pos.coords.longitude,
-                is_read:0, created_at:new Date().toISOString().replace('T',' ').substring(0,19)
-            });
-            ChatEngine.renderMessages([msgs[msgs.length-1]], true);
-            showToast('Lokasi terkirim');
-        }, function(err) { showToast('Gagal mendapatkan lokasi: '+err.message, 'error'); }, {enableHighAccuracy:true,timeout:10000});
-    }
-
-    /* ── File Upload ── */
-    function triggerFileUpload() { document.getElementById('chatFileInput').click(); }
-    function onFileSelected(input) {
-        if (!input.files[0] || !_activeId) return;
-        var file = input.files[0];
-        var msgs = _cfg.dummyData.chatMessages[_activeId] || [];
-        var maxId = msgs.reduce(function(m,x){return Math.max(m,x.id);},0);
-        var isImg = file.type.startsWith('image/');
-        msgs.push({
-            id:maxId+1, sender_type:'admin', sender_name:'Admin BAS',
-            message_type:isImg?'image':'file', message:'', file_name:file.name, file_size:file.size,
-            file_path: isImg ? URL.createObjectURL(file) : '#',
-            is_read:0, created_at:new Date().toISOString().replace('T',' ').substring(0,19)
-        });
-        ChatEngine.renderMessages([msgs[msgs.length-1]], true);
-        input.value = '';
-        showToast('File terkirim');
-    }
-
-    /* ── Voice Note (Dummy) ── */
-    function toggleVoice() {
-        if (!_activeId) return;
-        var msgs = _cfg.dummyData.chatMessages[_activeId] || [];
-        var maxId = msgs.reduce(function(m,x){return Math.max(m,x.id);},0);
-        msgs.push({
-            id:maxId+1, sender_type:'admin', sender_name:'Admin BAS',
-            message_type:'voice', message:'', duration:'0:05',
-            is_read:0, created_at:new Date().toISOString().replace('T',' ').substring(0,19)
-        });
-        ChatEngine.renderMessages([msgs[msgs.length-1]], true);
-        showToast('Voice note terkirim');
-    }
-
-    /* ── Export Chat ── */
-    function exportChat(id) {
-        var msgs = (_cfg.dummyData.chatMessages||{})[id] || [];
-        var conv = (_cfg.dummyData.chatConversations||[]).find(function(c){return c.candidateId===id;});
-        var txt = 'Chat Export: ' + (conv?conv.name:'') + '\n' + '='.repeat(40) + '\n\n';
-        msgs.forEach(function(m) {
-            txt += '[' + m.created_at + '] ' + m.sender_name + ': ';
-            if (m.message_type==='image') txt += '[Foto] ';
-            else if (m.message_type==='file') txt += '[File: '+m.file_name+'] ';
-            else if (m.message_type==='location') txt += '[Lokasi] ';
-            else if (m.message_type==='voice') txt += '[Voice Note] ';
-            txt += (m.message||'') + '\n';
-        });
-        var blob = new Blob([txt], {type:'text/plain'});
-        var a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = 'chat_' + (conv?conv.givenId:'export') + '.txt';
-        a.click();
-        showToast('Chat di-export');
-    }
-
     /* ── Nav Badge ── */
     function updateNavBadge() {
-        var total = (_cfg.dummyData.chatConversations||[]).reduce(function(s,c){return s+(c.unread||0);},0);
+        var total = _conversations.reduce(function(s,c){return s+(parseInt(c.unread_count)||0);},0);
         var badge = document.getElementById('chatNavBadge');
         if (badge) { badge.textContent = total; badge.style.display = total > 0 ? 'inline' : 'none'; }
         var mini = document.getElementById('chatNavBadgeMini');
@@ -417,20 +399,18 @@ const AdminChat = (() => {
     function goBack() {
         var layout = document.getElementById('chatLayout');
         if (layout) layout.classList.remove('conv-open');
+        if (_pollTimer) clearInterval(_pollTimer);
     }
-
-    function initSwipeOnMessages() {}
 
     function showToast(msg, type) {
         if (typeof window.showToast === 'function') window.showToast(msg, type);
     }
 
     return {
-        init, openChat, send, filterList, filterProject,
-        onInputChange, useCanned, togglePin, showConvMenu, setLabel,
+        init, openChat, send, filterList,
+        onInputChange, useCanned, togglePin,
         toggleNotes, saveNote, toggleSearchBar, searchInChat,
-        updateStatus, sendLoc, triggerFileUpload, onFileSelected,
-        toggleVoice, exportChat, goBack, renderConversationList,
-        updateNavBadge,
+        triggerFileUpload, onFileSelected,
+        goBack, renderConversationList, updateNavBadge,
     };
 })();

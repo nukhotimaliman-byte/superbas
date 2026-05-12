@@ -175,8 +175,7 @@ tabs.forEach(tab => {
                 container: 'chatContainer',
                 role: ADMIN_ROLE || 'owner',
                 project: 'dw',
-                allowedProvinces: typeof ALLOWED_PROVINCES !== 'undefined' ? ALLOWED_PROVINCES : null,
-                dummyData: DUMMY,
+                apiBase: './api/chat.php',
             });
         }
         // Mobile: close sidebar
