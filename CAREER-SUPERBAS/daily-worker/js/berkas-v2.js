@@ -41,7 +41,8 @@ h+='</div></div>';
 // Step 2 — Data Pribadi
 h+='<div class="bk-card"><div class="bk-card-head"><div class="bk-card-num">2</div><div class="bk-card-title">Data Pribadi</div><div class="bk-card-check" id="bkCheck2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></div></div><div class="bk-fields">';
 h+='<div class="bk-row">'+bkF('Tempat Lahir','<input class="bk-input" id="bkBirthPlace" placeholder="Jakarta" oninput="bkUpdate()">')+bkF('Tanggal Lahir','<input class="bk-input" type="date" id="bkBirthDate" onchange="bkUpdate()">')+'</div>';
-h+='<div class="bk-row"><div class="bk-field"><label>Pendidikan Terakhir</label>'+bkRadios('bk_edu',BK_EDU)+'</div><div class="bk-field"><label>Pernah Bekerja di SPX?</label>'+bkRadios('bk_spx',['Ya','Tidak'])+'</div></div>';
+h+='<div class="bk-field"><label>Pendidikan Terakhir</label>'+bkRadios('bk_edu',BK_EDU)+'</div>';
+h+='<div class="bk-field"><label>Pernah Bekerja di SPX?</label>'+bkRadios('bk_spx',['Ya','Tidak'])+'</div>';
 h+=bkF('Referensi <span style="font-weight:400;color:var(--text-secondary)">(Opsional)</span>','<input class="bk-input" id="bkRef" placeholder="Dari Facebook / Diajak teman" oninput="bkUpdate()">');
 h+='</div></div>';
 
@@ -140,9 +141,17 @@ function bkFillForm(){
   if(wa){bkFillAndLock('bkWA',wa);}
   // Birth
   s('bkBirthPlace',c.tempat_lahir);s('bkBirthDate',c.tanggal_lahir);
-  // Address — lock if already filled from registration
-  if(c.address){s('bkAddrDetail',c.address);s('bkAddr',c.address);}
-  if(c.provinsi&&c.kabupaten){BK.addrLocked=true;}
+  // Address — fallback: candidate → user table (registration data)
+  var addr=c.address||u.address||'';
+  if(addr){s('bkAddrDetail',addr);s('bkAddr',addr);}
+  var prov=c.provinsi||u.provinsi||'';
+  var kab=c.kabupaten||u.kabupaten||'';
+  var kec=c.kecamatan||u.kecamatan||'';
+  var kel=c.kelurahan||u.kelurahan||'';
+  BK.savedAddr={provinsi:prov,kabupaten:kab,kecamatan:kec,kelurahan:kel};
+  // Lock ONLY for non-Google users who have address data
+  var isGoogle=!!(u.google_id);
+  if(prov&&kab&&!isGoogle){BK.addrLocked=true;}
   // Other fields
   s('bkRef',c.referensi);s('bkEmName',c.emergency_name);s('bkEmPhone',c.emergency_phone);
   s('bkBankNo',c.bank_account_no);s('bkBankName',c.bank_account_name);
@@ -160,24 +169,24 @@ function bkPopSel(id,items,ph){var s=document.getElementById(id);s.innerHTML='<o
 function bkResSel(id,ph){var s=document.getElementById(id);s.innerHTML='<option value="">— '+ph+' —</option>';s.disabled=true;}
 async function bkLoadProv(){
   var d=await bkFW('provinces.json');bkPopSel('bkProv',d,'Pilih Provinsi');
-  // Auto-select saved address from candidate data
-  var c=BK.candidate;
-  if(c&&c.provinsi){
-    var provId=bkFindByName('bkProv',c.provinsi);
+  // Auto-select saved address (from candidate OR user registration data)
+  var sa=BK.savedAddr||{};
+  if(sa.provinsi){
+    var provId=bkFindByName('bkProv',sa.provinsi);
     if(provId){
       document.getElementById('bkProv').value=provId;
       var kabs=await bkFW('regencies/'+provId+'.json');bkPopSel('bkKab',kabs,'Pilih Kabupaten');
-      if(c.kabupaten){
-        var kabId=bkFindByName('bkKab',c.kabupaten);
+      if(sa.kabupaten){
+        var kabId=bkFindByName('bkKab',sa.kabupaten);
         if(kabId){
           document.getElementById('bkKab').value=kabId;
           var kecs=await bkFW('districts/'+kabId+'.json');bkPopSel('bkKec',kecs,'Pilih Kecamatan');
-          if(c.kecamatan){
-            var kecId=bkFindByName('bkKec',c.kecamatan);
+          if(sa.kecamatan){
+            var kecId=bkFindByName('bkKec',sa.kecamatan);
             if(kecId){
               document.getElementById('bkKec').value=kecId;
               var kels=await bkFW('villages/'+kecId+'.json');bkPopSel('bkKel',kels,'Pilih Kelurahan');
-              if(c.kelurahan){bkFindByName('bkKel',c.kelurahan);}
+              if(sa.kelurahan){bkFindByName('bkKel',sa.kelurahan);}
             }
           }
         }

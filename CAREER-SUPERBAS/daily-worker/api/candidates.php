@@ -472,7 +472,7 @@ if ($method === 'POST') {
         $docs = $stmt->fetchAll();
 
         // Get user info (include nik, email, phone for berkas lock logic)
-        $stmt = $db->prepare('SELECT name, email, nik, phone, picture, google_id FROM dw_users WHERE id = ?');
+        $stmt = $db->prepare('SELECT name, email, nik, phone, picture, google_id, address, provinsi, kabupaten, kecamatan, kelurahan FROM dw_users WHERE id = ?');
         $stmt->execute([$user_id]);
         $user = $stmt->fetch();
 
