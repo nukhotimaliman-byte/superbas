@@ -63,7 +63,7 @@
 .chat-header-typing{font-size:.65rem;color:var(--accent);font-style:italic;margin-top:2px}
 
 /* ── Messages Area ──────────────────────── */
-.chat-messages{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:4px;scrollbar-width:thin}
+.chat-messages{flex:1;overflow-y:auto;padding:16px 16px 72px;display:flex;flex-direction:column;gap:4px;scrollbar-width:thin}
 .chat-messages::-webkit-scrollbar{width:4px}
 .chat-messages::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
 
@@ -143,7 +143,7 @@
 .chat-voice-dur{font-size:.6rem;opacity:.6;min-width:30px}
 
 /* ── Input Bar ──────────────────────────── */
-.chat-input-bar{padding:12px 16px;border-top:1px solid var(--border);display:flex;align-items:flex-end;gap:8px;background:var(--bg1)}
+.chat-input-bar{padding:12px 16px;border-top:1px solid var(--border);display:flex;align-items:flex-end;gap:8px;background:var(--bg1);position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;z-index:50;box-shadow:0 -2px 12px rgba(0,0,0,.06)}
 .chat-input-actions{display:flex;gap:2px}
 .chat-input-actions button{background:none;border:none;color:var(--t3);cursor:pointer;padding:8px;border-radius:8px;transition:all .15s}
 .chat-input-actions button:hover{color:var(--accent);background:var(--bg2)}
