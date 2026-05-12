@@ -209,12 +209,11 @@ function updateOpsCard() {
 // ══════════════════════════════════════════
 // ABSENSI PAGE
 // ══════════════════════════════════════════
-const DUMMY_ABSENSI = [];
-
 const BULAN = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
 const HARI = ['Min','Sen','Sel','Rab','Kam','Jum','Sab'];
 let currentMonth = new Date().getMonth();
 let currentYear = new Date().getFullYear();
+let _absensiCache = {};
 
 function changeMonth(dir) {
   currentMonth += dir;
@@ -223,12 +222,31 @@ function changeMonth(dir) {
   renderAbsensi();
 }
 
-function renderAbsensi() {
+async function renderAbsensi() {
   const ml = document.getElementById('monthLabel');
   if (ml) ml.textContent = BULAN[currentMonth] + ' ' + currentYear;
 
   const monthStr = String(currentMonth + 1).padStart(2, '0');
-  const data = DUMMY_ABSENSI.filter(d => d.date.startsWith(currentYear + '-' + monthStr));
+  const monthKey = currentYear + '-' + monthStr;
+
+  // Fetch from API (cache per month)
+  let data = _absensiCache[monthKey];
+  if (!data) {
+    try {
+      const r = await fetch('./api/attendance.php?action=history&month=' + monthKey, {credentials:'same-origin'});
+      const d = await r.json();
+      data = (d && d.attendance) ? d.attendance : [];
+      _absensiCache[monthKey] = data;
+      // Show OPS ID if available
+      if (d && d.ops_id) {
+        const opsEl = document.getElementById('absOpsId');
+        if (opsEl) opsEl.textContent = d.ops_id;
+      }
+    } catch(e) {
+      console.warn('[Absensi] API error:', e);
+      data = [];
+    }
+  }
 
   // Split by period
   const p1Data = data.filter(d => parseInt(d.date.split('-')[2]) <= 15);
