@@ -177,6 +177,147 @@ if ($action === 'summary') {
     ]);
 }
 
+// ═══════════════════════════════════════════════════
+// SYNC GANTI REKENING (from GAS)
+// ═══════════════════════════════════════════════════
+if ($action === 'sync_gantirek' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    $data = json_decode(file_get_contents('php://input'), true);
+    if (($data['token'] ?? '') !== $SYNC_TOKEN)
+        jsonResponse(['error' => 'Invalid token'], 403);
+
+    $rows = $data['rows'] ?? [];
+    if (empty($rows)) jsonResponse(['error' => 'No rows'], 400);
+
+    $db = getDB();
+
+    // Ensure table exists
+    $db->exec("CREATE TABLE IF NOT EXISTS dw_rekening_changes (
+        id              INT AUTO_INCREMENT PRIMARY KEY,
+        ops_id          VARCHAR(20) NOT NULL,
+        candidate_id    INT DEFAULT NULL,
+        user_id         INT DEFAULT NULL,
+        nama            VARCHAR(100),
+        email           VARCHAR(100),
+        penempatan      VARCHAR(100),
+        rekening_baru   VARCHAR(30),
+        nama_rekening   VARCHAR(100),
+        bank_baru       VARCHAR(50),
+        foto_buku_rek   TEXT DEFAULT NULL,
+        tgl_ajuan       DATETIME,
+        status          VARCHAR(30) DEFAULT 'Menunggu Verifikasi',
+        tgl_proses      DATE DEFAULT NULL,
+        source_sheet    VARCHAR(200) DEFAULT NULL,
+        synced_at       TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        UNIQUE KEY uk_ops_tgl (ops_id, tgl_ajuan),
+        INDEX idx_user (user_id),
+        INDEX idx_status (status)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+    // Pre-load mapping
+    $mapping = [];
+    try {
+        $mapStmt = $db->query("
+            SELECT i.ops_id, c.id as candidate_id, c.user_id 
+            FROM dw_importrange i
+            JOIN dw_candidates c ON c.nik = i.nik 
+            WHERE i.nik IS NOT NULL AND i.nik != ''
+        ");
+        while ($m = $mapStmt->fetch()) {
+            $mapping[$m['ops_id']] = ['candidate_id' => $m['candidate_id'], 'user_id' => $m['user_id']];
+        }
+    } catch (Exception $e) {}
+
+    $stmt = $db->prepare("INSERT INTO dw_rekening_changes 
+        (ops_id, candidate_id, user_id, nama, email, penempatan, rekening_baru, nama_rekening, bank_baru, foto_buku_rek, tgl_ajuan, source_sheet)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ON DUPLICATE KEY UPDATE 
+            nama=VALUES(nama), email=VALUES(email), penempatan=VALUES(penempatan),
+            rekening_baru=VALUES(rekening_baru), nama_rekening=VALUES(nama_rekening),
+            bank_baru=VALUES(bank_baru), foto_buku_rek=VALUES(foto_buku_rek),
+            candidate_id=VALUES(candidate_id), user_id=VALUES(user_id),
+            source_sheet=VALUES(source_sheet)");
+
+    $synced = 0;
+    $sourceSheet = $data['source_sheet'] ?? '';
+    foreach ($rows as $r) {
+        $opsId = trim($r['ops_id'] ?? '');
+        if (!$opsId) continue;
+
+        $tglAjuan = $r['tgl_ajuan'] ?? '';
+        if (!$tglAjuan) continue;
+
+        $map = $mapping[$opsId] ?? ['candidate_id' => null, 'user_id' => null];
+
+        try {
+            $stmt->execute([
+                $opsId,
+                $map['candidate_id'],
+                $map['user_id'],
+                trim($r['nama'] ?? ''),
+                trim($r['email'] ?? ''),
+                trim($r['penempatan'] ?? ''),
+                trim($r['rekening_baru'] ?? ''),
+                trim($r['nama_rekening'] ?? ''),
+                trim($r['bank_baru'] ?? ''),
+                trim($r['foto_buku_rek'] ?? ''),
+                $tglAjuan,
+                $sourceSheet
+            ]);
+            $synced++;
+        } catch (Exception $e) {}
+    }
+
+    jsonResponse(['ok' => true, 'synced' => $synced, 'total' => count($rows), 'synced_at' => date('Y-m-d H:i:s')]);
+}
+
+// ═══════════════════════════════════════════════════
+// REKENING STATUS — User's bank change request
+// ═══════════════════════════════════════════════════
+if ($action === 'rekening_status') {
+    if (empty($_SESSION['user_id']))
+        jsonResponse(['error' => 'Not authenticated'], 401);
+
+    $userId = $_SESSION['user_id'];
+    $db = getDB();
+    $opsId = findOpsId($db, $userId);
+
+    if (!$opsId) {
+        jsonResponse(['request' => null, 'ops_id' => null]);
+        return;
+    }
+
+    // Get latest rekening change request
+    try {
+        $stmt = $db->prepare("
+            SELECT bank_baru, rekening_baru, nama_rekening, tgl_ajuan, status, penempatan
+            FROM dw_rekening_changes
+            WHERE ops_id = ?
+            ORDER BY tgl_ajuan DESC
+            LIMIT 1
+        ");
+        $stmt->execute([$opsId]);
+        $req = $stmt->fetch();
+
+        if ($req) {
+            jsonResponse([
+                'request' => [
+                    'bank' => $req['bank_baru'],
+                    'rekening' => $req['rekening_baru'],
+                    'atas_nama' => $req['nama_rekening'],
+                    'tgl_ajuan' => $req['tgl_ajuan'],
+                    'status' => $req['status']
+                ],
+                'ops_id' => $opsId
+            ]);
+        } else {
+            jsonResponse(['request' => null, 'ops_id' => $opsId]);
+        }
+    } catch (Exception $e) {
+        jsonResponse(['request' => null, 'ops_id' => $opsId]);
+    }
+    return;
+}
+
 jsonResponse(['error' => 'Invalid action'], 400);
 
 // ═══════════════════════════════════════════════════

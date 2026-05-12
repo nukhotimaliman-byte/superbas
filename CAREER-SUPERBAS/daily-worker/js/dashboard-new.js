@@ -536,14 +536,23 @@ function isNameMatch(nama1, nama2) {
 // REKENING PAGE
 // ══════════════════════════════════════════
 
-// Dummy data: rekening baru dari GDoc pergantian (null = belum ada pengajuan)
-var DUMMY_REK_BARU = null;
-// Contoh jika ada pengajuan:
-// var DUMMY_REK_BARU = { bank: 'BCA', rekening: '7820334106', atas_nama: 'Ramdan RH Woli', tgl_ajuan: '2026-05-08', status: 'Menunggu Verifikasi' };
+var _rekBaru = null; // Loaded from API
+var _rekBaruLoaded = false;
 
-function renderRekening() {
+async function renderRekening() {
   var container = document.getElementById('rekeningContent');
   if (!container) return;
+
+  // Fetch rekening change status from API (once)
+  if (!_rekBaruLoaded) {
+    try {
+      var r = await fetch('./api/attendance.php?action=rekening_status', {credentials:'same-origin'});
+      var d = await r.json();
+      _rekBaru = (d && d.request) ? d.request : null;
+      _rekBaruLoaded = true;
+    } catch(e) { console.warn('[Rekening] API error:', e); }
+  }
+
   var d = USER_DATA;
   var valid = isNameMatch(d.nama, d.atas_nama || '');
   var statusClass = valid ? 'rek-valid' : 'rek-invalid';
@@ -576,8 +585,8 @@ function renderRekening() {
   '</div>';
 
   // Section: Rekening Pengajuan Baru (dari GDoc Pergantian)
-  if (DUMMY_REK_BARU) {
-    var nb = DUMMY_REK_BARU;
+  if (_rekBaru) {
+    var nb = _rekBaru;
     var validBaru = isNameMatch(d.nama, nb.atas_nama || '');
     var scBaru = validBaru ? 'rek-valid' : 'rek-invalid';
     var stBaru = validBaru ? 'Terverifikasi' : 'Tidak Sesuai';
@@ -603,7 +612,7 @@ function renderRekening() {
   }
 
   // Button — hanya tampil jika belum ada pengajuan
-  if (!DUMMY_REK_BARU) {
+  if (!_rekBaru) {
     h += '<button class="rek-change-btn" onclick="showPage(\'page-gantirek\')">' +
       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 16h5v5"/></svg>' +
       ' Ajukan Pergantian Rekening</button>';
