@@ -161,6 +161,8 @@ function showPage(pageId) {
   if (pageId === 'page-idcard') BASIdCard.render('idcardContent', USER_DATA);
   if (pageId === 'page-settings') renderSettings();
   if (pageId === 'page-chat' && typeof UserChat !== 'undefined') UserChat.init();
+  var bnav = document.querySelector('.bottom-nav');
+  if (bnav) bnav.style.display = (pageId === 'page-chat') ? 'none' : '';
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
