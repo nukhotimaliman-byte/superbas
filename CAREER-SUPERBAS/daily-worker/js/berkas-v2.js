@@ -41,8 +41,7 @@ h+='</div></div>';
 // Step 2 — Data Pribadi
 h+='<div class="bk-card"><div class="bk-card-head"><div class="bk-card-num">2</div><div class="bk-card-title">Data Pribadi</div><div class="bk-card-check" id="bkCheck2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></div></div><div class="bk-fields">';
 h+='<div class="bk-row">'+bkF('Tempat Lahir','<input class="bk-input" id="bkBirthPlace" placeholder="Jakarta" oninput="bkUpdate()">')+bkF('Tanggal Lahir','<input class="bk-input" type="date" id="bkBirthDate" onchange="bkUpdate()">')+'</div>';
-h+='<div class="bk-field"><label>Pendidikan Terakhir</label>'+bkRadios('bk_edu',BK_EDU)+'</div>';
-h+='<div class="bk-field"><label>Pernah Bekerja di SPX?</label>'+bkRadios('bk_spx',['Ya','Tidak'])+'</div>';
+h+='<div class="bk-row"><div class="bk-field"><label>Pendidikan Terakhir</label>'+bkRadios('bk_edu',BK_EDU)+'</div><div class="bk-field"><label>Pernah Bekerja di SPX?</label>'+bkRadios('bk_spx',['Ya','Tidak'])+'</div></div>';
 h+=bkF('Referensi <span style="font-weight:400;color:var(--text-secondary)">(Opsional)</span>','<input class="bk-input" id="bkRef" placeholder="Dari Facebook / Diajak teman" oninput="bkUpdate()">');
 h+='</div></div>';
 
