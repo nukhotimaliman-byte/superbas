@@ -31,7 +31,7 @@ const UserChat = (() => {
 
         container.innerHTML =
             '<div class="chat-user-wrap">' +
-                '<div class="chat-messages" id="userChatMsgs" style="height:calc(100% - 56px);"></div>' +
+                '<div class="chat-messages chat-wallpaper" id="userChatMsgs" style="height:calc(100% - 56px);"></div>' +
                 '<div class="chat-reply-bar" id="userReplyBar"></div>' +
                 '<div class="chat-input-bar" id="userInputBar">' +
                     '<div class="chat-input-actions">' +
@@ -45,11 +45,31 @@ const UserChat = (() => {
             '</div>';
 
         ChatEngine.init({candidateId: _userId, role: 'user', container: container});
-        ChatEngine.renderMessages(_messages, false);
+        _renderWithDates(_messages);
 
         // Init swipe
         var msgsEl = document.getElementById('userChatMsgs');
         if (msgsEl) ChatEngine.initSwipeReply(msgsEl);
+    }
+
+    function _renderWithDates(msgs) {
+        var chatArea = document.getElementById('userChatMsgs');
+        if (!chatArea) return;
+        var html = '';
+        var lastDate = '';
+        var months = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+        msgs.forEach(function(m) {
+            var d = m.created_at ? m.created_at.substring(0,10) : '';
+            if (d && d !== lastDate) {
+                var parts = d.split('-');
+                var label = parseInt(parts[2]) + ' ' + months[parseInt(parts[1])-1] + ' ' + parts[0];
+                html += '<div class="chat-date-sep"><span>' + label + '</span></div>';
+                lastDate = d;
+            }
+            html += ChatEngine.renderBubble(m);
+        });
+        chatArea.innerHTML = html;
+        requestAnimationFrame(function() { chatArea.scrollTop = chatArea.scrollHeight; });
     }
 
     function send() {

@@ -23,6 +23,14 @@
   --warning-border: #6366f1;
   --warning-text: #4338ca;
   --link-card: rgba(99,102,241,0.06);
+  /* Chat variable mapping */
+  --bg1: #ffffff;
+  --bg2: #f7f8fc;
+  --bg3: #eef2ff;
+  --t1: #1e293b;
+  --t2: #64748b;
+  --t3: #94a3b8;
+  --accent-d: rgba(124,58,237,0.08);
 }
 
 body {
@@ -51,6 +59,14 @@ body.dark-mode {
   --warning-border: #6366f1;
   --warning-text: #a5b4fc;
   --link-card: rgba(99,102,241,0.12);
+  /* Chat variable mapping */
+  --bg1: #1e293b;
+  --bg2: #0f172a;
+  --bg3: #334155;
+  --t1: #f1f5f9;
+  --t2: #94a3b8;
+  --t3: #64748b;
+  --accent-d: rgba(129,140,248,0.12);
 }
 
 /* ── Header ── */
