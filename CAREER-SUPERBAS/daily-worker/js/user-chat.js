@@ -13,7 +13,8 @@ const UserChat = (() => {
     const MONTHS = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
 
     function init() {
-        if (_inited) return;
+        // Always reload messages, but only rebuild DOM once
+        if (_inited) { _loadHistory(); return; }
         _inited = true;
 
         var container = document.getElementById('userChatContainer');
@@ -46,23 +47,35 @@ const UserChat = (() => {
     }
 
     async function _loadHistory() {
-        if (!_userId) { _showEmpty(); return; }
-
         try {
-            // First get candidate_id from user
-            var authR = await fetch('./api/user-auth.php?action=check', {credentials:'same-origin'});
-            var authD = await authR.json();
-            if (!authD || !authD.user) { _showEmpty(); return; }
+            // Get candidate_id — try session first, then localStorage
+            if (!_candidateId) {
+                var authR = await fetch('./api/user-auth.php?action=check', {credentials:'same-origin'});
+                var authD = await authR.json();
+                console.log('[Chat] auth check:', authD);
 
-            var candR = await fetch('./api/candidates.php?user_id=' + authD.user.id);
-            var candD = await candR.json();
-            if (!candD || !candD.candidate) { _showEmpty(); return; }
+                if (!authD || !authD.user) {
+                    console.warn('[Chat] Not authenticated');
+                    _showEmpty(); return;
+                }
+                _userId = authD.user.id;
 
-            _candidateId = candD.candidate.id;
+                var candR = await fetch('./api/candidates.php?user_id=' + authD.user.id);
+                var candD = await candR.json();
+                console.log('[Chat] candidate:', candD);
+
+                if (!candD || !candD.candidate) {
+                    console.warn('[Chat] No candidate found');
+                    _showEmpty(); return;
+                }
+                _candidateId = candD.candidate.id;
+            }
 
             // Fetch chat history
+            console.log('[Chat] Loading history for candidate:', _candidateId);
             var r = await fetch('./api/chat.php?action=history&candidate_id=' + _candidateId, {credentials:'same-origin'});
             var d = await r.json();
+            console.log('[Chat] History response:', d);
 
             if (d && d.messages && d.messages.length > 0) {
                 _messages = d.messages;
@@ -73,6 +86,9 @@ const UserChat = (() => {
                     headers: {'Content-Type':'application/json'},
                     body: JSON.stringify({candidate_id: _candidateId})
                 });
+            } else if (d && d.error) {
+                console.error('[Chat] API error:', d.error);
+                _showEmpty();
             } else {
                 _showEmpty();
             }
@@ -81,7 +97,7 @@ const UserChat = (() => {
             _startPoll();
 
         } catch(e) {
-            console.warn('Chat: API error', e);
+            console.error('[Chat] Load error:', e);
             _showEmpty();
         }
     }
