@@ -12,6 +12,22 @@ require_once __DIR__ . '/../config.php';
 $action = $_GET['action'] ?? '';
 $SYNC_TOKEN = 'bas-sync-2026';
 
+// Quick stats (no auth needed)
+if ($action === 'stats') {
+    $db = getDB();
+    $att = (int) $db->query("SELECT COUNT(*) FROM dw_attendance")->fetchColumn();
+    $rek = 0;
+    try { $rek = (int) $db->query("SELECT COUNT(*) FROM dw_rekening_changes")->fetchColumn(); } catch(Exception $e) {}
+    $linked = (int) $db->query("SELECT COUNT(*) FROM dw_attendance WHERE user_id IS NOT NULL")->fetchColumn();
+    $months = $db->query("SELECT DATE_FORMAT(date,'%Y-%m') as m, COUNT(*) as c FROM dw_attendance GROUP BY m ORDER BY m DESC LIMIT 5")->fetchAll();
+    jsonResponse([
+        'attendance_total' => $att,
+        'attendance_linked' => $linked,
+        'rekening_changes' => $rek,
+        'recent_months' => $months
+    ]);
+}
+
 // ═══════════════════════════════════════════════════
 // SYNC ABSENSI (from GAS)
 // ═══════════════════════════════════════════════════
