@@ -138,36 +138,60 @@ const UserChat = (() => {
         var input = document.getElementById('userChatInput');
         if (!input) return;
         var text = input.value.trim();
-        if (!text || !_candidateId) return;
+        if (!text) return;
+
+        // If candidateId not loaded yet, try loading it
+        if (!_candidateId) {
+            console.warn('[Chat] candidateId not set, attempting reload...');
+            try {
+                var authR = await fetch('./api/user-auth.php?action=check', {credentials:'same-origin'});
+                var authD = await authR.json();
+                if (authD && authD.user) {
+                    var candR = await fetch('./api/candidates.php?user_id=' + authD.user.id);
+                    var candD = await candR.json();
+                    if (candD && candD.candidate) _candidateId = candD.candidate.id;
+                }
+            } catch(e) {}
+            if (!_candidateId) {
+                alert('Sesi login tidak ditemukan. Silakan refresh halaman.');
+                return;
+            }
+        }
 
         input.value = '';
         input.style.height = 'auto';
 
         try {
+            var replyTo = null;
+            try { replyTo = ChatEngine.getReplyTo(); } catch(e){}
+
             var r = await fetch('./api/chat.php?action=send', {
                 method: 'POST', credentials: 'same-origin',
                 headers: {'Content-Type':'application/json'},
                 body: JSON.stringify({
                     candidate_id: _candidateId,
                     message: text,
-                    reply_to_id: ChatEngine.getReplyTo()?.id || null
+                    reply_to_id: replyTo ? replyTo.id : null
                 })
             });
             var d = await r.json();
+            console.log('[Chat] send response:', d);
             if (d && d.ok) {
                 var newMsg = {
                     id: d.id, sender_type:'user', sender_name:'Anda',
                     message_type:'text', message:text, is_read:0,
-                    created_at: d.created_at || new Date().toISOString().replace('T',' ').substring(0,19),
-                    reply_to_id: ChatEngine.getReplyTo()?.id || null,
-                    reply_preview: ChatEngine.getReplyTo() ? JSON.stringify(ChatEngine.getReplyTo()) : null
+                    created_at: d.created_at || new Date().toISOString().replace('T',' ').substring(0,19)
                 };
                 _messages.push(newMsg);
                 ChatEngine.renderMessages([newMsg], true);
-                ChatEngine.clearReply();
+                try { ChatEngine.clearReply(); } catch(e){}
+            } else {
+                console.error('[Chat] send failed:', d);
+                alert('Gagal kirim pesan: ' + (d.error || 'Unknown error'));
             }
         } catch(e) {
-            console.warn('Chat send error', e);
+            console.error('[Chat] send error', e);
+            alert('Koneksi gagal. Coba lagi.');
         }
     }
 
