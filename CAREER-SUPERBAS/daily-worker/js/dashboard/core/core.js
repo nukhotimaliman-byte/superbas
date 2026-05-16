@@ -198,17 +198,8 @@ const DWCache = {
   }
 };
 
-// ── Early URL Detection (runs before DOMContentLoaded to prevent flash) ──
+// ── Early URL Detection ──
 var _initialSlug = window.location.pathname.replace('/daily-worker/', '').replace(/\/$/, '').replace('dashboard-new.html', '').replace('dashboard.html', '');
-if (_initialSlug && _initialSlug !== 'home') {
-  // Remove 'active' from home immediately to prevent flash
-  document.addEventListener('DOMContentLoaded', function() {
-    var home = document.getElementById('page-home');
-    if (home && document.getElementById('page-' + _initialSlug)) {
-      home.classList.remove('active');
-    }
-  }, { once: true });
-}
 
 // ══════════════════════════════════════════
 // INIT — DOMContentLoaded
@@ -216,85 +207,97 @@ if (_initialSlug && _initialSlug !== 'home') {
 document.addEventListener('DOMContentLoaded', async () => {
   initDarkMode();
 
-  // Auth check
-  if (typeof checkUserAuth === 'function') {
-    try {
-      CURRENT_USER = await checkUserAuth();
-      if (!CURRENT_USER) { window.location.href = '/daily-worker/login.html'; return; }
-      if (['owner','korlap','korlap_interview','korlap_td'].includes(CURRENT_USER.role)) { window.location.href = '/daily-worker/admin.html'; return; }
-      // Load candidate data from API
-      try {
-        const res = await fetch('/daily-worker/api/candidates.php?user_id=' + CURRENT_USER.id);
-        const data = await res.json();
-        if (data.candidate) {
-          const c = data.candidate;
-          USER_DATA.nama = c.name || CURRENT_USER.name || '';
-          USER_DATA.nik = c.nik || CURRENT_USER.nik || '';
-          USER_DATA.ops_id = c.given_id || c.candidate_id || '';
-          USER_DATA.station = c.location_name || '';
-          USER_DATA.join_date = c.created_at ? new Date(c.created_at).toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'}) : '';
-          USER_DATA.bank = c.bank_name || '';
-          USER_DATA.rekening = c.bank_account_no || '';
-          USER_DATA.atas_nama = c.bank_account_name || '';
-          USER_DATA.status_berkas = c.status || 'Belum Pemberkasan';
-          USER_DATA.status_gaji = '';
-        } else {
-          USER_DATA.nama = CURRENT_USER.name || '';
-          USER_DATA.nik = CURRENT_USER.nik || '';
-        }
-      } catch(e) { console.warn('Failed to load candidate:', e); USER_DATA.nama = CURRENT_USER.name || ''; }
+  // If navigating to a non-home page, hide home immediately to prevent flash
+  if (_initialSlug && _initialSlug !== 'home' && _initialSlug !== '') {
+    var homeEl = document.getElementById('page-home');
+    if (homeEl) homeEl.classList.remove('active');
+  }
 
-      // Enrich with importrange data
+  try {
+    // Auth check
+    if (typeof checkUserAuth === 'function') {
       try {
-        var searchKey = USER_DATA.nik || USER_DATA.ops_id || '';
-        if (searchKey) {
-          var irRes = await fetch('/daily-worker/api/importrange.php?action=list&search=' + encodeURIComponent(searchKey) + '&limit=1');
-          var irData = await irRes.json();
-          if (irData.success && irData.data && irData.data.length > 0) {
-            var ir = irData.data[0];
-            if (ir.ops_id) USER_DATA.ops_id = ir.ops_id;
-            if (ir.station) USER_DATA.station = ir.station;
-            if (ir.bank) USER_DATA.bank = ir.bank;
-            if (ir.rekening) USER_DATA.rekening = ir.rekening;
-            if (ir.atas_nama) USER_DATA.atas_nama = ir.atas_nama;
-            if (ir.join_date) USER_DATA.join_date = ir.join_date;
-            if (ir.status_gaji) USER_DATA.status_gaji = ir.status_gaji;
-            if (ir.nama) USER_DATA.nama = ir.nama;
+        CURRENT_USER = await checkUserAuth();
+        if (!CURRENT_USER) { window.location.href = '/daily-worker/login.html'; return; }
+        if (['owner','korlap','korlap_interview','korlap_td'].includes(CURRENT_USER.role)) { window.location.href = '/daily-worker/admin.html'; return; }
+        // Load candidate data from API
+        try {
+          const res = await fetch('/daily-worker/api/candidates.php?user_id=' + CURRENT_USER.id);
+          const data = await res.json();
+          if (data.candidate) {
+            const c = data.candidate;
+            USER_DATA.nama = c.name || CURRENT_USER.name || '';
+            USER_DATA.nik = c.nik || CURRENT_USER.nik || '';
+            USER_DATA.ops_id = c.given_id || c.candidate_id || '';
+            USER_DATA.station = c.location_name || '';
+            USER_DATA.join_date = c.created_at ? new Date(c.created_at).toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'}) : '';
+            USER_DATA.bank = c.bank_name || '';
+            USER_DATA.rekening = c.bank_account_no || '';
+            USER_DATA.atas_nama = c.bank_account_name || '';
+            USER_DATA.status_berkas = c.status || 'Belum Pemberkasan';
+            USER_DATA.status_gaji = '';
+          } else {
+            USER_DATA.nama = CURRENT_USER.name || '';
+            USER_DATA.nik = CURRENT_USER.nik || '';
           }
-        }
-      } catch(e) { console.warn('Importrange enrich failed:', e); }
+        } catch(e) { console.warn('Failed to load candidate:', e); USER_DATA.nama = CURRENT_USER.name || ''; }
 
-    } catch(e) { console.warn('Auth check failed:', e); }
-  }
+        // Enrich with importrange data
+        try {
+          var searchKey = USER_DATA.nik || USER_DATA.ops_id || '';
+          if (searchKey) {
+            var irRes = await fetch('/daily-worker/api/importrange.php?action=list&search=' + encodeURIComponent(searchKey) + '&limit=1');
+            var irData = await irRes.json();
+            if (irData.success && irData.data && irData.data.length > 0) {
+              var ir = irData.data[0];
+              if (ir.ops_id) USER_DATA.ops_id = ir.ops_id;
+              if (ir.station) USER_DATA.station = ir.station;
+              if (ir.bank) USER_DATA.bank = ir.bank;
+              if (ir.rekening) USER_DATA.rekening = ir.rekening;
+              if (ir.atas_nama) USER_DATA.atas_nama = ir.atas_nama;
+              if (ir.join_date) USER_DATA.join_date = ir.join_date;
+              if (ir.status_gaji) USER_DATA.status_gaji = ir.status_gaji;
+              if (ir.nama) USER_DATA.nama = ir.nama;
+            }
+          }
+        } catch(e) { console.warn('Importrange enrich failed:', e); }
 
-  // Init all home components
-  if (typeof renderHomeGrid === 'function') renderHomeGrid();
-  if (typeof updateOpsCard === 'function') updateOpsCard();
-  if (typeof updateNotifications === 'function') updateNotifications();
-  if (typeof loadLinktree === 'function') loadLinktree();
-  if (typeof loadSiteLinks === 'function') loadSiteLinks();
-
-  // Bottom nav click handlers
-  document.querySelectorAll('.nav-item').forEach(b => b.addEventListener('click', () => showPage(b.dataset.page)));
-  var chatBtn = document.getElementById('chatBtn');
-  if (chatBtn) chatBtn.addEventListener('click', function() { showPage('page-chat'); });
-
-  // Restore page from clean URL (e.g. /daily-worker/idcard → page-idcard)
-  if (_initialSlug && document.getElementById('page-' + _initialSlug)) {
-    showPage('page-' + _initialSlug);
-  } else if (!_initialSlug || _initialSlug === 'home') {
-    // Make sure home is active
-    var home = document.getElementById('page-home');
-    if (home) home.classList.add('active');
-  }
-
-  // Handle browser back/forward
-  window.addEventListener('popstate', function(e) {
-    var slug = window.location.pathname.replace('/daily-worker/', '').replace(/\/$/, '');
-    if (slug && document.getElementById('page-' + slug)) {
-      showPage('page-' + slug);
-    } else {
-      showPage('page-home');
+      } catch(e) { console.warn('Auth check failed:', e); }
     }
-  });
+
+    // Init all home components
+    try {
+      if (typeof renderHomeGrid === 'function') renderHomeGrid();
+      if (typeof updateOpsCard === 'function') updateOpsCard();
+      if (typeof updateNotifications === 'function') updateNotifications();
+      if (typeof loadLinktree === 'function') loadLinktree();
+      if (typeof loadSiteLinks === 'function') loadSiteLinks();
+    } catch(e) { console.warn('Home component init failed:', e); }
+
+  } finally {
+    // ═══ GUARANTEED: URL routing ALWAYS runs ═══
+    // Bottom nav click handlers
+    document.querySelectorAll('.nav-item').forEach(b => b.addEventListener('click', () => showPage(b.dataset.page)));
+    var chatBtn = document.getElementById('chatBtn');
+    if (chatBtn) chatBtn.addEventListener('click', function() { showPage('page-chat'); });
+
+    // Restore page from clean URL (e.g. /daily-worker/idcard → page-idcard)
+    if (_initialSlug && _initialSlug !== '' && document.getElementById('page-' + _initialSlug)) {
+      showPage('page-' + _initialSlug);
+    } else {
+      // Default to home
+      var homeEl2 = document.getElementById('page-home');
+      if (homeEl2 && !homeEl2.classList.contains('active')) homeEl2.classList.add('active');
+    }
+
+    // Handle browser back/forward
+    window.addEventListener('popstate', function(e) {
+      var slug = window.location.pathname.replace('/daily-worker/', '').replace(/\/$/, '');
+      if (slug && document.getElementById('page-' + slug)) {
+        showPage('page-' + slug);
+      } else {
+        showPage('page-home');
+      }
+    });
+  }
 });
