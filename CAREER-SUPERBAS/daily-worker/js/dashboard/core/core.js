@@ -94,6 +94,14 @@ function showPage(pageId) {
   if (bnav) bnav.style.display = (pageId === 'page-chat') ? 'none' : '';
   window.scrollTo({ top: 0, behavior: 'smooth' });
   _currentPage = pageId;
+
+  // Update URL hash for refresh persistence
+  var slug = pageId.replace('page-', '');
+  if (slug !== 'home') {
+    history.replaceState(null, '', '#' + slug);
+  } else {
+    history.replaceState(null, '', window.location.pathname);
+  }
 }
 
 // ── Shared Utilities ──
@@ -258,4 +266,20 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.querySelectorAll('.nav-item').forEach(b => b.addEventListener('click', () => showPage(b.dataset.page)));
   var chatBtn = document.getElementById('chatBtn');
   if (chatBtn) chatBtn.addEventListener('click', function() { showPage('page-chat'); });
+
+  // Restore page from URL hash (e.g. #idcard → page-idcard)
+  var hash = window.location.hash.replace('#', '');
+  if (hash && document.getElementById('page-' + hash)) {
+    showPage('page-' + hash);
+  }
+
+  // Handle browser back/forward
+  window.addEventListener('hashchange', function() {
+    var h = window.location.hash.replace('#', '');
+    if (h && document.getElementById('page-' + h)) {
+      showPage('page-' + h);
+    } else {
+      showPage('page-home');
+    }
+  });
 });
