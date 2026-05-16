@@ -13,27 +13,24 @@
   AddType image/svg+xml .svg
 </IfModule>
 
-# SPA Routing - redirect semua 404 ke app.html (React app)
-# index.html = landing page publik (tidak di-redirect)
 <IfModule mod_rewrite.c>
   RewriteEngine On
 
-  # Jangan proses file/folder yang sudah ada
-  RewriteCond %{REQUEST_FILENAME} !-f
-  RewriteCond %{REQUEST_FILENAME} !-d
+  # Skip real files and directories
+  RewriteCond %{REQUEST_FILENAME} -f [OR]
+  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteRule ^ - [L]
 
-  # Dashboard clean URLs → route to dashboard.html
-  RewriteRule ^(berkas|absensi|slipgaji|linkgaji|rekening|gantirek|aduan|idcard|lokasi|chat|lainnya|settings|home)$ dashboard.html [L,QSA]
+  # Dashboard clean URLs → route to dashboard-new.html
+  RewriteRule ^(berkas|absensi|slipgaji|linkgaji|rekening|gantirek|aduan|idcard|lokasi|chat|lainnya|settings|home)$ dashboard-new.html [L,QSA]
 
-  # Jangan redirect ke landing page (index.html)
-  RewriteCond %{REQUEST_FILENAME} !-f
-  RewriteCond %{REQUEST_FILENAME} !-d
+  # Skip index/root
   RewriteCond %{REQUEST_URI} !^/$
 
-  # Arahkan semua SPA routes ke app.html
-  RewriteRule . app.html [L]
+  # All other 404s → app.html (React SPA)
+  RewriteRule ^ app.html [L]
 
-  # Protect uploads — only allow image/pdf access
+  # Protect uploads
   RewriteCond %{REQUEST_URI} /uploads/ [NC]
   RewriteCond %{REQUEST_URI} !\.(jpg|jpeg|png|pdf)$ [NC]
   RewriteRule .* - [F,L]

@@ -2,15 +2,297 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8">
-  <meta http-equiv="refresh" content="0;url=dashboard.html">
-  <title>Redirecting...</title>
-  <script>
-    // Preserve hash if any
-    var hash = window.location.hash || '';
-    window.location.replace('dashboard.html' + hash);
-  </script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Super-BAS — Daily Worker Dashboard</title>
+  <link rel="icon" type="image/png" href="favicon-bas.png">
+  <link rel="stylesheet" href="css/dashboard/core/core.css?v=2">
+  <link rel="stylesheet" href="css/dashboard/home/home.css?v=2">
+  <link rel="stylesheet" href="css/dashboard/absensi/absensi.css?v=2">
+  <link rel="stylesheet" href="css/dashboard/slipgaji/slipgaji.css?v=2">
+  <link rel="stylesheet" href="css/dashboard/linkgaji/linkgaji.css?v=2">
+  <link rel="stylesheet" href="css/dashboard/rekening/rekening.css?v=2">
+  <link rel="stylesheet" href="css/dashboard/aduan/aduan.css?v=2">
+  <link rel="stylesheet" href="css/dashboard/lainnya/lainnya.css?v=2">
+  <link rel="stylesheet" href="css/dashboard/settings/settings.css?v=2">
+  <link rel="stylesheet" href="../shared/css/bas-camera.css?v=1">
+  <link rel="stylesheet" href="css/dashboard/idcard/idcard.css?v=2">
+  <link rel="stylesheet" href="css/dashboard/chat/chat.css?v=5">
+  <link rel="stylesheet" href="css/dashboard/lokasi/lokasi.css?v=1">
 </head>
 <body>
-  <p>Mengalihkan... <a href="dashboard.html">Klik di sini</a> jika tidak otomatis.</p>
+
+
+
+  <!-- ═══ PAGE: HOME ═══ -->
+  <div id="page-home" class="page-content active">
+    <header class="app-header animate-in">
+      <div class="header-left">
+        <div class="header-avatar" id="userAvatar">—</div>
+        <div>
+          <div class="header-greeting">Hello,</div>
+          <div class="header-name" id="userName">—</div>
+        </div>
+      </div>
+      <div class="header-right">
+        <button class="header-btn" id="chatBtn" title="Chat Admin">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          <span class="chat-badge" style="display:none;"></span>
+        </button>
+      </div>
+    </header>
+    <div class="content">
+      <!-- OPS Card -->
+      <div class="ops-card animate-in delay-1">
+        <div class="ops-card-top">
+          <div class="ops-id" id="opsId">—</div>
+          <span class="ops-id-lock"><img src="../BAS.svg" alt="BAS" style="width:84px;height:auto;filter:brightness(0) invert(1);opacity:1;"></span>
+        </div>
+        <div class="ops-station" id="opsStation">—</div>
+        <div class="ops-status-row">
+          <div>
+            <div class="ops-status-label">Pengisian Link Gaji</div>
+            <div class="ops-status-value" id="statusGajiCard">—</div>
+          </div>
+          <div class="ops-join">
+            <div>Bergabung</div>
+            <div style="font-weight:600;" id="joinDate">—</div>
+          </div>
+        </div>
+        <!-- Progress Ring -->
+        <div class="ops-progress-ring" id="opsProgressRing"></div>
+      </div>
+
+      <!-- Dynamic Notifications -->
+      <div id="notif-container"></div>
+
+      <!-- Top Services -->
+      <div class="section-title animate-in delay-3">Menu Layanan</div>
+      <div class="services-grid animate-in delay-3" id="services-grid">
+        <!-- Populated by JS: 7 items + Lainnya -->
+      </div>
+
+      <!-- Quick Info -->
+      <div class="section-title animate-in delay-4">Info Cepat</div>
+      <div class="quick-info animate-in delay-4">
+        <div class="qi-card"><div class="qi-label">Status Gaji</div><div class="qi-value pending" id="statusGaji">—</div></div>
+        <div class="qi-card"><div class="qi-label">Bank</div><div class="qi-value" id="bankName">—</div></div>
+        <div class="qi-card"><div class="qi-label">Rek</div><div class="qi-value" id="rekeningNo">—</div></div>
+      </div>
+
+      <!-- Salary Estimator -->
+      <div class="salary-estimator animate-in delay-5" id="salaryEstimator"></div>
+
+      <!-- Aktivitas -->
+      <div class="section-header animate-in delay-5"><h3>Aktivitas Terakhir</h3><a href="#" class="see-all">Lihat semua &rarr;</a></div>
+      <div class="activity-list animate-in delay-5" id="activityList">
+        <div style="text-align:center;padding:20px 0;color:var(--text-secondary);font-size:13px;">Belum ada aktivitas</div>
+      </div>
+
+      <!-- Linktree -->
+      <div class="section-title animate-in delay-6" id="linktree-section">Link & Grup</div>
+      <div class="linktree-section animate-in delay-6" id="linktreeContainer">
+        <div style="text-align:center;padding:20px 0;color:var(--text-secondary);font-size:13px;">Memuat link...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ PAGE: SLIP GAJI ═══ -->
+  <div id="page-slipgaji" class="page-content">
+    <div class="page-header">
+      <button class="page-back" onclick="showPage('page-home')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg></button>
+      <div class="page-title">Slip Gaji</div>
+    </div>
+    <div class="content" style="padding-bottom:24px;">
+      <!-- Summary -->
+      <div class="slip-summary" id="slipSummary"></div>
+      <!-- List -->
+      <div class="slip-list" id="slipList"></div>
+    </div>
+  </div>
+
+  <!-- ═══ PAGE: ABSENSI ═══ -->
+  <div id="page-absensi" class="page-content">
+    <div class="page-header">
+      <button class="page-back" onclick="showPage('page-home')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg></button>
+      <div class="page-title">Absensi</div>
+    </div>
+    <div class="content" style="padding-bottom:24px;">
+      <!-- Month Selector -->
+      <div class="month-selector">
+        <button class="month-arrow" onclick="changeMonth(-1)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg></button>
+        <div class="month-label" id="monthLabel">—</div>
+        <button class="month-arrow" onclick="changeMonth(1)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></button>
+      </div>
+      <!-- Summary per Periode -->
+      <div class="absensi-summary">
+        <div class="abs-card p1-card">
+          <div class="abs-card-tag">Periode 1</div>
+          <div class="abs-card-num" id="absP1">0</div>
+          <div class="abs-card-label">Hari Hadir</div>
+          <div class="abs-card-gaji" id="absP1Gaji">Gaji: 25 Feb</div>
+        </div>
+        <div class="abs-card p2-card">
+          <div class="abs-card-tag">Periode 2</div>
+          <div class="abs-card-num" id="absP2">0</div>
+          <div class="abs-card-label">Hari Hadir</div>
+          <div class="abs-card-gaji" id="absP2Gaji">Gaji: 10 Mar</div>
+        </div>
+        <div class="abs-card accent">
+          <div class="abs-card-tag">Total</div>
+          <div class="abs-card-num" id="absTotalAll">0</div>
+          <div class="abs-card-label">Total Hadir</div>
+        </div>
+      </div>
+      <!-- Attendance Streak -->
+      <div class="abs-streak" id="absStreak"></div>
+      <!-- Remark Banner -->
+      <div class="remark-banner" id="remarkBanner"></div>
+      <!-- Mini Calendar -->
+      <div class="mini-calendar" id="miniCalendar"></div>
+      <!-- Legend -->
+      <div class="cal-legend"><span class="legend-dot p1-dot"></span> Periode 1 (1-15) <span class="legend-dot p2-dot"></span> Periode 2 (16+)</div>
+      <!-- Attendance List -->
+      <div class="section-title" style="margin-top:20px;">Riwayat Absensi</div>
+      <div class="absensi-list" id="absensiList"></div>
+    </div>
+  </div>
+
+  <!-- ═══ PAGE: LINK GAJI ═══ -->
+  <div id="page-linkgaji" class="page-content">
+    <div class="page-header">
+      <button class="page-back" onclick="showPage('page-home')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg></button>
+      <div class="page-title">Link Pengisian Gaji</div>
+    </div>
+    <div class="gaji-instruction">
+      <strong>📋 Instruksi Pengisian:</strong>
+      1. Klik link gaji sesuai area Anda<br>
+      2. Isi formulir dengan data yang benar<br>
+      3. Pastikan nomor rekening atas nama sendiri<br>
+      4. Submit dan tunggu verifikasi admin
+    </div>
+        <div class="gaji-links" id="gajiLinksContainer">
+      <div style="text-align:center;padding:20px;color:var(--text-secondary);font-size:13px;">Memuat link...</div>
+    </div>
+    <div style="padding:16px;font-size:12px;color:var(--text-secondary);text-align:center;line-height:1.5;">
+      ℹ️ Hubungi admin jika area Anda belum tersedia.
+    </div>
+  </div>
+
+  <!-- ═══ PAGE: REKENING ═══ -->
+  <div id="page-rekening" class="page-content">
+    <div class="page-header">
+      <button class="page-back" onclick="showPage('page-home')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg></button>
+      <div class="page-title">Rekening</div>
+    </div>
+    <div class="content" style="padding-bottom:24px;" id="rekeningContent">
+    </div>
+  </div>
+
+  <!-- ═══ PAGE: GANTI REKENING ═══ -->
+  <div id="page-gantirek" class="page-content">
+    <div class="page-header">
+      <button class="page-back" onclick="showPage('page-rekening')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg></button>
+      <div class="page-title">Ganti Rekening</div>
+    </div>
+    <div class="content" style="padding-bottom:24px;" id="gantirekContent">
+    </div>
+  </div>
+
+  <!-- ═══ PAGE: ADUAN PUNGLI ═══ -->
+  <div id="page-aduan" class="page-content">
+    <div class="page-header">
+      <button class="page-back" onclick="showPage('page-home')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg></button>
+      <div class="page-title">Aduan Pungli</div>
+    </div>
+    <div class="content" style="padding-bottom:24px;" id="aduanContent">
+    </div>
+  </div>
+
+  <!-- ═══ PAGE: BERKAS ═══ -->
+  <div id="page-berkas" class="page-content">
+    <div class="page-header"><button class="page-back" onclick="showPage('page-home')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg></button><div class="page-title">Pemberkasan</div></div>
+    <div id="berkasContent"></div>
+  </div>
+
+  <!-- ═══ PAGE: ID CARD ═══ -->
+  <div id="page-idcard" class="page-content">
+    <div class="page-header"><button class="page-back" onclick="showPage('page-home')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg></button><div class="page-title">ID Card</div></div>
+    <div id="idcardContent"></div>
+  </div>
+
+  <!-- ═══ PAGE: LAINNYA (All Menu) ═══ -->
+  <div id="page-lainnya" class="page-content">
+    <div class="page-header">
+      <button class="page-back" onclick="showPage('page-home')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg></button>
+      <div class="page-title">Semua Menu</div>
+      <button class="edit-toggle-btn" id="editToggleBtn" onclick="toggleEditMode()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        <span>Edit</span>
+      </button>
+    </div>
+    <div class="content" style="padding-bottom:20px;">
+      <div class="services-grid" id="all-services-grid" style="margin-top:12px;">
+        <!-- Populated by JS -->
+      </div>
+      <div class="edit-hint" id="editHint" style="display:none;">
+        <p>Tahan & geser untuk mengatur urutan. 7 teratas tampil di Home.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ PAGE: SETTINGS ═══ -->
+  <div id="page-settings" class="page-content">
+    <div class="page-header"><button class="page-back" onclick="showPage('page-home')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg></button><div class="page-title">Pengaturan</div></div>
+    <div id="settingsContent"></div>
+  </div>
+
+  <!-- ═══ PAGE: LOKASI DC ═══ -->
+  <div id="page-lokasi" class="page-content">
+    <div class="page-header">
+      <button class="page-back" onclick="showPage('page-home')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg></button>
+      <div class="page-title">Lokasi DC</div>
+    </div>
+    <div class="content" style="padding-bottom:24px;" id="lokasiContent"></div>
+  </div>
+
+  <!-- ═══ PAGE: CHAT ═══ -->
+  <div id="page-chat" class="page-content">
+    <div class="page-header">
+      <button class="page-back" onclick="showPage('page-home')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg></button>
+      <div class="page-title">Chat Admin</div>
+    </div>
+    <div id="userChatContainer" style="height:calc(100vh - 120px);overflow:hidden;"></div>
+  </div>
+
+  <!-- ═══ BOTTOM NAV ═══ -->
+  <nav class="bottom-nav">
+    <button class="nav-item active" data-page="page-home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Home</button>
+    <button class="nav-item" data-page="page-berkas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Berkas</button>
+    <button class="nav-cam-fab" onclick="BASCamera.open()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></button>
+    <button class="nav-item" data-page="page-idcard"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>ID Card</button>
+    <button class="nav-item" data-page="page-settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9c.26.604.852.997 1.51 1H21a2 2 0 0 1 0 4h-.09c-.658.003-1.25.396-1.51 1z"/></svg>Settings</button>
+  </nav>
+
+  <script src="js/utils.js?v=5"></script>
+  <script src="js/user-auth.js?v=5"></script>
+  <script src="js/logo-base64.js?v=5"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="../shared/js/bas-camera.js?v=4"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+  <script src="js/dashboard/idcard/idcard.js?v=8"></script>
+  <script src="js/dashboard/chat/bas-chat.js?v=3"></script>
+  <script src="js/dashboard/chat/user-chat.js?v=6"></script>
+  <link rel="stylesheet" href="css/dashboard/berkas/berkas.css?v=5">
+  <script src="js/dashboard/berkas/berkas.js?v=5"></script>
+  <script src="js/dashboard/core/core.js?v=2"></script>
+  <script src="js/dashboard/home/home.js?v=2"></script>
+  <script src="js/dashboard/absensi/absensi.js?v=2"></script>
+  <script src="js/dashboard/slipgaji/slipgaji.js?v=2"></script>
+  <script src="js/dashboard/linkgaji/linkgaji.js?v=2"></script>
+  <script src="js/dashboard/rekening/rekening.js?v=2"></script>
+  <script src="js/dashboard/aduan/aduan.js?v=2"></script>
+  <script src="js/dashboard/lainnya/lainnya.js?v=2"></script>
+  <script src="js/dashboard/settings/settings.js?v=2"></script>
+  <script src="js/dashboard/lokasi/lokasi.js?v=1"></script>
 </body>
 </html>
