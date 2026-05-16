@@ -136,6 +136,7 @@ function initSidebar(){
     if (tab === 'blacklist'    && !window._bL) { loadBlacklist();  window._bL = 1; }
     if (tab === 'analytics'    && !window._aL) { loadAnalytics();  window._aL = 1; }
     if (tab === 'settings'     && !window._sL) { loadSettings();   window._sL = 1; }
+    if (tab === 'linktree'     && !window._ltL) { loadLinktree();  window._ltL = 1; }
     if (tab === 'quick-access' && !window._qL) { renderQuickAccess(); window._qL = 1; }
   }));
 }

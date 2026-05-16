@@ -1,0 +1,70 @@
+/* ═══════════════════════════════════════════════════
+   BAS Daily Worker — Lokasi DC Page CSS
+   DC location map, station list, distance info
+   ═══════════════════════════════════════════════════ */
+
+.lokasi-header-info {
+  padding: 16px; text-align: center;
+}
+.lokasi-header-info h3 {
+  font-size: 16px; font-weight: 700; color: var(--text);
+  margin: 0 0 4px;
+}
+.lokasi-header-info p {
+  font-size: 12px; color: var(--text-secondary); margin: 0;
+}
+
+/* Station Card */
+.lokasi-card {
+  background: var(--surface); border-radius: 16px;
+  padding: 16px; margin: 0 16px 12px;
+  box-shadow: var(--card-shadow);
+  display: flex; align-items: center; gap: 14px;
+  cursor: pointer; transition: transform 0.2s;
+  text-decoration: none; color: inherit;
+}
+.lokasi-card:active { transform: scale(0.98); }
+
+.lokasi-card-icon {
+  width: 48px; height: 48px; border-radius: 14px;
+  background: rgba(236,72,153,0.1); color: #ec4899;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.lokasi-card-icon svg { width: 22px; height: 22px; }
+
+.lokasi-card-info { flex: 1; }
+.lokasi-card-name {
+  font-size: 14px; font-weight: 700; color: var(--text);
+}
+.lokasi-card-address {
+  font-size: 11px; color: var(--text-secondary);
+  margin-top: 2px; line-height: 1.4;
+}
+.lokasi-card-distance {
+  font-size: 10px; font-weight: 600;
+  color: #ec4899; margin-top: 4px;
+}
+
+.lokasi-card-arrow {
+  color: var(--text-secondary); opacity: 0.5; flex-shrink: 0;
+}
+.lokasi-card-arrow svg { width: 16px; height: 16px; }
+
+/* Map container */
+.lokasi-map {
+  margin: 0 16px 16px; border-radius: 16px;
+  overflow: hidden; height: 200px;
+  background: var(--surface); box-shadow: var(--card-shadow);
+}
+.lokasi-map iframe {
+  width: 100%; height: 100%; border: none;
+}
+
+/* Empty state */
+.lokasi-empty {
+  text-align: center; padding: 40px 20px;
+  color: var(--text-secondary);
+}
+.lokasi-empty svg { width: 48px; height: 48px; margin-bottom: 12px; opacity: 0.4; }
+.lokasi-empty p { font-size: 13px; margin: 0; }

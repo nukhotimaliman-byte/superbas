@@ -652,12 +652,37 @@ function formatRekening(rek) {
 // ══════════════════════════════════════════
 // GANTI REKENING PAGE
 // ══════════════════════════════════════════
-const DUMMY_GANTIREK_LINKS = [
-  { area: 'Sulawesi + Papua', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>', link: '#', desc: 'Form pergantian rekening wilayah Sulawesi & Papua' },
-  { area: 'Kalimantan', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>', link: '#', desc: 'Form pergantian rekening wilayah Kalimantan' },
-  { area: 'Sumatera', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>', link: '#', desc: 'Form pergantian rekening wilayah Sumatera' },
-  { area: 'Jawa + Bali + NTB + NTT', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>', link: '#', desc: 'Form pergantian rekening wilayah Jawa, Bali, NTB, NTT' },
-];
+var SITE_LINKS = { link_gaji: [], link_gantirek: [] };
+async function loadSiteLinks() {
+  try {
+    var res = await fetch(API_BASE + 'site-config.php?action=get_links');
+    var data = await res.json();
+    if (data.success) SITE_LINKS = data.data;
+  } catch(e) { console.warn('Load site links failed:', e); }
+  renderLinkGajiPage();
+}
+
+function renderLinkGajiPage() {
+  var container = document.getElementById('gajiLinksContainer');
+  if (!container) return;
+  var links = SITE_LINKS.link_gaji || [];
+  if (links.length === 0) {
+    container.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-secondary);font-size:13px;">Belum ada link gaji tersedia.</div>';
+    return;
+  }
+  var h = '';
+  links.forEach(function(item) {
+    h += '<a href="' + item.link + '" target="_blank" rel="noopener" class="gaji-link-card">' +
+      '<div class="gaji-link-icon si-purple">💰</div>' +
+      '<div class="gaji-link-info">' +
+        '<div class="gaji-link-title">Link Gaji — ' + item.area + '</div>' +
+        '<div class="gaji-link-desc">' + (item.desc || '') + '</div>' +
+      '</div>' +
+      '<div class="gaji-link-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></div>' +
+    '</a>';
+  });
+  container.innerHTML = h;
+}
 
 function renderGantiRekening() {
   var container = document.getElementById('gantirekContent');
@@ -667,7 +692,11 @@ function renderGantiRekening() {
     '<h3>Pilih Area Anda</h3>' +
     '<p>Klik link sesuai daerah kerja untuk mengajukan pergantian rekening.</p>' +
   '</div>';
-  DUMMY_GANTIREK_LINKS.forEach(function(item) {
+  var gantirekLinks = SITE_LINKS.link_gantirek || [];
+  if (gantirekLinks.length === 0) {
+    h += '<div style="text-align:center;padding:20px;color:var(--text-secondary);font-size:13px;">Belum ada link ganti rekening tersedia.</div>';
+  }
+  gantirekLinks.forEach(function(item) {
     h += '<a href="' + item.link + '" target="_blank" class="gantirek-link">' +
       '<div class="gantirek-link-icon">' + item.icon + '</div>' +
       '<div class="gantirek-link-info">' +
@@ -921,6 +950,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   updateOpsCard();
   updateNotifications();
   loadLinktree();
+  loadSiteLinks();
   document.querySelectorAll('.nav-item').forEach(b => b.addEventListener('click', () => showPage(b.dataset.page)));
   var chatBtn = document.getElementById('chatBtn');
   if (chatBtn) chatBtn.addEventListener('click', function() { showPage('page-chat'); });

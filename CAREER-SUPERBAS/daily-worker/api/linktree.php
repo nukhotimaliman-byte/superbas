@@ -20,7 +20,7 @@ function requireLinktreeAuth() {
 }
 
 $action = $_GET['action'] ?? '';
-$TABLE  = 'dw_linktree';
+$TABLE  = 'bas_linktree';  // Shared across all projects
 
 // ── Public: get active links (for beranda) ──
 if ($_SERVER['REQUEST_METHOD'] === 'GET' && $action === 'list') {

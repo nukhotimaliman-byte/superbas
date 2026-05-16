@@ -652,6 +652,13 @@ body.sidebar-collapsed .main { margin-left: var(--sidebar-collapsed); }
 .s-btn--primary { background: var(--accent); color: #000; border-color: var(--accent); }
 .s-btn--primary:hover { filter: brightness(1.15); box-shadow: 0 4px 20px var(--accent-d); }
 .s-btn--danger { border-color: rgba(239,68,68,.3); color: var(--danger); }
+
+/* ID Card Mode Tabs */
+.idcm-tab { background: transparent; color: var(--t3); }
+.idcm-tab.active { background: var(--bg2); color: var(--accent); box-shadow: 0 2px 8px rgba(0,0,0,.06); }
+.idcm-tab:hover:not(.active) { color: var(--t1); background: rgba(255,255,255,.03); }
+.idcm-panel { transition: opacity .2s ease; }
+.idcm-panel:not(.active) { display: none; }
 .s-btn--danger:hover { background: rgba(239,68,68,.1); }
 .s-form-group { margin-bottom: 16px; }
 .s-form-label { display: block; font-size: .65rem; font-weight: 600; color: var(--t3); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 6px; }

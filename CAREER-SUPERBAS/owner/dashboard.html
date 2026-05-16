@@ -66,6 +66,12 @@
             <span>Export</span>
         </button>
 
+        <div class="sidebar-section-label">Content</div>
+        <button class="sidebar-item" data-tab="linktree" data-tooltip="Linktree">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+            <span>Linktree</span>
+        </button>
+
         <div class="sidebar-section-label">System</div>
         <button class="sidebar-item" data-tab="quick-access" data-tooltip="Quick Access">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
@@ -445,7 +451,75 @@
     </div>
 </div>
 
+<!-- LINKTREE PANEL -->
+<div class="panel" id="panel-linktree">
+    <div class="panel-header">
+        <h2 class="panel-title">Linktree Manager</h2>
+        <p class="panel-desc">Kelola link penting yang ditampilkan di semua project (shared)</p>
+    </div>
+    <div style="display:flex;gap:10px;align-items:center;margin-bottom:20px;flex-wrap:wrap">
+        <span id="ltCount" style="font-size:.82rem;color:var(--t3)"></span>
+        <div style="flex:1"></div>
+        <button class="s-btn" onclick="addLtGroup()" style="display:inline-flex;align-items:center;gap:5px">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+            Tambah Grup
+        </button>
+        <button class="s-btn s-btn--primary" onclick="openLtModal()" style="display:inline-flex;align-items:center;gap:5px">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Tambah Link
+        </button>
+    </div>
+    <div class="lt-container" id="ltList">
+        <div class="lt-empty">Memuat...</div>
+    </div>
+</div>
+
 </div><!-- /main -->
+
+<!-- Linktree Modal -->
+<div id="ltModal" class="lt-modal-overlay" style="display:none" onclick="if(event.target===this)closeLtModal()">
+    <div class="lt-modal">
+        <div class="lt-modal-hdr">
+            <h3 id="ltModalTitle" style="margin:0;font-size:1.05rem;display:flex;align-items:center;gap:8px">🔗 Tambah Link Baru</h3>
+            <button onclick="closeLtModal()" style="background:none;border:none;font-size:1.3rem;cursor:pointer;color:var(--t3)">&times;</button>
+        </div>
+        <div class="lt-modal-body">
+            <input type="hidden" id="ltEditId" value="">
+            <div class="lt-field">
+                <label class="lt-label">Icon</label>
+                <div id="ltIconPicker" class="lt-icon-grid"></div>
+            </div>
+            <div class="lt-field">
+                <label class="lt-label">Judul Link *</label>
+                <input type="text" id="ltTitle" class="lt-input" placeholder="Contoh: Tutorial Pendaftaran">
+            </div>
+            <div class="lt-field">
+                <label class="lt-label">URL *</label>
+                <input type="url" id="ltUrl" class="lt-input" placeholder="https://...">
+            </div>
+            <div class="lt-field">
+                <label class="lt-label">Deskripsi <span style="font-weight:400;color:var(--t3)">(opsional)</span></label>
+                <input type="text" id="ltDesc" class="lt-input" placeholder="Deskripsi singkat...">
+            </div>
+            <div class="lt-field">
+                <label class="lt-label">Grup <span style="font-weight:400;color:var(--t3)">(opsional)</span></label>
+                <input type="text" id="ltGroupName" class="lt-input" placeholder="Contoh: Jawa Barat, Social Media" list="ltGroupSuggest">
+                <datalist id="ltGroupSuggest"></datalist>
+            </div>
+            <div class="lt-field">
+                <label class="lt-label">Urutan Grup <span style="font-weight:400;color:var(--t3)">(kecil = atas)</span></label>
+                <input type="number" id="ltGroupOrder" class="lt-input" placeholder="0" value="0" min="0" style="width:100px">
+            </div>
+            <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">
+                <button class="s-btn" onclick="closeLtModal()">Batal</button>
+                <button class="s-btn s-btn--primary" onclick="saveLtItem()" style="display:inline-flex;align-items:center;gap:5px">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                    Simpan
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 
 <!-- Modal -->
 <div class="modal-overlay" id="modalOverlay">
@@ -462,6 +536,123 @@
 <!-- Toast -->
 <div class="toast-container" id="toastContainer"></div>
 
+<style>
+/* ── Linktree Panel ──────────────────────── */
+.lt-container {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: var(--r); overflow: hidden;
+}
+.lt-empty {
+    padding: 40px 20px; text-align: center; color: var(--t3); font-size: .85rem;
+}
+.lt-item {
+    display: flex; align-items: center; gap: 12px; padding: 14px 18px;
+    border-bottom: 1px solid var(--border); transition: background .15s;
+}
+.lt-item:last-child { border-bottom: none; }
+.lt-item:hover { background: var(--accent-g); }
+.lt-inactive { opacity: .45; }
+.lt-item-icon {
+    width: 38px; height: 38px; border-radius: 10px; display: flex;
+    align-items: center; justify-content: center; flex-shrink: 0;
+    background: var(--accent-g); color: var(--accent);
+}
+.lt-item-icon svg { width: 18px; height: 18px; }
+.lt-ic-whatsapp { background: rgba(37,211,102,.1) !important; color: #25d366 !important; }
+.lt-ic-instagram { background: rgba(225,48,108,.1) !important; color: #e1306c !important; }
+.lt-ic-tiktok { background: rgba(255,255,255,.06) !important; color: var(--t1) !important; }
+.lt-ic-facebook { background: rgba(24,119,242,.1) !important; color: #1877f2 !important; }
+.lt-ic-youtube { background: rgba(255,0,0,.08) !important; color: #ff0000 !important; }
+.lt-ic-telegram { background: rgba(38,165,224,.1) !important; color: #26a5e4 !important; }
+.lt-item-body { flex: 1; min-width: 0; }
+.lt-item-title { font-weight: 600; font-size: .88rem; color: var(--t1); }
+.lt-item-desc { font-size: .75rem; color: var(--accent); margin-top: 2px; }
+.lt-item-url {
+    font-size: .72rem; color: var(--t3); white-space: nowrap;
+    overflow: hidden; text-overflow: ellipsis; margin-top: 2px;
+}
+.lt-item-acts { display: flex; gap: 6px; align-items: center; flex-shrink: 0; }
+.lt-act-btn {
+    background: none; border: none; cursor: pointer; padding: 5px;
+    border-radius: 6px; color: var(--t3); transition: all .15s; font-size: .85rem;
+    display: inline-flex; align-items: center; justify-content: center;
+}
+.lt-act-btn:hover { background: var(--bg3); color: var(--t1); }
+.lt-act-del:hover { color: #ef4444 !important; background: rgba(239,68,68,.08) !important; }
+
+/* Toggle switch */
+.lt-switch { position: relative; width: 34px; height: 18px; flex-shrink: 0; display: inline-block; }
+.lt-switch input { opacity: 0; width: 0; height: 0; }
+.lt-switch-sl {
+    position: absolute; inset: 0; background: var(--bg4); border-radius: 18px;
+    border: 1px solid var(--border); cursor: pointer; transition: all .2s;
+}
+.lt-switch-sl::before {
+    content: ''; position: absolute; height: 14px; width: 14px; left: 2px; bottom: 1px;
+    background: var(--t3); border-radius: 50%; transition: all .2s;
+}
+.lt-switch input:checked + .lt-switch-sl { background: var(--accent-d); border-color: var(--accent); }
+.lt-switch input:checked + .lt-switch-sl::before { transform: translateX(15px); background: var(--accent); }
+
+/* Group headers */
+.lt-group-hdr {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 18px; font-size: .72rem; font-weight: 700; color: var(--accent);
+    text-transform: uppercase; letter-spacing: .8px;
+    border-bottom: 1px solid var(--border); background: var(--accent-g);
+}
+.lt-group-left { display: flex; align-items: center; gap: 8px; }
+.lt-group-left svg { width: 14px; height: 14px; color: var(--accent); }
+.lt-group-cnt { font-weight: 400; opacity: .6; font-size: .65rem; }
+.lt-group-acts { display: flex; gap: 2px; }
+
+/* Modal */
+.lt-modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,.6); z-index: 10000;
+    display: flex; align-items: center; justify-content: center;
+    backdrop-filter: blur(4px); animation: ltFadeIn .2s ease;
+}
+@keyframes ltFadeIn { from { opacity: 0 } to { opacity: 1 } }
+.lt-modal {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--r);
+    width: 480px; max-width: 92vw;
+    box-shadow: 0 24px 80px rgba(0,0,0,.4); animation: ltPop .25s ease;
+    overflow: hidden;
+}
+@keyframes ltPop { from { opacity: 0; transform: scale(.95) } to { opacity: 1; transform: scale(1) } }
+.lt-modal-hdr {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 18px 22px; border-bottom: 1px solid var(--border);
+}
+.lt-modal-body { padding: 18px 22px 24px; }
+.lt-field { margin-bottom: 14px; }
+.lt-label { font-size: .78rem; font-weight: 600; display: block; margin-bottom: 5px; color: var(--t1); }
+.lt-input {
+    width: 100%; padding: 10px 14px; border: 1px solid var(--border);
+    border-radius: var(--rs); background: var(--bg3); color: var(--t1);
+    font-family: var(--font); font-size: .82rem; box-sizing: border-box;
+    transition: border-color .25s var(--ease), box-shadow .25s var(--ease);
+}
+.lt-input:focus { outline: none; border-color: var(--accent); background: var(--accent-g); box-shadow: 0 0 0 3px rgba(56,189,248,.08); }
+
+/* Icon picker */
+.lt-icon-grid { display: flex; flex-wrap: wrap; gap: 6px; }
+.lt-ico-opt {
+    width: 38px; height: 38px; display: flex; align-items: center; justify-content: center;
+    border-radius: 8px; border: 2px solid var(--border); cursor: pointer;
+    transition: all .15s; background: var(--bg3); color: var(--t3);
+}
+.lt-ico-opt svg { width: 18px; height: 18px; }
+.lt-ico-opt:hover { border-color: var(--accent); color: var(--t1); }
+.lt-ico-opt.selected { border-color: var(--accent); color: var(--accent); background: var(--accent-d); box-shadow: 0 0 0 2px rgba(56,189,248,.12); }
+.lt-ico-whatsapp.selected { color: #25d366; border-color: #25d366; background: rgba(37,211,102,.12); box-shadow: 0 0 0 2px rgba(37,211,102,.15); }
+.lt-ico-instagram.selected { color: #e1306c; border-color: #e1306c; background: rgba(225,48,108,.12); box-shadow: 0 0 0 2px rgba(225,48,108,.15); }
+.lt-ico-tiktok.selected { color: var(--t1); border-color: var(--t1); background: var(--bg4); }
+.lt-ico-facebook.selected { color: #1877f2; border-color: #1877f2; background: rgba(24,119,242,.12); box-shadow: 0 0 0 2px rgba(24,119,242,.15); }
+.lt-ico-youtube.selected { color: #ff0000; border-color: #ff0000; background: rgba(255,0,0,.08); box-shadow: 0 0 0 2px rgba(255,0,0,.1); }
+.lt-ico-telegram.selected { color: #26a5e4; border-color: #26a5e4; background: rgba(38,165,224,.12); box-shadow: 0 0 0 2px rgba(38,165,224,.15); }
+</style>
+
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
 <script src="js/utils.js?v=2.0"></script>
 <script src="js/overview.js?v=2.0"></script>
@@ -469,6 +660,7 @@
 <script src="js/modules.js?v=2.0"></script>
 <script src="js/forecast.js?v=2.0"></script>
 <script src="js/indonesia-map.js?v=2.0"></script>
+<script src="js/linktree.js?v=1.0"></script>
 <script src="js/dashboard.js?v=2.0"></script>
 </body>
 </html>

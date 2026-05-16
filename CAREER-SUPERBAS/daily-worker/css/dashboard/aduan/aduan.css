@@ -1,0 +1,90 @@
+/* ═══════════════════════════════════════════════════
+   BAS Daily Worker — Aduan Pungli Page CSS
+   Form, upload, locked state, aduan card
+   ═══════════════════════════════════════════════════ */
+
+.aduan-intro { text-align: center; padding: 20px 16px 10px; color: #ef4444; }
+.aduan-intro h3 { font-size: 16px; color: #111827; margin: 12px 0 4px; }
+.aduan-intro p { font-size: 13px; color: #6b7280; margin: 0; line-height: 1.5; }
+
+.aduan-section {
+  margin: 12px 16px; background: #fff; border-radius: 16px;
+  padding: 16px; box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+}
+.aduan-section-title {
+  font-size: 13px; font-weight: 700; color: #374151;
+  margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid #f3f4f6;
+}
+.aduan-field { margin-bottom: 14px; }
+.aduan-field:last-child { margin-bottom: 0; }
+.aduan-field label { display: block; font-size: 12px; font-weight: 600; color: #6b7280; margin-bottom: 6px; }
+.aduan-input {
+  width: 100%; padding: 10px 12px; border: 1.5px solid #e5e7eb;
+  border-radius: 10px; font-size: 14px; color: #111827;
+  background: #fff; outline: none; box-sizing: border-box;
+  transition: border-color 0.2s;
+}
+.aduan-input:focus { border-color: #6366f1; }
+.aduan-readonly { background: #f9fafb; color: #6b7280; }
+.aduan-textarea { resize: vertical; min-height: 100px; font-family: inherit; }
+
+.aduan-upload {
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  padding: 24px 16px; border: 2px dashed #d1d5db;
+  border-radius: 12px; cursor: pointer; color: #9ca3af;
+  transition: border-color 0.2s, background 0.2s;
+}
+.aduan-upload:active { border-color: #6366f1; background: rgba(99,102,241,0.04); }
+.aduan-upload span { font-size: 13px; }
+
+.aduan-submit {
+  display: block; width: calc(100% - 32px); margin: 16px;
+  padding: 14px; background: linear-gradient(135deg, #ef4444, #dc2626);
+  color: #fff; border: none; border-radius: 14px;
+  font-size: 14px; font-weight: 600; cursor: pointer;
+  box-shadow: 0 4px 16px rgba(239,68,68,0.3);
+}
+
+/* Locked state */
+.aduan-locked-banner {
+  display: flex; align-items: center; gap: 8px;
+  margin: 16px; padding: 12px 16px;
+  background: #fef3c7; border: 1px solid #fcd34d;
+  border-radius: 12px; font-size: 13px; font-weight: 500; color: #92400e;
+}
+.aduan-card {
+  margin: 0 16px 16px; background: #fff; border-radius: 16px;
+  overflow: hidden; box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+}
+.aduan-card-header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 14px 16px; background: linear-gradient(135deg, #fef2f2, #fff1f2);
+  border-bottom: 1px solid #fecaca;
+}
+.aduan-tiket { font-size: 13px; font-weight: 700; color: #991b1b; }
+.aduan-status {
+  font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 6px;
+}
+.aduan-diterima { background: #dbeafe; color: #1e40af; }
+.aduan-proses { background: #fef3c7; color: #92400e; }
+.aduan-selesai { background: #d1fae5; color: #065f46; }
+
+.aduan-detail { padding: 12px 16px; }
+.aduan-row {
+  display: flex; justify-content: space-between;
+  padding: 6px 0; font-size: 13px; border-bottom: 1px solid #f9fafb;
+}
+.aduan-row:last-child { border-bottom: none; }
+.aduan-row span:first-child { color: #6b7280; }
+.aduan-row span:last-child { font-weight: 600; color: #111827; }
+
+.aduan-kronologi { padding: 0 16px 12px; }
+.aduan-kronologi-label { font-size: 12px; font-weight: 600; color: #6b7280; margin-bottom: 4px; }
+.aduan-kronologi-text {
+  font-size: 13px; color: #374151; line-height: 1.6;
+  background: #f9fafb; padding: 12px; border-radius: 10px;
+}
+.aduan-bukti {
+  display: flex; align-items: center; gap: 6px;
+  padding: 10px 16px 16px; font-size: 12px; color: #6b7280;
+}

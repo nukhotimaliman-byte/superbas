@@ -1,0 +1,93 @@
+/* ═══════════════════════════════════════════════════
+   BAS Daily Worker — Slip Gaji Page CSS
+   Summary card, slip list, detail expand, PDF button
+   ═══════════════════════════════════════════════════ */
+
+.slip-sum-card {
+  background: var(--accent-gradient); color: #fff;
+  border-radius: 16px; padding: 20px; text-align: center;
+  margin-bottom: 16px;
+}
+.slip-sum-label { font-size: 12px; opacity: 0.8; font-weight: 500; }
+.slip-sum-amount { font-size: 28px; font-weight: 800; margin: 4px 0; }
+.slip-sum-count { font-size: 11px; opacity: 0.7; }
+
+.slip-list { display: flex; flex-direction: column; gap: 8px; }
+.slip-item {
+  background: var(--surface); border-radius: 14px;
+  box-shadow: var(--card-shadow); overflow: hidden;
+}
+.slip-item-header {
+  display: flex; align-items: center; gap: 10px;
+  padding: 14px 16px; cursor: pointer;
+}
+.slip-item-icon {
+  width: 38px; height: 38px; border-radius: 10px;
+  background: rgba(99,102,241,0.08); color: var(--accent);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.slip-item-info { flex: 1; }
+.slip-item-period { font-size: 13px; font-weight: 600; }
+.slip-item-amount { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+.slip-badge {
+  padding: 3px 8px; border-radius: 6px;
+  font-size: 9px; font-weight: 700; flex-shrink: 0;
+}
+.slip-badge.done { background: rgba(16,185,129,0.1); color: #059669; }
+.slip-badge.pending { background: rgba(234,179,8,0.1); color: #d97706; }
+.slip-badge.bouncing { background: rgba(239,68,68,0.1); color: #dc2626; }
+.slip-chevron {
+  color: var(--text-secondary); transition: transform 0.3s;
+  flex-shrink: 0;
+}
+.slip-chevron.open { transform: rotate(180deg); }
+
+.slip-item-body {
+  max-height: 0; overflow: hidden;
+  transition: max-height 0.35s ease, padding 0.35s ease;
+  padding: 0 16px;
+}
+.slip-item-body.open { max-height: 600px; padding: 0 16px 16px; }
+
+.slip-detail-section { margin-bottom: 10px; }
+.slip-detail-title {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.5px;
+  padding: 4px 8px; border-radius: 6px;
+  display: inline-block; margin-bottom: 8px;
+}
+.slip-detail-title.earn { background: rgba(16,185,129,0.08); color: #059669; }
+.slip-detail-title.deduct { background: rgba(239,68,68,0.08); color: #dc2626; }
+.slip-detail-row {
+  display: flex; justify-content: space-between;
+  font-size: 12px; padding: 4px 0;
+}
+.slip-detail-row span.positive { color: #059669; font-weight: 600; }
+.slip-detail-row span.negative { color: #dc2626; font-weight: 600; }
+.slip-detail-row.subtotal {
+  border-top: 1px dashed var(--border);
+  margin-top: 4px; padding-top: 6px; font-weight: 700;
+}
+.slip-detail-total {
+  background: rgba(99,102,241,0.05); border-radius: 10px;
+  padding: 12px; text-align: center; margin: 10px 0;
+}
+.slip-detail-total div:first-child { font-size: 10px; color: var(--text-secondary); font-weight: 600; letter-spacing: 0.5px; }
+.slip-total-num { font-size: 22px; font-weight: 800; color: var(--accent); margin-top: 2px; }
+.slip-detail-transfer {
+  font-size: 11px; color: var(--text-secondary);
+  padding: 8px 0; border-top: 1px solid var(--border);
+}
+.slip-detail-warn {
+  padding: 8px 12px; border-radius: 8px;
+  background: rgba(239,68,68,0.06); color: #dc2626;
+  font-size: 11px; font-weight: 600; margin: 6px 0;
+}
+.slip-dl-btn {
+  width: 100%; padding: 10px; border: none;
+  border-radius: 10px; cursor: pointer;
+  background: var(--accent-gradient); color: #fff;
+  font-size: 13px; font-weight: 600;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  margin-top: 8px;
+}

@@ -1,0 +1,35 @@
+/* ═══════════════════════════════════════════════════
+   BAS Daily Worker — Link Gaji Page CSS
+   Instruction box, link cards
+   ═══════════════════════════════════════════════════ */
+
+.gaji-instruction {
+  background: var(--warning-bg);
+  border: 1px solid var(--warning-border);
+  border-radius: 14px;
+  padding: 16px; margin: 12px 16px;
+  font-size: 13px; color: var(--warning-text);
+  line-height: 1.6;
+}
+.gaji-instruction strong { display: block; margin-bottom: 4px; }
+
+.gaji-links { padding: 0 16px; }
+.gaji-link-card {
+  display: flex; align-items: center; gap: 14px;
+  padding: 16px; background: var(--surface);
+  border-radius: 14px; margin-bottom: 10px;
+  box-shadow: var(--card-shadow);
+  text-decoration: none; color: var(--text);
+  transition: transform 0.2s;
+}
+.gaji-link-card:active { transform: scale(0.98); }
+.gaji-link-icon {
+  width: 48px; height: 48px; border-radius: 14px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; font-size: 22px;
+}
+.gaji-link-info { flex: 1; }
+.gaji-link-title { font-size: 14px; font-weight: 700; }
+.gaji-link-desc { font-size: 12px; color: var(--text-secondary); margin-top: 3px; }
+.gaji-link-arrow { color: var(--text-secondary); }
+.gaji-link-arrow svg { width: 20px; height: 20px; }

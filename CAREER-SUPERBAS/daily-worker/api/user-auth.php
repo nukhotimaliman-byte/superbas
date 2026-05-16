@@ -121,7 +121,7 @@ switch ($action) {
         $password   = $data['password'] ?? '';
 
         if (!$identifier || !$password) {
-            jsonResponse(['error' => 'Username/NIK dan password wajib diisi'], 400);
+            jsonResponse(['error' => 'Username/NIK/Email dan password wajib diisi'], 400);
         }
 
         $db = getDB();
@@ -154,8 +154,8 @@ switch ($action) {
         }
 
         // 2. Check users table (username OR NIK)
-        $stmt = $db->prepare('SELECT id, nik, username, password, name, picture, is_deleted FROM dw_users WHERE username = ? OR nik = ?');
-        $stmt->execute([$identifier, $identifier]);
+        $stmt = $db->prepare('SELECT id, nik, username, password, name, picture, is_deleted FROM dw_users WHERE username = ? OR nik = ? OR email = ?');
+        $stmt->execute([$identifier, $identifier, $identifier]);
         $user = $stmt->fetch();
 
         if ($user && $user['is_deleted']) {
@@ -192,7 +192,7 @@ switch ($action) {
             break;
         }
 
-        jsonResponse(['error' => 'Username/NIK atau password salah'], 401);
+        jsonResponse(['error' => 'Username/NIK/Email atau password salah'], 401);
         break;
 
     // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•

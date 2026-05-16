@@ -1,0 +1,138 @@
+/* ═══════════════════════════════════════════════════
+   BAS Daily Worker — Rekening Page CSS
+   Bank card, rekening info, ganti rekening form
+   ═══════════════════════════════════════════════════ */
+
+/* ══ REKENING PAGE ══ */
+.rek-warning {
+  background: linear-gradient(135deg, #fef2f2, #fee2e2);
+  border: 1px solid #fca5a5;
+  border-radius: 16px;
+  padding: 16px;
+  margin: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.rek-warning-icon {
+  width: 40px; height: 40px;
+  background: #ef4444;
+  border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  color: #fff;
+}
+.rek-warning-icon svg { width: 22px; height: 22px; }
+.rek-warning-text { font-size: 13px; color: #991b1b; line-height: 1.5; }
+.rek-warning-btn {
+  background: #ef4444; color: #fff; border: none;
+  border-radius: 10px; padding: 10px 16px;
+  font-size: 13px; font-weight: 600; cursor: pointer; text-align: center;
+}
+
+.bank-card {
+  margin: 16px;
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a78bfa 100%);
+  border-radius: 20px; padding: 24px; color: #fff;
+  position: relative; overflow: hidden;
+  box-shadow: 0 8px 32px rgba(99,102,241,0.35);
+}
+.bank-card::before {
+  content: ''; position: absolute; top: -40px; right: -40px;
+  width: 120px; height: 120px; background: rgba(255,255,255,0.08); border-radius: 50%;
+}
+.bank-card::after {
+  content: ''; position: absolute; bottom: -20px; left: -20px;
+  width: 80px; height: 80px; background: rgba(255,255,255,0.06); border-radius: 50%;
+}
+.bank-card-top { margin-bottom: 20px; position: relative; z-index: 1; }
+.bank-card-label { font-size: 11px; opacity: 0.7; text-transform: uppercase; letter-spacing: 1px; }
+.bank-card-bank { font-size: 18px; font-weight: 700; margin-top: 2px; }
+.bank-card-number {
+  font-size: 22px; font-weight: 600; letter-spacing: 3px;
+  font-family: 'Courier New', monospace; margin: 16px 0;
+  position: relative; z-index: 1;
+}
+.bank-card-bottom { display: flex; justify-content: space-between; align-items: flex-end; position: relative; z-index: 1; }
+.bank-card-name { font-size: 14px; font-weight: 600; margin-top: 2px; }
+.bank-card-status {
+  font-size: 11px; font-weight: 600; padding: 4px 10px;
+  border-radius: 8px; display: flex; align-items: center; gap: 4px;
+}
+.bank-card-status svg { width: 14px; height: 14px; }
+.bank-card-status.rek-valid { background: rgba(16,185,129,0.25); color: #d1fae5; }
+.bank-card-status.rek-invalid { background: rgba(239,68,68,0.3); color: #fecaca; }
+
+.rek-info-section {
+  margin: 0 16px; background: #fff; border-radius: 16px;
+  padding: 16px; box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+}
+.rek-info-title {
+  font-size: 13px; font-weight: 700; color: #374151;
+  margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid #f3f4f6;
+}
+.rek-info-row {
+  display: flex; justify-content: space-between;
+  padding: 8px 0; font-size: 13px; border-bottom: 1px solid #f9fafb;
+}
+.rek-info-row:last-child { border-bottom: none; }
+.rek-info-row span:first-child { color: #6b7280; }
+.rek-info-row span:last-child { font-weight: 600; color: #111827; }
+.rek-valid { color: #059669 !important; }
+.rek-invalid { color: #dc2626 !important; }
+.rek-pending { color: #d97706 !important; font-weight: 600; }
+
+.rek-section-label {
+  font-size: 14px; font-weight: 700; color: #374151;
+  padding: 16px 16px 0; display: flex; align-items: center; gap: 8px;
+}
+.rek-source {
+  font-size: 11px; font-weight: 500; color: #9ca3af;
+  background: #f3f4f6; padding: 2px 8px; border-radius: 6px;
+}
+.rek-empty {
+  margin: 8px 16px; padding: 32px 16px;
+  background: #f9fafb; border: 2px dashed #e5e7eb;
+  border-radius: 16px; text-align: center; color: #9ca3af;
+}
+.rek-empty p { margin: 8px 0 0; font-size: 13px; }
+
+.rek-change-btn {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  width: calc(100% - 32px); margin: 16px; padding: 14px;
+  background: linear-gradient(135deg, #eab308, #f59e0b);
+  color: #fff; border: none; border-radius: 14px;
+  font-size: 14px; font-weight: 600; cursor: pointer;
+  box-shadow: 0 4px 16px rgba(234,179,8,0.3);
+}
+
+/* ══ GANTI REKENING PAGE ══ */
+.gantirek-header { text-align: center; padding: 20px 16px 10px; }
+.gantirek-header-icon {
+  width: 56px; height: 56px;
+  background: linear-gradient(135deg, rgba(234,179,8,0.15), rgba(245,158,11,0.15));
+  color: #eab308; border-radius: 16px;
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 12px;
+}
+.gantirek-header h3 { font-size: 16px; color: #111827; margin: 0 0 4px; }
+.gantirek-header p { font-size: 13px; color: #6b7280; margin: 0; }
+
+.gantirek-link {
+  display: flex; align-items: center; gap: 14px;
+  margin: 8px 16px; padding: 16px; background: #fff;
+  border-radius: 14px; text-decoration: none;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.gantirek-link:active { transform: scale(0.98); }
+.gantirek-link-icon {
+  width: 44px; height: 44px;
+  background: linear-gradient(135deg, rgba(234,179,8,0.1), rgba(245,158,11,0.15));
+  border-radius: 12px; display: flex; align-items: center; justify-content: center;
+  color: #eab308; flex-shrink: 0;
+}
+.gantirek-link-info { flex: 1; min-width: 0; }
+.gantirek-link-title { font-size: 14px; font-weight: 600; color: #111827; }
+.gantirek-link-desc { font-size: 12px; color: #6b7280; margin-top: 2px; }
+.gantirek-link-arrow { color: #d1d5db; flex-shrink: 0; }
+.gantirek-link-arrow svg { width: 18px; height: 18px; }

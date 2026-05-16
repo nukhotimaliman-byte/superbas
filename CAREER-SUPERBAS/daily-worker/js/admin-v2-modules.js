@@ -10,6 +10,7 @@ function initModules() {
     initLocations();
     initBlacklist();
     initSettings();
+    if (typeof initIDCard === 'function') initIDCard();
 }
 
 // ═══ ANALYTICS ═══
@@ -641,10 +642,197 @@ async function initSettings() {
     initMenuConfig();
     // Init dropdown opts
     renderDropdownOpts();
+    // Init link layanan
+    await loadLinkLayanan();
     // Init system info
     const storageSize = JSON.stringify(localStorage).length;
     const sysStorage = document.getElementById('sysStorage');
     if (sysStorage) sysStorage.textContent = (storageSize / 1024).toFixed(1) + ' KB used';
+}
+
+// ── Link Layanan (Gaji & Ganti Rekening) ──
+var LINK_DATA = { link_gaji: [], link_gantirek: [] };
+
+async function loadLinkLayanan() {
+    try {
+        const res = await fetch(API_BASE + 'site-config.php?action=get_links', { credentials: 'same-origin' });
+        const data = await res.json();
+        if (data.success && data.data) {
+            LINK_DATA.link_gaji = data.data.link_gaji || [];
+            LINK_DATA.link_gantirek = data.data.link_gantirek || [];
+        }
+    } catch(e) { console.warn('Load link layanan failed:', e); }
+    renderLinkList('link_gaji', 'linkGajiList');
+    renderLinkList('link_gantirek', 'linkGantirekList');
+}
+
+function renderLinkList(key, containerId) {
+    var container = document.getElementById(containerId);
+    if (!container) return;
+    var items = LINK_DATA[key] || [];
+    // Update counter badge
+    var countEl = document.getElementById(key === 'link_gaji' ? 'linkGajiCount' : 'linkGantirekCount');
+    if (countEl) countEl.textContent = items.length;
+    // Accent colors per type
+    var accent = key === 'link_gaji' ? '#A855F7' : '#EAB308';
+    var accentBg = key === 'link_gaji' ? 'rgba(168,85,247,' : 'rgba(234,179,8,';
+    var emptyIcon = key === 'link_gaji'
+        ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="32" height="32" style="color:' + accent + '"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>'
+        : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="32" height="32" style="color:' + accent + '"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M7 15h0M2 9h20"/></svg>';
+
+    if (items.length === 0) {
+        container.innerHTML = '<div style="text-align:center;padding:32px 20px;">' +
+            '<div style="margin-bottom:8px;opacity:.5;">' + emptyIcon + '</div>' +
+            '<div style="font-size:.78rem;color:var(--t3);margin-bottom:4px;">Belum ada link</div>' +
+            '<div style="font-size:.65rem;color:var(--t3);opacity:.7;">Klik tombol di bawah untuk menambahkan</div>' +
+        '</div>';
+        return;
+    }
+    var html = '';
+    items.forEach(function(item, idx) {
+        // Extract domain from URL
+        var domain = '';
+        try { domain = new URL(item.link).hostname.replace('www.',''); } catch(e) { domain = item.link; }
+        var faviconUrl = 'https://www.google.com/s2/favicons?domain=' + domain + '&sz=32';
+
+        html += '<div class="lnk-card" style="display:flex;align-items:center;gap:14px;padding:14px 16px;background:var(--bg3);border:1px solid var(--border);border-radius:12px;margin-bottom:8px;transition:all .2s;position:relative;overflow:hidden;" onmouseover="this.style.borderColor=\'' + accent + '40\';this.querySelector(\'.lnk-actions\').style.opacity=1" onmouseout="this.style.borderColor=\'var(--border)\';this.querySelector(\'.lnk-actions\').style.opacity=0">' +
+            // Left accent bar
+            '<div style="position:absolute;left:0;top:0;bottom:0;width:3px;background:' + accent + ';border-radius:3px 0 0 3px;"></div>' +
+            // Sort badge
+            '<div style="min-width:28px;height:28px;border-radius:8px;background:' + accentBg + '.1);color:' + accent + ';display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:800;">' + (item.sort || idx+1) + '</div>' +
+            // Favicon
+            '<img src="' + faviconUrl + '" alt="" style="width:20px;height:20px;border-radius:4px;flex-shrink:0;" onerror="this.style.display=\'none\'">' +
+            // Info
+            '<div style="flex:1;min-width:0;">' +
+                '<div style="display:flex;align-items:center;gap:8px;margin-bottom:3px;">' +
+                    '<span style="font-size:.78rem;font-weight:700;color:var(--t1);">' + item.area + '</span>' +
+                    '<span style="background:rgba(34,197,94,.12);color:#22C55E;font-size:.55rem;font-weight:700;padding:2px 7px;border-radius:10px;">Aktif</span>' +
+                '</div>' +
+                '<a href="' + item.link + '" target="_blank" style="font-size:.68rem;color:var(--accent);text-decoration:none;display:flex;align-items:center;gap:4px;">' +
+                    '<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:280px;">' + domain + '</span>' +
+                    '<span style="background:' + accentBg + '.12);color:' + accent + ';font-size:.55rem;padding:1px 6px;border-radius:4px;flex-shrink:0;font-weight:600;">Buka</span>' +
+                '</a>' +
+                (item.desc ? '<div style="font-size:.62rem;color:var(--t3);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + item.desc + '</div>' : '') +
+            '</div>' +
+            // Actions (hover reveal)
+            '<div class="lnk-actions" style="display:flex;gap:4px;flex-shrink:0;opacity:0;transition:opacity .2s;">' +
+                '<button class="act-btn" onclick="editLinkItem(\'' + key + '\', ' + idx + ')" title="Edit" style="background:rgba(59,130,246,.1);color:#3B82F6;border:none;width:30px;height:30px;border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>' +
+                '<button class="act-btn" onclick="deleteLinkItem(\'' + key + '\', ' + idx + ')" title="Hapus" style="background:rgba(239,68,68,.1);color:#EF4444;border:none;width:30px;height:30px;border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>' +
+            '</div>' +
+        '</div>';
+    });
+    container.innerHTML = html;
+}
+
+function toggleAddForm(type) {
+    var formId = type === 'gaji' ? 'addFormGaji' : 'addFormGantirek';
+    var btnId = type === 'gaji' ? 'btnToggleGaji' : 'btnToggleGantirek';
+    var form = document.getElementById(formId);
+    var btn = document.getElementById(btnId);
+    if (!form) return;
+    if (form.style.display === 'none') {
+        form.style.display = 'block';
+        if (btn) btn.style.display = 'none';
+    } else {
+        form.style.display = 'none';
+        if (btn) btn.style.display = 'block';
+    }
+}
+
+async function saveLinkData(key) {
+    try {
+        const res = await fetch(API_BASE + 'site-config.php?action=set', {
+            method: 'POST', credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ key: key, value: LINK_DATA[key] })
+        });
+        const data = await res.json();
+        if (!data.success) { showToast(data.error || 'Gagal menyimpan', 'error'); return false; }
+        return true;
+    } catch(e) { showToast('Error: ' + e.message, 'error'); return false; }
+}
+
+async function addLinkGaji() {
+    var area = document.getElementById('lgArea').value.trim();
+    var url = document.getElementById('lgUrl').value.trim();
+    var desc = document.getElementById('lgDesc').value.trim();
+    var sort = parseInt(document.getElementById('lgSort').value) || 1;
+    if (!area || !url) { showToast('Area dan URL wajib diisi', 'error'); return; }
+    LINK_DATA.link_gaji.push({ area: area, link: url, desc: desc, sort: sort });
+    LINK_DATA.link_gaji.sort(function(a,b) { return (a.sort||99) - (b.sort||99); });
+    var ok = await saveLinkData('link_gaji');
+    if (ok) {
+        document.getElementById('lgArea').value = '';
+        document.getElementById('lgUrl').value = '';
+        document.getElementById('lgDesc').value = '';
+        document.getElementById('lgSort').value = '1';
+        renderLinkList('link_gaji', 'linkGajiList');
+        toggleAddForm('gaji');
+        showToast('Link gaji ditambahkan');
+    }
+}
+
+async function addLinkGantirek() {
+    var area = document.getElementById('grArea').value.trim();
+    var url = document.getElementById('grUrl').value.trim();
+    var desc = document.getElementById('grDesc').value.trim();
+    var sort = parseInt(document.getElementById('grSort').value) || 1;
+    if (!area || !url) { showToast('Area dan URL wajib diisi', 'error'); return; }
+    LINK_DATA.link_gantirek.push({ area: area, link: url, desc: desc, sort: sort });
+    LINK_DATA.link_gantirek.sort(function(a,b) { return (a.sort||99) - (b.sort||99); });
+    var ok = await saveLinkData('link_gantirek');
+    if (ok) {
+        document.getElementById('grArea').value = '';
+        document.getElementById('grUrl').value = '';
+        document.getElementById('grDesc').value = '';
+        document.getElementById('grSort').value = '1';
+        renderLinkList('link_gantirek', 'linkGantirekList');
+        toggleAddForm('gantirek');
+        showToast('Link ganti rekening ditambahkan');
+    }
+}
+
+function editLinkItem(key, idx) {
+    var item = LINK_DATA[key][idx];
+    if (!item) return;
+    var label = key === 'link_gaji' ? 'Gaji' : 'Ganti Rekening';
+    var html = '<div style="font-size:.85rem;font-weight:700;margin-bottom:16px;">Edit Link ' + label + '</div>' +
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">' +
+            '<div><label class="s-form-label">Area</label><input class="s-input" id="editLnArea" value="' + item.area + '"></div>' +
+            '<div><label class="s-form-label">URL</label><input class="s-input" id="editLnUrl" value="' + item.link + '"></div>' +
+            '<div style="grid-column:1/-1;"><label class="s-form-label">Deskripsi</label><input class="s-input" id="editLnDesc" value="' + (item.desc||'') + '"></div>' +
+            '<div><label class="s-form-label">Urutan</label><input class="s-input" id="editLnSort" type="number" value="' + (item.sort||1) + '" min="1"></div>' +
+        '</div>' +
+        '<button class="s-btn s-btn--primary" style="margin-top:16px;" onclick="saveEditLinkItem(\'' + key + '\', ' + idx + ')">Simpan</button>';
+    openModal(html);
+}
+
+async function saveEditLinkItem(key, idx) {
+    var item = LINK_DATA[key][idx];
+    if (!item) return;
+    item.area = document.getElementById('editLnArea').value.trim();
+    item.link = document.getElementById('editLnUrl').value.trim();
+    item.desc = document.getElementById('editLnDesc').value.trim();
+    item.sort = parseInt(document.getElementById('editLnSort').value) || 1;
+    LINK_DATA[key].sort(function(a,b) { return (a.sort||99) - (b.sort||99); });
+    var ok = await saveLinkData(key);
+    if (ok) {
+        closeModal();
+        var containerId = key === 'link_gaji' ? 'linkGajiList' : 'linkGantirekList';
+        renderLinkList(key, containerId);
+        showToast('Link diperbarui');
+    }
+}
+
+async function deleteLinkItem(key, idx) {
+    if (!confirm('Hapus link ini?')) return;
+    LINK_DATA[key].splice(idx, 1);
+    var ok = await saveLinkData(key);
+    if (ok) {
+        var containerId = key === 'link_gaji' ? 'linkGajiList' : 'linkGantirekList';
+        renderLinkList(key, containerId);
+        showToast('Link dihapus');
+    }
 }
 
 async function loadLinktreeData() {
@@ -833,6 +1021,7 @@ function renderLinktree() {
             '<div class="linktree-item-icon" style="background:' + color + '20;color:' + color + ';">' + (ICON_SVG[lt.icon] || ICON_SVG.link) + '</div>' +
             '<div class="linktree-item-info">' +
                 '<div class="linktree-item-title">' + lt.title + '</div>' +
+                (lt.description ? '<div style="font-size:.68rem;color:var(--accent);margin-top:1px;">' + lt.description + '</div>' : '') +
                 '<div class="linktree-item-url">' + lt.url + '</div>' +
             '</div>' +
             '<span class="linktree-item-badge" style="background:' + (lt.active?'rgba(34,197,94,.15)':'rgba(239,68,68,.15)') + ';color:' + (lt.active?'#22C55E':'#EF4444') + '">' + (lt.active?'Aktif':'Nonaktif') + '</span>' +
@@ -875,16 +1064,18 @@ async function addLinktree() {
     if (!title || !url) { showToast('Isi judul dan URL', 'error'); return; }
     const iconKey = document.getElementById('ltIcon').value;
     const groupName = document.getElementById('ltCategory').value;
+    const desc = (document.getElementById('ltDesc') || {}).value || '';
     try {
         const res = await fetch(API_BASE + 'linktree.php?action=add', {
             method: 'POST', credentials: 'same-origin',
             headers: { 'Content-Type': 'application/json', 'X-Admin-Token': 'bas-owner-2026' },
-            body: JSON.stringify({ title: title, url: url, icon_key: iconKey, icon: iconKey, group_name: groupName === 'Umum' ? null : groupName, description: '' })
+            body: JSON.stringify({ title: title, url: url, icon_key: iconKey, icon: iconKey, group_name: groupName === 'Umum' ? null : groupName, description: desc.trim() })
         });
         const data = await res.json();
         if (!data.ok) { showToast(data.error || 'Gagal menambah link', 'error'); return; }
         document.getElementById('ltTitle').value = '';
         document.getElementById('ltUrl').value = '';
+        if (document.getElementById('ltDesc')) document.getElementById('ltDesc').value = '';
         await loadLinktreeData();
         renderLinktree();
         showToast('Link berhasil ditambahkan');
@@ -900,9 +1091,11 @@ function editLinktree(id) {
     const catOpts = (DUMMY.linktreeCategories || ['Umum']).map(function(c) {
         return '<option value="' + c + '"' + (c === lt.category ? ' selected' : '') + '>' + c + '</option>';
     }).join('');
+    const descVal = (lt.description || '').replace(/"/g, '&quot;');
     const html = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">' +
         '<div><label class="s-form-label">Judul</label><input class="s-input" id="editLtTitle" value="' + lt.title + '"></div>' +
         '<div><label class="s-form-label">URL</label><input class="s-input" id="editLtUrl" value="' + lt.url + '"></div>' +
+        '<div style="grid-column:1/-1;"><label class="s-form-label">Deskripsi / Teks <span style="font-weight:400;color:var(--t3);">(opsional)</span></label><input class="s-input" id="editLtDesc" value="' + descVal + '" placeholder="Teks yang tampil di bawah judul link..."></div>' +
         '<div><label class="s-form-label">Icon</label><select class="s-input" id="editLtIcon">' + iconOpts + '</select></div>' +
         '<div><label class="s-form-label">Kategori</label><select class="s-input" id="editLtCategory">' + catOpts + '</select></div>' +
     '</div>' +
@@ -916,10 +1109,11 @@ async function saveLinktreeEdit(id) {
     const iconKey = document.getElementById('editLtIcon').value;
     const groupName = document.getElementById('editLtCategory').value;
     try {
+        const desc = (document.getElementById('editLtDesc') || {}).value || '';
         const res = await fetch(API_BASE + 'linktree.php?action=update', {
             method: 'POST', credentials: 'same-origin',
             headers: { 'Content-Type': 'application/json', 'X-Admin-Token': 'bas-owner-2026' },
-            body: JSON.stringify({ id: id, title: title, url: url, icon_key: iconKey, icon: iconKey, group_name: groupName === 'Umum' ? null : groupName, description: '' })
+            body: JSON.stringify({ id: id, title: title, url: url, icon_key: iconKey, icon: iconKey, group_name: groupName === 'Umum' ? null : groupName, description: desc.trim() })
         });
         const data = await res.json();
         if (!data.ok) { showToast(data.error || 'Gagal memperbarui', 'error'); return; }

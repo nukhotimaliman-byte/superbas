@@ -46,8 +46,8 @@
 
       <form id="loginForm">
         <div class="form-group">
-          <label for="loginId">Username / NIK</label>
-          <input type="text" id="loginId" placeholder="Masukkan username atau NIK" autocomplete="username" required>
+          <label for="loginId">Username / NIK / Email</label>
+          <input type="text" id="loginId" placeholder="Username, NIK, atau Email" autocomplete="username" required>
         </div>
         <div class="form-group">
           <label for="loginPass">Password</label>
@@ -409,11 +409,11 @@ loginForm.addEventListener('submit', async (e) => {
       showToast('Login berhasil!', 'success');
       showEditor();
     } else {
-      loginError.textContent = data.error || 'Username atau password salah';
+      loginError.textContent = data.error || 'Username/NIK/Email atau password salah';
       loginError.classList.add('show');
     }
   } catch (err) {
-    loginError.textContent = 'Username atau password salah';
+    loginError.textContent = 'Tidak dapat terhubung ke server';
     loginError.classList.add('show');
   } finally {
     btnLogin.disabled = false;

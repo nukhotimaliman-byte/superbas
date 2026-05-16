@@ -43,35 +43,36 @@ if ($action === 'debug_user') {
     $data = json_decode(file_get_contents('php://input'), true);
     if (($data['token'] ?? '') !== $SYNC_TOKEN) jsonResponse(['error'=>'Invalid token'], 403);
     $opsId = trim($data['ops_id'] ?? '');
+    $nik = trim($data['nik'] ?? '');
     $db = getDB();
-    $r = ['ops_id'=>$opsId, 'api_version'=>'v3'];
+    $r = ['api_version'=>'v3', 'input_ops_id'=>$opsId, 'input_nik'=>$nik];
     
-    $s = $db->prepare("SELECT ops_id, nama, nik, station FROM dw_importrange WHERE LOWER(ops_id) = LOWER(?)");
-    $s->execute([$opsId]); $r['importrange'] = $s->fetch() ?: 'NOT FOUND';
-    
-    $s = $db->prepare("SELECT COUNT(*) FROM dw_attendance WHERE LOWER(ops_id) = LOWER(?)");
-    $s->execute([$opsId]); $r['attendance_count'] = (int)$s->fetchColumn();
-    
-    $s = $db->prepare("SELECT date, shifting, station FROM dw_attendance WHERE LOWER(ops_id) = LOWER(?) ORDER BY date DESC LIMIT 3");
-    $s->execute([$opsId]); $r['attendance_sample'] = $s->fetchAll();
-    
-    if (is_array($r['importrange']) && !empty($r['importrange']['nik'])) {
-        $nik = $r['importrange']['nik'];
-        // Check ALL importrange rows with this NIK
-        $s = $db->prepare("SELECT ops_id, nama FROM dw_importrange WHERE TRIM(nik) = TRIM(?)");
-        $s->execute([$nik]); $r['all_importrange_by_nik'] = $s->fetchAll();
-        
+    // If NIK provided, find importrange by NIK first
+    if ($nik) {
+        $s = $db->prepare("SELECT ops_id, nama, nik, station FROM dw_importrange WHERE TRIM(nik) = TRIM(?)");
+        $s->execute([$nik]); $r['importrange_by_nik'] = $s->fetchAll();
+        // Also find candidate
         $s = $db->prepare("SELECT id, user_id, given_id, nik FROM dw_candidates WHERE TRIM(nik) = TRIM(?)");
-        $s->execute([$nik]); $r['candidate'] = $s->fetch() ?: 'NO CANDIDATE';
-        if (is_array($r['candidate']) && !empty($r['candidate']['user_id'])) {
-            $uid = $r['candidate']['user_id'];
+        $s->execute([$nik]); $r['candidate_by_nik'] = $s->fetch() ?: 'NO CANDIDATE';
+        if (is_array($r['candidate_by_nik']) && !empty($r['candidate_by_nik']['user_id'])) {
+            $uid = $r['candidate_by_nik']['user_id'];
             $s = $db->prepare("SELECT id, name, phone FROM dw_users WHERE id = ?");
             $s->execute([$uid]); $r['user'] = $s->fetch() ?: 'NOT FOUND';
             $r['resolveOpsId_result'] = resolveOpsId($db, $uid);
-            $s = $db->prepare("SELECT id, given_id, nik FROM dw_candidates WHERE user_id = ?");
-            $s->execute([$uid]); $r['all_candidates'] = $s->fetchAll();
         }
     }
+    
+    // If ops_id provided (or found via NIK), search attendance
+    $searchOps = $opsId ?: ($r['resolveOpsId_result'] ?? '');
+    if ($searchOps) {
+        $s = $db->prepare("SELECT ops_id, nama, nik, station FROM dw_importrange WHERE LOWER(ops_id) = LOWER(?)");
+        $s->execute([$searchOps]); $r['importrange'] = $s->fetch() ?: 'NOT FOUND';
+        $s = $db->prepare("SELECT COUNT(*) FROM dw_attendance WHERE LOWER(ops_id) = LOWER(?)");
+        $s->execute([$searchOps]); $r['attendance_count'] = (int)$s->fetchColumn();
+        $s = $db->prepare("SELECT date, shifting, station FROM dw_attendance WHERE LOWER(ops_id) = LOWER(?) ORDER BY date DESC LIMIT 5");
+        $s->execute([$searchOps]); $r['attendance_sample'] = $s->fetchAll();
+    }
+    
     jsonResponse($r);
 }
 
