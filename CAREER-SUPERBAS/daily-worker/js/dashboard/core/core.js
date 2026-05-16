@@ -95,12 +95,12 @@ function showPage(pageId) {
   window.scrollTo({ top: 0, behavior: 'smooth' });
   _currentPage = pageId;
 
-  // Update URL hash for refresh persistence
+  // Update URL (clean path, no hash)
   var slug = pageId.replace('page-', '');
-  if (slug !== 'home') {
-    history.replaceState(null, '', '#' + slug);
-  } else {
-    history.replaceState(null, '', window.location.pathname);
+  var basePath = '/daily-worker/';
+  var newPath = slug === 'home' ? basePath : basePath + slug;
+  if (window.location.pathname !== newPath) {
+    history.pushState({ page: pageId }, '', newPath);
   }
 }
 
@@ -267,17 +267,17 @@ document.addEventListener('DOMContentLoaded', async () => {
   var chatBtn = document.getElementById('chatBtn');
   if (chatBtn) chatBtn.addEventListener('click', function() { showPage('page-chat'); });
 
-  // Restore page from URL hash (e.g. #idcard → page-idcard)
-  var hash = window.location.hash.replace('#', '');
-  if (hash && document.getElementById('page-' + hash)) {
-    showPage('page-' + hash);
+  // Restore page from clean URL (e.g. /daily-worker/idcard → page-idcard)
+  var pathSlug = window.location.pathname.replace('/daily-worker/', '').replace(/\/$/, '').replace('dashboard.html', '');
+  if (pathSlug && document.getElementById('page-' + pathSlug)) {
+    showPage('page-' + pathSlug);
   }
 
   // Handle browser back/forward
-  window.addEventListener('hashchange', function() {
-    var h = window.location.hash.replace('#', '');
-    if (h && document.getElementById('page-' + h)) {
-      showPage('page-' + h);
+  window.addEventListener('popstate', function(e) {
+    var slug = window.location.pathname.replace('/daily-worker/', '').replace(/\/$/, '');
+    if (slug && document.getElementById('page-' + slug)) {
+      showPage('page-' + slug);
     } else {
       showPage('page-home');
     }

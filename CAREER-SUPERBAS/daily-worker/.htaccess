@@ -22,7 +22,12 @@
   RewriteCond %{REQUEST_FILENAME} !-f
   RewriteCond %{REQUEST_FILENAME} !-d
 
+  # Dashboard clean URLs → route to dashboard.html
+  RewriteRule ^(berkas|absensi|slipgaji|linkgaji|rekening|gantirek|aduan|idcard|lokasi|chat|lainnya|settings|home)$ dashboard.html [L,QSA]
+
   # Jangan redirect ke landing page (index.html)
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
   RewriteCond %{REQUEST_URI} !^/$
 
   # Arahkan semua SPA routes ke app.html
