@@ -50,7 +50,7 @@ const UserChat = (() => {
         try {
             // Get candidate_id — try session first, then localStorage
             if (!_candidateId) {
-                var authR = await fetch('./api/user-auth.php?action=check', {credentials:'same-origin'});
+                var authR = await fetch('/daily-worker/api/user-auth.php?action=check', {credentials:'same-origin'});
                 var authD = await authR.json();
                 console.log('[Chat] auth check:', authD);
 
@@ -60,7 +60,7 @@ const UserChat = (() => {
                 }
                 _userId = authD.user.id;
 
-                var candR = await fetch('./api/candidates.php?user_id=' + authD.user.id);
+                var candR = await fetch('/daily-worker/api/candidates.php?user_id=' + authD.user.id);
                 var candD = await candR.json();
                 console.log('[Chat] candidate:', candD);
 
@@ -73,7 +73,7 @@ const UserChat = (() => {
 
             // Fetch chat history
             console.log('[Chat] Loading history for candidate:', _candidateId);
-            var r = await fetch('./api/chat.php?action=history&candidate_id=' + _candidateId, {credentials:'same-origin'});
+            var r = await fetch('/daily-worker/api/chat.php?action=history&candidate_id=' + _candidateId, {credentials:'same-origin'});
             var d = await r.json();
             console.log('[Chat] History response:', d);
 
@@ -81,7 +81,7 @@ const UserChat = (() => {
                 _messages = d.messages;
                 _renderWithDates(_messages);
                 // Mark messages as read
-                fetch('./api/chat.php?action=mark_read', {
+                fetch('/daily-worker/api/chat.php?action=mark_read', {
                     method: 'POST', credentials: 'same-origin',
                     headers: {'Content-Type':'application/json'},
                     body: JSON.stringify({candidate_id: _candidateId})
@@ -134,13 +134,13 @@ const UserChat = (() => {
         _pollTimer = setInterval(async function() {
             var lastId = _messages.length > 0 ? _messages[_messages.length-1].id : 0;
             try {
-                var r = await fetch('./api/chat.php?action=poll&candidate_id=' + _candidateId + '&after_id=' + lastId, {credentials:'same-origin'});
+                var r = await fetch('/daily-worker/api/chat.php?action=poll&candidate_id=' + _candidateId + '&after_id=' + lastId, {credentials:'same-origin'});
                 var d = await r.json();
                 if (d && d.messages && d.messages.length > 0) {
                     d.messages.forEach(function(m) { _messages.push(m); });
                     ChatEngine.renderMessages(d.messages, true);
                     // Mark as read
-                    fetch('./api/chat.php?action=mark_read', {
+                    fetch('/daily-worker/api/chat.php?action=mark_read', {
                         method: 'POST', credentials: 'same-origin',
                         headers: {'Content-Type':'application/json'},
                         body: JSON.stringify({candidate_id: _candidateId})
@@ -160,10 +160,10 @@ const UserChat = (() => {
         if (!_candidateId) {
             console.warn('[Chat] candidateId not set, attempting reload...');
             try {
-                var authR = await fetch('./api/user-auth.php?action=check', {credentials:'same-origin'});
+                var authR = await fetch('/daily-worker/api/user-auth.php?action=check', {credentials:'same-origin'});
                 var authD = await authR.json();
                 if (authD && authD.user) {
-                    var candR = await fetch('./api/candidates.php?user_id=' + authD.user.id);
+                    var candR = await fetch('/daily-worker/api/candidates.php?user_id=' + authD.user.id);
                     var candD = await candR.json();
                     if (candD && candD.candidate) _candidateId = candD.candidate.id;
                 }
@@ -181,7 +181,7 @@ const UserChat = (() => {
             var replyTo = null;
             try { replyTo = ChatEngine.getReplyTo(); } catch(e){}
 
-            var r = await fetch('./api/chat.php?action=send', {
+            var r = await fetch('/daily-worker/api/chat.php?action=send', {
                 method: 'POST', credentials: 'same-origin',
                 headers: {'Content-Type':'application/json'},
                 body: JSON.stringify({
@@ -227,7 +227,7 @@ const UserChat = (() => {
         fd.append('file', file);
 
         try {
-            var r = await fetch('./api/chat.php?action=upload', {
+            var r = await fetch('/daily-worker/api/chat.php?action=upload', {
                 method: 'POST', credentials: 'same-origin', body: fd
             });
             var d = await r.json();
@@ -251,7 +251,7 @@ const UserChat = (() => {
         if (!navigator.geolocation || !_candidateId) return;
         navigator.geolocation.getCurrentPosition(async function(pos) {
             try {
-                var r = await fetch('./api/chat.php?action=send', {
+                var r = await fetch('/daily-worker/api/chat.php?action=send', {
                     method: 'POST', credentials: 'same-origin',
                     headers: {'Content-Type':'application/json'},
                     body: JSON.stringify({

@@ -4,7 +4,7 @@
  */
 
 // ── API Base ──
-const API_BASE = './api/';
+const API_BASE = '/daily-worker/api/';
 
 // ── Shared Constants ──
 const BULAN = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
@@ -198,6 +198,18 @@ const DWCache = {
   }
 };
 
+// ── Early URL Detection (runs before DOMContentLoaded to prevent flash) ──
+var _initialSlug = window.location.pathname.replace('/daily-worker/', '').replace(/\/$/, '').replace('dashboard-new.html', '').replace('dashboard.html', '');
+if (_initialSlug && _initialSlug !== 'home') {
+  // Remove 'active' from home immediately to prevent flash
+  document.addEventListener('DOMContentLoaded', function() {
+    var home = document.getElementById('page-home');
+    if (home && document.getElementById('page-' + _initialSlug)) {
+      home.classList.remove('active');
+    }
+  }, { once: true });
+}
+
 // ══════════════════════════════════════════
 // INIT — DOMContentLoaded
 // ══════════════════════════════════════════
@@ -212,7 +224,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (['owner','korlap','korlap_interview','korlap_td'].includes(CURRENT_USER.role)) { window.location.href = 'admin.html'; return; }
       // Load candidate data from API
       try {
-        const res = await fetch('./api/candidates.php?user_id=' + CURRENT_USER.id);
+        const res = await fetch('/daily-worker/api/candidates.php?user_id=' + CURRENT_USER.id);
         const data = await res.json();
         if (data.candidate) {
           const c = data.candidate;
@@ -236,7 +248,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       try {
         var searchKey = USER_DATA.nik || USER_DATA.ops_id || '';
         if (searchKey) {
-          var irRes = await fetch('./api/importrange.php?action=list&search=' + encodeURIComponent(searchKey) + '&limit=1');
+          var irRes = await fetch('/daily-worker/api/importrange.php?action=list&search=' + encodeURIComponent(searchKey) + '&limit=1');
           var irData = await irRes.json();
           if (irData.success && irData.data && irData.data.length > 0) {
             var ir = irData.data[0];
@@ -268,9 +280,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (chatBtn) chatBtn.addEventListener('click', function() { showPage('page-chat'); });
 
   // Restore page from clean URL (e.g. /daily-worker/idcard → page-idcard)
-  var pathSlug = window.location.pathname.replace('/daily-worker/', '').replace(/\/$/, '').replace('dashboard.html', '');
-  if (pathSlug && document.getElementById('page-' + pathSlug)) {
-    showPage('page-' + pathSlug);
+  if (_initialSlug && document.getElementById('page-' + _initialSlug)) {
+    showPage('page-' + _initialSlug);
+  } else if (!_initialSlug || _initialSlug === 'home') {
+    // Make sure home is active
+    var home = document.getElementById('page-home');
+    if (home) home.classList.add('active');
   }
 
   // Handle browser back/forward

@@ -25,7 +25,7 @@ async function renderAbsensi() {
   let data = _absensiCache[monthKey];
   if (!data) {
     try {
-      const r = await fetch('./api/attendance.php?action=history&month=' + monthKey, {credentials:'same-origin'});
+      const r = await fetch('/daily-worker/api/attendance.php?action=history&month=' + monthKey, {credentials:'same-origin'});
       const d = await r.json();
       data = (d && d.attendance) ? d.attendance : [];
       _absensiCache[monthKey] = data;

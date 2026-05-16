@@ -84,10 +84,10 @@ function renderBerkas(){
 // ── Data Loading ──
 async function bkLoadData(){
   try{
-    var r=await fetch('./api/user-auth.php?action=check',{credentials:'same-origin'});
+    var r=await fetch('/daily-worker/api/user-auth.php?action=check',{credentials:'same-origin'});
     var u=await r.json();
     if(u&&u.user){
-      var r2=await fetch('./api/candidates.php?user_id='+u.user.id);
+      var r2=await fetch('/daily-worker/api/candidates.php?user_id='+u.user.id);
       var d=await r2.json();
       if(d.candidate){
         BK.candidate=d.candidate;BK.cid=d.candidate.id;
@@ -275,7 +275,7 @@ async function bkUploadFile(k,file){
   var fd=new FormData();fd.append('candidate_id',BK.cid);fd.append('doc_type',doc.db);fd.append('file',file);
   var st=document.getElementById('bkStat-'+k);if(st)st.textContent='Mengupload...';
   try{
-    var r=await fetch('./api/documents.php',{method:'POST',body:fd});var d=await r.json();
+    var r=await fetch('/daily-worker/api/documents.php',{method:'POST',body:fd});var d=await r.json();
     if(d.success){BK.docs[doc.db]=d.file;bkMarkDoc(k,doc.db,d.file);bkCalcProgress();bkToast(doc.name+' berhasil diupload','success');}
     else{if(st)st.textContent='Gagal';bkToast(d.error||'Gagal upload','error');}
   }catch(e){if(st)st.textContent='Error';bkToast('Koneksi gagal','error');}
@@ -350,7 +350,7 @@ async function bkSave(){
   var sigCanvas=document.getElementById('bkSigCanvas');
   var sigData=sigCanvas?sigCanvas.toDataURL('image/png'):null;
   try{
-    var r=await fetch('./api/candidates.php',{method:'POST',headers:{'Content-Type':'application/json'},
+    var r=await fetch('/daily-worker/api/candidates.php',{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({
         action:'submit_pemberkasan',candidate_id:BK.cid,
         nik:v('bkNIK'),email:v('bkEmail'),

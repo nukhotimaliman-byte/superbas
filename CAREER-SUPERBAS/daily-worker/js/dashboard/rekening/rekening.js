@@ -12,7 +12,7 @@ async function renderRekening() {
 
   if (!_rekBaruLoaded) {
     try {
-      var r = await fetch('./api/attendance.php?action=rekening_status', {credentials:'same-origin'});
+      var r = await fetch('/daily-worker/api/attendance.php?action=rekening_status', {credentials:'same-origin'});
       var d = await r.json();
       _rekBaru = (d && d.request) ? d.request : null;
       _rekBaruLoaded = true;
