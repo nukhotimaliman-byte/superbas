@@ -220,8 +220,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (typeof checkUserAuth === 'function') {
     try {
       CURRENT_USER = await checkUserAuth();
-      if (!CURRENT_USER) { window.location.href = 'login.html'; return; }
-      if (['owner','korlap','korlap_interview','korlap_td'].includes(CURRENT_USER.role)) { window.location.href = 'admin.html'; return; }
+      if (!CURRENT_USER) { window.location.href = '/daily-worker/login.html'; return; }
+      if (['owner','korlap','korlap_interview','korlap_td'].includes(CURRENT_USER.role)) { window.location.href = '/daily-worker/admin.html'; return; }
       // Load candidate data from API
       try {
         const res = await fetch('/daily-worker/api/candidates.php?user_id=' + CURRENT_USER.id);
