@@ -10,7 +10,7 @@ self.addEventListener('push', function(event) {
     let data = {
         title: 'BAS Recruitment',
         body: 'Ada notifikasi baru untuk Anda',
-        url: '/kurir/daftar.html'
+        url: '/kurir/daftar'
     };
 
     // Try to read payload (if sent with data)
@@ -51,7 +51,7 @@ self.addEventListener('notificationclick', function(event) {
 
     if (event.action === 'dismiss') return;
 
-    const url = event.notification.data?.url || '/kurir/daftar.html';
+    const url = event.notification.data?.url || '/kurir/daftar';
 
     event.waitUntil(
         clients.matchAll({ type: 'window', includeUncontrolled: true })

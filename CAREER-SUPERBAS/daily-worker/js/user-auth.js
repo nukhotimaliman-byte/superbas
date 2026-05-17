@@ -3,7 +3,7 @@
  * Supports: username/NIK + password, Google Sign-In, Forgot Password
  */
 
-const USER_AUTH_API = '/daily-worker/api/user-auth.php';
+const USER_AUTH_API = './api/user-auth.php';
 
 // ── Demo Accounts (no database needed) ─────
 const DEMO_ACCOUNTS = {
@@ -146,7 +146,7 @@ async function handleGoogleComplete(nik, username, password, googleData, phone) 
 async function handleUserLogout() {
     sessionStorage.removeItem('bas_demo_user');
     try { await fetch(`${USER_AUTH_API}?action=logout`, { method: 'POST', credentials: 'same-origin' }); } catch {}
-    window.location.href = '/daily-worker/login.html';
+    window.location.href = 'login';
 }
 
 // ── Redirect by role ───────────────────────
@@ -156,9 +156,9 @@ function redirectByRole(role) {
         case 'korlap':
         case 'korlap_interview':
         case 'korlap_td':
-            window.location.href = '/daily-worker/admin.html'; break;
+            window.location.href = 'admin'; break;
         default:
-            window.location.href = '/daily-worker/'; break;
+            window.location.href = 'dashboard-new'; break;
     }
 }
 

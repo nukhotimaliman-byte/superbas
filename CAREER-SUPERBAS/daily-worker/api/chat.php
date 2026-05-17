@@ -556,7 +556,7 @@ function triggerChatPush($candidateId, $sender, $preview) {
     $payload = [
         'title' => 'Pesan dari ' . ($sender['name'] ?? 'Admin'),
         'body'  => $preview,
-        'url'   => '/daily-worker/dashboard.html',
+        'url'   => '/daily-worker/dashboard-new',
     ];
 
     try {

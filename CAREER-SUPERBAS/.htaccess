@@ -1,0 +1,14 @@
+# Clean URL — hapus ekstensi .html
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+
+  # 301 Redirect: /page.html → /page (SEO & backward compat)
+  RewriteCond %{THE_REQUEST} \s/([^.]+)\.html[\s?] [NC]
+  RewriteRule ^ /%1 [R=301,L]
+
+  # Internal rewrite: /page → /page.html
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteCond %{REQUEST_FILENAME}.html -f
+  RewriteRule ^(.+)$ $1.html [L]
+</IfModule>

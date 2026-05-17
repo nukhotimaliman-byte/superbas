@@ -48,6 +48,6 @@ function renderSettings() {
 function doLogout() {
   if (confirm('Yakin ingin keluar dari akun?')) {
     if (typeof handleUserLogout === 'function') { handleUserLogout(); }
-    else { localStorage.clear(); sessionStorage.clear(); window.location.href = 'login.html'; }
+    else { localStorage.clear(); sessionStorage.clear(); window.location.href = 'login'; }
   }
 }

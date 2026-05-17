@@ -102,7 +102,7 @@ body::before{content:'';position:fixed;top:30%;left:50%;transform:translate(-50%
     try{
         const r=await fetch('api/auth.php?action=check',{credentials:'include'});
         const d=await r.json();
-        if(d.logged_in) window.location.href='dashboard.html';
+        if(d.logged_in) window.location.href='dashboard';
     }catch(e){}
 })();
 
@@ -128,7 +128,7 @@ document.getElementById('loginForm').addEventListener('submit', async function(e
         const d=await r.json();
 
         if(d.success){
-            window.location.href='dashboard.html';
+            window.location.href='dashboard';
         }else{
             err.textContent=d.error||'Login gagal';
             err.classList.add('show');

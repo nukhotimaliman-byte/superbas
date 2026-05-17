@@ -11,9 +11,21 @@
     </IfModule>
 </FilesMatch>
 
-# Block direct access to data directory
+# Clean URL + Block data directory
 <IfModule mod_rewrite.c>
     RewriteEngine On
+
+    # 301 Redirect: /page.html → /page
+    RewriteCond %{THE_REQUEST} \s/owner/([^.]+)\.html[\s?] [NC]
+    RewriteRule ^ /owner/%1 [R=301,L]
+
+    # Internal rewrite: /page → /page.html
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_FILENAME}.html -f
+    RewriteRule ^(.+)$ $1.html [L]
+
+    # Block direct access to data directory
     RewriteRule ^data/ - [F,L]
 </IfModule>
 

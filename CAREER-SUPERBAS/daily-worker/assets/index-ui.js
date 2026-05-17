@@ -55,7 +55,7 @@
         function setStoredTheme(mode) {
           try {
             localStorage.setItem(STORAGE_KEY, mode);
-            // Write legacy keys so owner.html & settings stay in sync
+            // Write legacy keys so owner & settings stay in sync
             LEGACY_KEYS.forEach(function(k) { localStorage.setItem(k, mode); });
           } catch(e) {}
         }
@@ -317,9 +317,9 @@
         
         // Watchdog Global: Deteksi logout dari UI internal React
         setInterval(function() {
-            if (window.location.pathname.indexOf('app.html') !== -1) {
+            if (window.location.pathname.indexOf('app') !== -1) {
                 if (!localStorage.getItem('bas_session') && !localStorage.getItem('bas_owner_auth')) {
-                    window.location.href = 'login.html';
+                    window.location.href = 'login';
                 }
             }
         }, 800);
@@ -358,7 +358,7 @@
 
           // Clear session dan paksa redirect ke login custom
           localStorage.removeItem('bas_session');
-          window.location.href = 'login.html';
+          window.location.href = 'login';
         });
 
         function getAppContainer() {

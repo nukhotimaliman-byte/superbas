@@ -104,7 +104,7 @@ document.getElementById('loginForm').addEventListener('submit', async function(e
             const roles = {owner:{name:'Owner BAS',role:'owner',allowed_provinces:[]},admin:{name:'Admin Korlap',role:'korlap_interview',allowed_provinces:[]},korlap:{name:'Budi Korlap',role:'korlap_interview',allowed_provinces:['Kalimantan Barat']}};
             const r = roles[user];
             localStorage.setItem('dw_admin_v2',JSON.stringify({name:r.name,role:r.role,username:user,allowed_provinces:r.allowed_provinces}));
-            window.location.href='admin-v2.html';
+            window.location.href='admin-v2';
         }else{
             err.textContent='Username atau password salah';
             err.classList.add('show');
@@ -124,7 +124,7 @@ document.getElementById('loginForm').addEventListener('submit', async function(e
         const d=await r.json();
         if(d.success){
             localStorage.setItem('dw_admin_v2',JSON.stringify(d.admin));
-            window.location.href='admin-v2.html';
+            window.location.href='admin-v2';
         }else{
             err.textContent=d.error||'Login gagal';
             err.classList.add('show');

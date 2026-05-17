@@ -46,7 +46,7 @@
                     <div class="empty-state-icon">📋</div>
                     <div class="empty-state-title">Belum Terdaftar</div>
                     <div class="empty-state-desc">Anda belum mengisi formulir pendaftaran.<br>Lengkapi data untuk melanjutkan.</div>
-                    <a href="index.html" class="btn btn-primary">Daftar Sekarang</a>
+                    <a href="index" class="btn btn-primary">Daftar Sekarang</a>
                 </div>
             </div>
 
@@ -896,13 +896,13 @@
             try {
                 currentUser = await checkUserAuth();
                 if (!currentUser) {
-                    window.location.href = 'login.html';
+                    window.location.href = 'login';
                     return;
                 }
 
                 // Admin/Owner/Korlap should go to admin dashboard, not user page
                 if (['owner','korlap','korlap_interview','korlap_td'].includes(currentUser.role)) {
-                    window.location.href = 'admin.html';
+                    window.location.href = 'admin';
                     return;
                 }
 
@@ -1437,7 +1437,7 @@
                     let d;
                     try { d = text ? JSON.parse(text) : null; } catch { d = null; }
                     if (!d) {
-                        if (res.status === 401) { showToast('Sesi habis, silakan login ulang', 'error'); setTimeout(() => window.location.href='login.html', 1500); return; }
+                        if (res.status === 401) { showToast('Sesi habis, silakan login ulang', 'error'); setTimeout(() => window.location.href='login', 1500); return; }
                         showToast('Respons server tidak valid (kode: ' + res.status + ')', 'error');
                         if (btn) { btn.disabled = false; btn.textContent = 'Simpan'; }
                         return;

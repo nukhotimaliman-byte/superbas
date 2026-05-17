@@ -75,11 +75,11 @@ function startClock(){
 async function checkAuth(){
   try {
     const d = await api('auth.php?action=check');
-    if (!d.logged_in) { window.location.href = 'index.html'; return null; }
+    if (!d.logged_in) { window.location.href = 'index'; return null; }
     Q('#userName').textContent = d.name;
     return d;
   } catch(e) {
-    window.location.href = 'index.html';
+    window.location.href = 'index';
     return null;
   }
 }
@@ -87,7 +87,7 @@ async function checkAuth(){
 function initLogout(){
   Q('#logoutBtn').addEventListener('click', async () => {
     try { await api('auth.php?action=logout', { method: 'POST' }); } catch(e) {}
-    window.location.href = 'index.html';
+    window.location.href = 'index';
   });
 }
 

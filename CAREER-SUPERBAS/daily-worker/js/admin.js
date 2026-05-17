@@ -203,7 +203,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     } else {
         // Clear stale cache
         localStorage.removeItem('bas_admin_cache');
-        window.location.href = 'login.html';
+        window.location.href = 'login';
     }
 });
 
@@ -249,7 +249,7 @@ async function initDashboard() {
         sessionStorage.removeItem('bas_demo_user');
         localStorage.removeItem('bas_admin_cache');
         try { await fetch(`${API_BASE}/user-auth.php?action=logout`, { method: 'POST' }); } catch {}
-        window.location.href = 'login.html';
+        window.location.href = 'login';
     };
 
     // Global search (optional - may not exist)
@@ -540,14 +540,14 @@ async function loadCandidates() {
                     const res2 = await fetch(url, { credentials: 'same-origin' });
                     if (res2.status === 401) {
                         showToast('Sesi habis. Silakan login ulang.', 'error');
-                        setTimeout(() => { localStorage.removeItem('bas_admin_cache'); window.location.href = 'login.html'; }, 1500);
+                        setTimeout(() => { localStorage.removeItem('bas_admin_cache'); window.location.href = 'login'; }, 1500);
                         return;
                     }
                     const data2 = await res2.json();
                     candidates = data2.candidates || [];
                 } else {
                     showToast('Sesi habis. Silakan login ulang.', 'error');
-                    setTimeout(() => { localStorage.removeItem('bas_admin_cache'); window.location.href = 'login.html'; }, 1500);
+                    setTimeout(() => { localStorage.removeItem('bas_admin_cache'); window.location.href = 'login'; }, 1500);
                     return;
                 }
             } else {

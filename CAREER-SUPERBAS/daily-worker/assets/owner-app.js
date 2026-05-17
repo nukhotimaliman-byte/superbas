@@ -1136,7 +1136,7 @@ function logout(){
   localStorage.removeItem('bas_session');
   // Also clear PHP session if active
   try { fetch('./api/user-auth.php?action=logout', { method: 'POST' }); } catch(e) {}
-  window.location.replace('login.html');
+  window.location.replace('login');
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -3928,7 +3928,7 @@ async function reloadData(){
 async function init(){
   // Check auth
   if(sessionStorage.getItem('bas_owner_auth')!=='true'){
-    window.location.href='app.html';
+    window.location.href='app';
     return;
   }
   

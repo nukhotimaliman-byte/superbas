@@ -5,7 +5,7 @@
         // ╔══════════════════════════════════════════════════════════╗
         // ║  GANTI URL DI BAWAH DENGAN URL WEB APP BARU ANDA       ║
         // ║  Setelah deploy Google Apps Script, paste URL-nya disini ║
-        // ║  Atau ganti via menu Pengaturan API di owner.html       ║
+        // ║  Atau ganti via menu Pengaturan API di owner       ║
         // ╚══════════════════════════════════════════════════════════╝
         var DEFAULT_NEW_API = "https://script.google.com/macros/s/AKfycbx52a6N0oZN0jzbbsv_tL0um3XwmgK6fVikQLZyyq_JODNT6fhMhjwY9Eop6BAyNxQ0/exec";
         var NEW_API = localStorage.getItem('bas_api_url') || DEFAULT_NEW_API;
@@ -445,7 +445,7 @@
                   status: ownerData.status,
                   wa: ownerData.wa
                 }));
-                window.location.href = 'owner.html';
+                window.location.href = 'owner';
                 return new Promise(function(){});
               }
 

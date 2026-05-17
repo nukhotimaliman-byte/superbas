@@ -5,19 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Super-BAS — Daily Worker Dashboard</title>
   <link rel="icon" type="image/png" href="favicon-bas.png">
-  <link rel="stylesheet" href="css/dashboard/core/core.css?v=2">
-  <link rel="stylesheet" href="css/dashboard/home/home.css?v=2">
-  <link rel="stylesheet" href="css/dashboard/absensi/absensi.css?v=2">
-  <link rel="stylesheet" href="css/dashboard/slipgaji/slipgaji.css?v=2">
-  <link rel="stylesheet" href="css/dashboard/linkgaji/linkgaji.css?v=2">
-  <link rel="stylesheet" href="css/dashboard/rekening/rekening.css?v=2">
-  <link rel="stylesheet" href="css/dashboard/aduan/aduan.css?v=2">
-  <link rel="stylesheet" href="css/dashboard/lainnya/lainnya.css?v=2">
-  <link rel="stylesheet" href="css/dashboard/settings/settings.css?v=2">
+  <link rel="stylesheet" href="css/dashboard-new.css?v=21">
   <link rel="stylesheet" href="../shared/css/bas-camera.css?v=1">
-  <link rel="stylesheet" href="css/dashboard/idcard/idcard.css?v=2">
-  <link rel="stylesheet" href="css/dashboard/chat/chat.css?v=5">
-  <link rel="stylesheet" href="css/dashboard/lokasi/lokasi.css?v=1">
+  <link rel="stylesheet" href="../shared/css/bas-idcard.css?v=2">
+  <link rel="stylesheet" href="../shared/css/bas-chat.css?v=4">
 </head>
 <body>
 
@@ -58,8 +49,6 @@
             <div style="font-weight:600;" id="joinDate">—</div>
           </div>
         </div>
-        <!-- Progress Ring -->
-        <div class="ops-progress-ring" id="opsProgressRing"></div>
       </div>
 
       <!-- Dynamic Notifications -->
@@ -78,9 +67,6 @@
         <div class="qi-card"><div class="qi-label">Bank</div><div class="qi-value" id="bankName">—</div></div>
         <div class="qi-card"><div class="qi-label">Rek</div><div class="qi-value" id="rekeningNo">—</div></div>
       </div>
-
-      <!-- Salary Estimator -->
-      <div class="salary-estimator animate-in delay-5" id="salaryEstimator"></div>
 
       <!-- Aktivitas -->
       <div class="section-header animate-in delay-5"><h3>Aktivitas Terakhir</h3><a href="#" class="see-all">Lihat semua &rarr;</a></div>
@@ -143,8 +129,6 @@
           <div class="abs-card-label">Total Hadir</div>
         </div>
       </div>
-      <!-- Attendance Streak -->
-      <div class="abs-streak" id="absStreak"></div>
       <!-- Remark Banner -->
       <div class="remark-banner" id="remarkBanner"></div>
       <!-- Mini Calendar -->
@@ -246,15 +230,6 @@
     <div id="settingsContent"></div>
   </div>
 
-  <!-- ═══ PAGE: LOKASI DC ═══ -->
-  <div id="page-lokasi" class="page-content">
-    <div class="page-header">
-      <button class="page-back" onclick="showPage('page-home')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg></button>
-      <div class="page-title">Lokasi DC</div>
-    </div>
-    <div class="content" style="padding-bottom:24px;" id="lokasiContent"></div>
-  </div>
-
   <!-- ═══ PAGE: CHAT ═══ -->
   <div id="page-chat" class="page-content">
     <div class="page-header">
@@ -279,20 +254,11 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="../shared/js/bas-camera.js?v=4"></script>
   <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
-  <script src="js/dashboard/idcard/idcard.js?v=8"></script>
-  <script src="js/dashboard/chat/bas-chat.js?v=3"></script>
-  <script src="js/dashboard/chat/user-chat.js?v=6"></script>
-  <link rel="stylesheet" href="css/dashboard/berkas/berkas.css?v=5">
-  <script src="js/dashboard/berkas/berkas.js?v=5"></script>
-  <script src="js/dashboard/core/core.js?v=11"></script>
-  <script src="js/dashboard/home/home.js?v=2"></script>
-  <script src="js/dashboard/absensi/absensi.js?v=2"></script>
-  <script src="js/dashboard/slipgaji/slipgaji.js?v=2"></script>
-  <script src="js/dashboard/linkgaji/linkgaji.js?v=2"></script>
-  <script src="js/dashboard/rekening/rekening.js?v=2"></script>
-  <script src="js/dashboard/aduan/aduan.js?v=2"></script>
-  <script src="js/dashboard/lainnya/lainnya.js?v=2"></script>
-  <script src="js/dashboard/settings/settings.js?v=2"></script>
-  <script src="js/dashboard/lokasi/lokasi.js?v=1"></script>
+  <script src="../shared/js/bas-idcard.js?v=7"></script>
+  <script src="../shared/js/bas-chat.js?v=2"></script>
+  <script src="js/user-chat.js?v=5"></script>
+  <link rel="stylesheet" href="css/berkas-v2.css?v=4">
+  <script src="js/berkas-v2.js?v=4"></script>
+  <script src="js/dashboard-new.js?v=20"></script>
 </body>
 </html>

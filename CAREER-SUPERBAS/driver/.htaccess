@@ -60,9 +60,21 @@
 # Deny directory listing
 Options -Indexes
 
-# Protect uploads — only allow image/pdf access
+# Clean URL + Uploads protection
 <IfModule mod_rewrite.c>
     RewriteEngine On
+
+    # 301 Redirect: /page.html → /page
+    RewriteCond %{THE_REQUEST} \s/driver/([^.]+)\.html[\s?] [NC]
+    RewriteRule ^ /driver/%1 [R=301,L]
+
+    # Internal rewrite: /page → /page.html
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_FILENAME}.html -f
+    RewriteRule ^(.+)$ $1.html [L]
+
+    # Protect uploads — only allow image/pdf access
     RewriteCond %{REQUEST_URI} /uploads/ [NC]
     RewriteCond %{REQUEST_URI} !\.(jpg|jpeg|png|pdf)$ [NC]
     RewriteRule .* - [F,L]

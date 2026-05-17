@@ -1,6 +1,6 @@
 <!--
   ═══════════════════════════════════════════════════════════════
-   Super-BAS — Daily Worker — Employee App (index.html)
+   Super-BAS — Daily Worker — Employee App (index)
    Super-BAS v2.0
   ═══════════════════════════════════════════════════════════════
 
@@ -43,27 +43,27 @@
 
         /* ── Auth Guard: redirect to login if no valid session ── */
         var ownerAuth = sessionStorage.getItem('bas_owner_auth');
-        if (ownerAuth === 'true') return; // owner — let owner.html handle it
+        if (ownerAuth === 'true') return; // owner — let owner handle it
 
         var raw = localStorage.getItem('bas_session');
         if (!raw) {
-          window.location.replace('login.html');
+          window.location.replace('login');
           return;
         }
         try {
           var parsed = JSON.parse(atob(raw));
           if (!parsed || !parsed.user || (parsed.exp && parsed.exp < Date.now())) {
             localStorage.removeItem('bas_session');
-            window.location.replace('login.html');
+            window.location.replace('login');
           }
-          // SQL users should go to sql-user.html, not app.html
+          // SQL users should go to sql-user, not app
           if (parsed.source === 'sql') {
-            window.location.replace('sql-user.html');
+            window.location.replace('sql-user');
             return;
           }
         } catch(e) {
           localStorage.removeItem('bas_session');
-          window.location.replace('login.html');
+          window.location.replace('login');
         }
       })();
     </script>

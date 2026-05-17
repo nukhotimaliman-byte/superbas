@@ -196,7 +196,7 @@ document.getElementById('logoutBtn').addEventListener('click', async function ()
     localStorage.removeItem('bas_admin_cache');
     sessionStorage.removeItem('bas_demo_user');
     try { await fetch(API_BASE + 'user-auth.php?action=logout', { method:'POST' }); } catch {}
-    window.location.href = 'login.html';
+    window.location.href = 'login';
 });
 
 // ── Toast ──
@@ -372,7 +372,7 @@ document.addEventListener('DOMContentLoaded', async function () {
     if (!authOk && !USE_DUMMY) {
         localStorage.removeItem('dw_admin_v2');
         localStorage.removeItem('bas_admin_cache');
-        window.location.href = 'login.html';
+        window.location.href = 'login';
         return;
     }
     // Update admin info post-auth

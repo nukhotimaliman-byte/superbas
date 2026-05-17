@@ -98,7 +98,7 @@ if ($action === 'send' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     $pushPayload = [
         'title' => $title,
         'body'  => $message,
-        'url'   => '/kurir/daftar.html',
+        'url'   => '/kurir/daftar',
     ];
 
     foreach ($subscriptions as $sub) {
@@ -145,7 +145,7 @@ if ($action === 'latest') {
             'id'    => $n['id'],
             'title' => $n['title'],
             'body'  => $n['message'],
-            'url'   => '/kurir/daftar.html',
+            'url'   => '/kurir/daftar',
             'time'  => $n['created_at']
         ]);
     } else {

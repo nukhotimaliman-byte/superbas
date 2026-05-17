@@ -4,7 +4,7 @@
  */
 
 // ── API Base ──
-const API_BASE = '/daily-worker/api/';
+const API_BASE = './api/';
 
 // ── Shared Constants ──
 const BULAN = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
@@ -17,7 +17,7 @@ const ALL_MENUS = [
   { key:'slipgaji', label:'Slip Gaji', page:'page-slipgaji', cls:'si-green', icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>' },
   { key:'linkgaji', label:'Link Gaji', page:'page-linkgaji', cls:'si-purple', icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>' },
   { key:'chat', label:'Chat Admin', cls:'si-orange', icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>' },
-  { key:'lokasi', label:'Lokasi DC', page:'page-lokasi', cls:'si-pink', icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>' },
+  { key:'lokasi', label:'Lokasi DC', cls:'si-pink', icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>' },
   { key:'idcard', label:'ID Card', page:'page-idcard', cls:'si-teal', icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>' },
   { key:'rekening', label:'Rekening', page:'page-rekening', cls:'', style:'background:rgba(6,182,212,0.1);color:#06b6d4;', icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 10h20"/><path d="M6 16h4"/></svg>' },
   { key:'gantirek', label:'Ganti Rek', page:'page-gantirek', cls:'', style:'background:rgba(234,179,8,0.1);color:#eab308;', icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 16h5v5"/></svg>' },
@@ -49,11 +49,21 @@ var USER_DATA = { nama:'', nik:'', ops_id:'', station:'', join_date:'', bank:'',
 var CURRENT_USER = null;
 
 // ── Page Navigation Index (for transition direction) ──
-const PAGE_INDEX = { 'page-home':0, 'page-berkas':1, 'page-absensi':2, 'page-slipgaji':3, 'page-linkgaji':4, 'page-rekening':5, 'page-gantirek':6, 'page-aduan':7, 'page-lainnya':8, 'page-idcard':9, 'page-settings':10, 'page-chat':11, 'page-lokasi':12 };
+const PAGE_INDEX = { 'page-home':0, 'page-berkas':1, 'page-absensi':2, 'page-slipgaji':3, 'page-linkgaji':4, 'page-rekening':5, 'page-gantirek':6, 'page-aduan':7, 'page-lainnya':8, 'page-idcard':9, 'page-settings':10, 'page-chat':11 };
 var _currentPage = 'page-home';
 
 // ── Lazy Init Tracker ──
 const _inited = {};
+var _skipPush = false;
+
+// ── URL ↔ Tab Mapping ──
+const TAB_MAP = {
+  'home':'page-home', 'berkas':'page-berkas', 'absensi':'page-absensi',
+  'slipgaji':'page-slipgaji', 'linkgaji':'page-linkgaji', 'chat':'page-chat',
+  'lokasi':'page-lokasi', 'idcard':'page-idcard', 'rekening':'page-rekening',
+  'gantirek':'page-gantirek', 'aduan':'page-aduan', 'settings':'page-settings',
+  'lainnya':'page-lainnya'
+};
 
 // ── Router ──
 function showPage(pageId) {
@@ -87,7 +97,6 @@ function showPage(pageId) {
   if (pageId === 'page-berkas' && typeof renderBerkas === 'function') renderBerkas();
   if (pageId === 'page-idcard' && typeof BASIdCard !== 'undefined') BASIdCard.render('idcardContent', USER_DATA);
   if (pageId === 'page-settings' && typeof renderSettings === 'function') renderSettings();
-  if (pageId === 'page-lokasi' && typeof renderLokasi === 'function') renderLokasi();
   if (pageId === 'page-chat' && typeof UserChat !== 'undefined') UserChat.init();
 
   var bnav = document.querySelector('.bottom-nav');
@@ -95,14 +104,23 @@ function showPage(pageId) {
   window.scrollTo({ top: 0, behavior: 'smooth' });
   _currentPage = pageId;
 
-  // Update URL (clean path, no hash)
-  var slug = pageId.replace('page-', '');
-  var basePath = '/daily-worker/';
-  var newPath = slug === 'home' ? basePath : basePath + slug;
-  if (window.location.pathname !== newPath) {
-    history.pushState({ page: pageId }, '', newPath);
+  // ── Update URL (pushState) ──
+  if (!_skipPush) {
+    var key = pageId.replace('page-', '');
+    var newPath = '/daily-worker/' + (key === 'home' ? '' : key);
+    if (window.location.pathname !== newPath) {
+      history.pushState({ page: pageId }, '', newPath);
+    }
   }
+  _skipPush = false;
 }
+
+// ── Browser Back/Forward ──
+window.addEventListener('popstate', function(e) {
+  _skipPush = true;
+  if (e.state && e.state.page) { showPage(e.state.page); }
+  else { showPage('page-home'); }
+});
 
 // ── Shared Utilities ──
 function fmtRp(n) { return !n||n===0?'-':'Rp '+Number(n).toLocaleString('id-ID'); }
@@ -198,106 +216,79 @@ const DWCache = {
   }
 };
 
-// ── Early URL Detection ──
-var _initialSlug = window.location.pathname.replace('/daily-worker/', '').replace(/\/$/, '').replace('dashboard-new.html', '').replace('dashboard.html', '');
-
 // ══════════════════════════════════════════
 // INIT — DOMContentLoaded
 // ══════════════════════════════════════════
 document.addEventListener('DOMContentLoaded', async () => {
   initDarkMode();
 
-  // If navigating to a non-home page, hide home immediately to prevent flash
-  if (_initialSlug && _initialSlug !== 'home' && _initialSlug !== '') {
-    var homeEl = document.getElementById('page-home');
-    if (homeEl) homeEl.classList.remove('active');
+  // Auth check
+  if (typeof checkUserAuth === 'function') {
+    try {
+      CURRENT_USER = await checkUserAuth();
+      if (!CURRENT_USER) { window.location.href = 'login'; return; }
+      if (['owner','korlap','korlap_interview','korlap_td'].includes(CURRENT_USER.role)) { window.location.href = 'admin'; return; }
+      // Load candidate data from API
+      try {
+        const res = await fetch('./api/candidates.php?user_id=' + CURRENT_USER.id);
+        const data = await res.json();
+        if (data.candidate) {
+          const c = data.candidate;
+          USER_DATA.nama = c.name || CURRENT_USER.name || '';
+          USER_DATA.nik = c.nik || CURRENT_USER.nik || '';
+          USER_DATA.ops_id = c.given_id || c.candidate_id || '';
+          USER_DATA.station = c.location_name || '';
+          USER_DATA.join_date = c.created_at ? new Date(c.created_at).toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'}) : '';
+          USER_DATA.bank = c.bank_name || '';
+          USER_DATA.rekening = c.bank_account_no || '';
+          USER_DATA.atas_nama = c.bank_account_name || '';
+          USER_DATA.status_berkas = c.status || 'Belum Pemberkasan';
+          USER_DATA.status_gaji = '';
+        } else {
+          USER_DATA.nama = CURRENT_USER.name || '';
+          USER_DATA.nik = CURRENT_USER.nik || '';
+        }
+      } catch(e) { console.warn('Failed to load candidate:', e); USER_DATA.nama = CURRENT_USER.name || ''; }
+
+      // Enrich with importrange data
+      try {
+        var searchKey = USER_DATA.nik || USER_DATA.ops_id || '';
+        if (searchKey) {
+          var irRes = await fetch('./api/importrange.php?action=list&search=' + encodeURIComponent(searchKey) + '&limit=1');
+          var irData = await irRes.json();
+          if (irData.success && irData.data && irData.data.length > 0) {
+            var ir = irData.data[0];
+            if (ir.ops_id) USER_DATA.ops_id = ir.ops_id;
+            if (ir.station) USER_DATA.station = ir.station;
+            if (ir.bank) USER_DATA.bank = ir.bank;
+            if (ir.rekening) USER_DATA.rekening = ir.rekening;
+            if (ir.atas_nama) USER_DATA.atas_nama = ir.atas_nama;
+            if (ir.join_date) USER_DATA.join_date = ir.join_date;
+            if (ir.status_gaji) USER_DATA.status_gaji = ir.status_gaji;
+            if (ir.nama) USER_DATA.nama = ir.nama;
+          }
+        }
+      } catch(e) { console.warn('Importrange enrich failed:', e); }
+
+    } catch(e) { console.warn('Auth check failed:', e); }
   }
 
-  try {
-    // Auth check
-    if (typeof checkUserAuth === 'function') {
-      try {
-        CURRENT_USER = await checkUserAuth();
-        if (!CURRENT_USER) { window.location.href = '/daily-worker/login.html'; return; }
-        if (['owner','korlap','korlap_interview','korlap_td'].includes(CURRENT_USER.role)) { window.location.href = '/daily-worker/admin.html'; return; }
-        // Load candidate data from API
-        try {
-          const res = await fetch('/daily-worker/api/candidates.php?user_id=' + CURRENT_USER.id);
-          const data = await res.json();
-          if (data.candidate) {
-            const c = data.candidate;
-            USER_DATA.nama = c.name || CURRENT_USER.name || '';
-            USER_DATA.nik = c.nik || CURRENT_USER.nik || '';
-            USER_DATA.ops_id = c.given_id || c.candidate_id || '';
-            USER_DATA.station = c.location_name || '';
-            USER_DATA.join_date = c.created_at ? new Date(c.created_at).toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'}) : '';
-            USER_DATA.bank = c.bank_name || '';
-            USER_DATA.rekening = c.bank_account_no || '';
-            USER_DATA.atas_nama = c.bank_account_name || '';
-            USER_DATA.status_berkas = c.status || 'Belum Pemberkasan';
-            USER_DATA.status_gaji = '';
-          } else {
-            USER_DATA.nama = CURRENT_USER.name || '';
-            USER_DATA.nik = CURRENT_USER.nik || '';
-          }
-        } catch(e) { console.warn('Failed to load candidate:', e); USER_DATA.nama = CURRENT_USER.name || ''; }
+  // Init all home components
+  if (typeof renderHomeGrid === 'function') renderHomeGrid();
+  if (typeof updateOpsCard === 'function') updateOpsCard();
+  if (typeof updateNotifications === 'function') updateNotifications();
+  if (typeof loadLinktree === 'function') loadLinktree();
+  if (typeof loadSiteLinks === 'function') loadSiteLinks();
 
-        // Enrich with importrange data
-        try {
-          var searchKey = USER_DATA.nik || USER_DATA.ops_id || '';
-          if (searchKey) {
-            var irRes = await fetch('/daily-worker/api/importrange.php?action=list&search=' + encodeURIComponent(searchKey) + '&limit=1');
-            var irData = await irRes.json();
-            if (irData.success && irData.data && irData.data.length > 0) {
-              var ir = irData.data[0];
-              if (ir.ops_id) USER_DATA.ops_id = ir.ops_id;
-              if (ir.station) USER_DATA.station = ir.station;
-              if (ir.bank) USER_DATA.bank = ir.bank;
-              if (ir.rekening) USER_DATA.rekening = ir.rekening;
-              if (ir.atas_nama) USER_DATA.atas_nama = ir.atas_nama;
-              if (ir.join_date) USER_DATA.join_date = ir.join_date;
-              if (ir.status_gaji) USER_DATA.status_gaji = ir.status_gaji;
-              if (ir.nama) USER_DATA.nama = ir.nama;
-            }
-          }
-        } catch(e) { console.warn('Importrange enrich failed:', e); }
+  // Bottom nav click handlers
+  document.querySelectorAll('.nav-item').forEach(b => b.addEventListener('click', () => showPage(b.dataset.page)));
+  var chatBtn = document.getElementById('chatBtn');
+  if (chatBtn) chatBtn.addEventListener('click', function() { showPage('page-chat'); });
 
-      } catch(e) { console.warn('Auth check failed:', e); }
-    }
-
-    // Init all home components
-    try {
-      if (typeof renderHomeGrid === 'function') renderHomeGrid();
-      if (typeof updateOpsCard === 'function') updateOpsCard();
-      if (typeof updateNotifications === 'function') updateNotifications();
-      if (typeof loadLinktree === 'function') loadLinktree();
-      if (typeof loadSiteLinks === 'function') loadSiteLinks();
-    } catch(e) { console.warn('Home component init failed:', e); }
-
-  } finally {
-    // ═══ GUARANTEED: URL routing ALWAYS runs ═══
-    // Bottom nav click handlers
-    document.querySelectorAll('.nav-item').forEach(b => b.addEventListener('click', () => showPage(b.dataset.page)));
-    var chatBtn = document.getElementById('chatBtn');
-    if (chatBtn) chatBtn.addEventListener('click', function() { showPage('page-chat'); });
-
-    // Restore page from clean URL (e.g. /daily-worker/idcard → page-idcard)
-    if (_initialSlug && _initialSlug !== '' && document.getElementById('page-' + _initialSlug)) {
-      showPage('page-' + _initialSlug);
-    } else {
-      // Default to home
-      var homeEl2 = document.getElementById('page-home');
-      if (homeEl2 && !homeEl2.classList.contains('active')) homeEl2.classList.add('active');
-    }
-
-    // Handle browser back/forward
-    window.addEventListener('popstate', function(e) {
-      var slug = window.location.pathname.replace('/daily-worker/', '').replace(/\/$/, '');
-      if (slug && document.getElementById('page-' + slug)) {
-        showPage('page-' + slug);
-      } else {
-        showPage('page-home');
-      }
-    });
+  // ── URL-based Tab Detection ──
+  var urlSegment = window.location.pathname.replace(/\/+$/, '').split('/').pop();
+  if (urlSegment && TAB_MAP[urlSegment]) {
+    _skipPush = true;
+    showPage(TAB_MAP[urlSegment]);
   }
 });

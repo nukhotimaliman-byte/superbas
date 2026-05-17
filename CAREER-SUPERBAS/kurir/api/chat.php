@@ -556,7 +556,7 @@ function triggerChatPush($candidateId, $sender, $preview) {
     $payload = [
         'title' => 'Pesan dari ' . ($sender['name'] ?? 'Admin'),
         'body'  => $preview,
-        'url'   => '/kurir/daftar.html',
+        'url'   => '/kurir/daftar',
     ];
 
     try {

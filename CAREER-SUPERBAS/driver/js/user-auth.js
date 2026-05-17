@@ -146,7 +146,7 @@ async function handleGoogleComplete(nik, username, password, googleData, phone) 
 async function handleUserLogout() {
     sessionStorage.removeItem('bas_demo_user');
     try { await fetch(`${USER_AUTH_API}?action=logout`, { method: 'POST', credentials: 'same-origin' }); } catch {}
-    window.location.href = 'login.html';
+    window.location.href = 'login';
 }
 
 // ── Redirect by role ───────────────────────
@@ -156,9 +156,9 @@ function redirectByRole(role) {
         case 'korlap':
         case 'korlap_interview':
         case 'korlap_td':
-            window.location.href = 'admin.html'; break;
+            window.location.href = 'admin'; break;
         default:
-            window.location.href = 'daftar.html'; break;
+            window.location.href = 'daftar'; break;
     }
 }
 

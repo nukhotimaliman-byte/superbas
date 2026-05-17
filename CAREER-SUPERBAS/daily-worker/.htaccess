@@ -1,9 +1,7 @@
 # ===================================================
 # .htaccess untuk PT. BAROKAH AMANAH SENTOSA (cPanel)
 # ===================================================
-# Catatan: File ini kompatibel dengan shared hosting cPanel
-# Jika masih error 500, coba hapus file .htaccess ini.
-# Website tetap bisa jalan tanpa file ini.
+# Clean URL + Tab Routing untuk Daily Worker Dashboard
 # ===================================================
 
 # MIME Types - agar file JS/CSS di-serve dengan benar
@@ -16,21 +14,26 @@
 <IfModule mod_rewrite.c>
   RewriteEngine On
 
-  # Skip real files and directories
-  RewriteCond %{REQUEST_FILENAME} -f [OR]
-  RewriteCond %{REQUEST_FILENAME} -d
-  RewriteRule ^ - [L]
+  # 1. 301 Redirect: /page.html → /page (SEO & backward compat)
+  RewriteCond %{THE_REQUEST} \s/daily-worker/([^.]+)\.html[\s?] [NC]
+  RewriteRule ^ /daily-worker/%1 [R=301,L]
 
-  # Dashboard clean URLs → route to dashboard-new.html
-  RewriteRule ^(berkas|absensi|slipgaji|linkgaji|rekening|gantirek|aduan|idcard|lokasi|chat|lainnya|settings|home)$ dashboard-new.html [L,QSA]
+  # 2. Jangan proses file/folder yang sudah ada
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
 
-  # Skip index/root
-  RewriteCond %{REQUEST_URI} !^/$
+  # 3. Coba serve sebagai .html dulu (login, admin, dll)
+  RewriteCond %{REQUEST_FILENAME}.html -f
+  RewriteRule ^(.+)$ $1.html [L]
 
-  # All other 404s → app.html (React SPA)
-  RewriteRule ^ app.html [L]
+  # 4. Dashboard tab routes → serve dashboard-new.html
+  #    (berkas, chat, absensi, slipgaji, linkgaji, rekening, dll)
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteCond %{REQUEST_URI} !^/daily-worker/$
+  RewriteRule . dashboard-new.html [L]
 
-  # Protect uploads
+  # Protect uploads — only allow image/pdf access
   RewriteCond %{REQUEST_URI} /uploads/ [NC]
   RewriteCond %{REQUEST_URI} !\.(jpg|jpeg|png|pdf)$ [NC]
   RewriteRule .* - [F,L]
