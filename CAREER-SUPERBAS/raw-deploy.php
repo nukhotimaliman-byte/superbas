@@ -14,9 +14,11 @@ echo "=== BAS Raw Deploy v5.0 ===\n\n";
 $base = 'https://raw.githubusercontent.com/nukhotimaliman-byte/superbas/main/CAREER-SUPERBAS/';
 
 $files = [
+    'deploy.php',
     'index.html',
     'lp2-style.css',
     'lp2.html',
+    '.htaccess',
     'BAS.svg',
     'map.svg',
     'favicon-bas.png',
