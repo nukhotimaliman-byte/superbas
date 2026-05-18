@@ -1,70 +1,118 @@
 <?php
 /**
- * BAS Auto-Deploy v3.9
- * 1. Upload file ini ke public_html/deploy.php
- * 2. Buka: https://super-bas.com/deploy.php?token=bas2026
- * 3. Hapus file ini setelah selesai!
+ * BAS GitHub Deploy v4.0
+ * Pulls latest from GitHub and extracts to server
+ * URL: https://super-bas.com/deploy.php?token=bas2026
  */
 
 $TOKEN = 'bas2026';
-if (($_GET['token'] ?? '') !== $TOKEN) { die('❌ Token salah'); }
+if (($_GET['token'] ?? '') !== $TOKEN) { die('Token salah'); }
 
 header('Content-Type: text/plain; charset=utf-8');
-echo "=== BAS Deploy v3.9 ===\n\n";
+echo "=== BAS GitHub Deploy v4.0 ===\n\n";
 
-$zipPath = __DIR__ . '/superbas-v3.9.zip';
+$repo = 'nukhotimaliman-byte/superbas';
+$branch = 'main';
+$subdir = 'CAREER-SUPERBAS/';
+$destDir = __DIR__ . '/';
 
-if (!file_exists($zipPath)) {
-    die("❌ Upload superbas-v3.9.zip ke public_html/ dulu!\n");
+// Download ZIP from GitHub
+$zipUrl = "https://github.com/$repo/archive/refs/heads/$branch.zip";
+$zipPath = sys_get_temp_dir() . '/superbas-deploy-' . time() . '.zip';
+
+echo "Downloading from GitHub...\n";
+echo "URL: $zipUrl\n";
+
+$ch = curl_init($zipUrl);
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+curl_setopt($ch, CURLOPT_USERAGENT, 'BAS-Deploy/4.0');
+curl_setopt($ch, CURLOPT_TIMEOUT, 120);
+$data = curl_exec($ch);
+$httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+curl_close($ch);
+
+if ($httpCode !== 200 || !$data) {
+    die("FAIL: Download failed (HTTP $httpCode)\n");
 }
 
-echo "📦 ZIP found: " . round(filesize($zipPath)/1024) . " KB\n";
+file_put_contents($zipPath, $data);
+$sizeKB = round(strlen($data) / 1024);
+echo "ZIP downloaded: {$sizeKB} KB\n\n";
 
+// Extract
 $zip = new ZipArchive;
-$res = $zip->open($zipPath);
-if ($res !== TRUE) {
-    die("❌ Gagal buka ZIP, error code: $res\n");
+if ($zip->open($zipPath) !== TRUE) {
+    unlink($zipPath);
+    die("FAIL: Cannot open ZIP\n");
 }
 
-echo "📂 Entries: " . $zip->numFiles . "\n\n";
+// GitHub ZIP has a prefix folder like "superbas-main/"
+$prefix = '';
+for ($i = 0; $i < $zip->numFiles; $i++) {
+    $name = $zip->getNameIndex($i);
+    if (strpos($name, $subdir) !== false) {
+        $prefix = explode($subdir, $name)[0] . $subdir;
+        break;
+    }
+}
+
+if (!$prefix) {
+    $zip->close();
+    unlink($zipPath);
+    die("FAIL: Could not find '$subdir' in ZIP\n");
+}
+
+echo "Prefix: $prefix\n";
+echo "Entries: {$zip->numFiles}\n\n";
 
 $success = 0;
 $errors = 0;
+$skipped = 0;
+
+// Skip these files/dirs during deploy
+$skipPatterns = [
+    'deploy.php',
+    'raw-deploy.php',
+    '.git/',
+    'node_modules/',
+    '.env',
+    'uploads/',
+    'config.php',
+];
 
 for ($i = 0; $i < $zip->numFiles; $i++) {
     $name = $zip->getNameIndex($i);
     
-    // Skip directories
-    if (substr($name, -1) === '/') continue;
+    // Only extract files under our subdir
+    if (strpos($name, $prefix) !== 0) continue;
     
-    $destPath = __DIR__ . '/' . $name;
-    $destDir = dirname($destPath);
+    // Get relative path
+    $relPath = substr($name, strlen($prefix));
+    if (!$relPath || substr($relPath, -1) === '/') continue;
     
-    // Create directory if needed
-    if (!is_dir($destDir)) {
-        mkdir($destDir, 0755, true);
+    // Skip protected files
+    $skip = false;
+    foreach ($skipPatterns as $pattern) {
+        if (strpos($relPath, $pattern) !== false) { $skip = true; break; }
     }
+    if ($skip) { $skipped++; continue; }
     
-    // Extract file content
+    $destPath = $destDir . $relPath;
+    $dir = dirname($destPath);
+    if (!is_dir($dir)) mkdir($dir, 0755, true);
+    
     $content = $zip->getFromIndex($i);
-    if ($content === false) {
-        echo "❌ FAIL: $name\n";
-        $errors++;
-        continue;
-    }
+    if ($content === false) { echo "FAIL: $relPath\n"; $errors++; continue; }
     
-    // Write file
     $written = file_put_contents($destPath, $content);
-    if ($written === false) {
-        echo "❌ WRITE FAIL: $name\n";
-        $errors++;
-    } else {
-        echo "✅ $name ($written bytes)\n";
-        $success++;
-    }
+    if ($written === false) { echo "WRITE FAIL: $relPath\n"; $errors++; }
+    else { echo "OK: $relPath\n"; $success++; }
 }
 
 $zip->close();
+unlink($zipPath);
 
-echo "\n=== Done: $success OK, $errors errors ===\n";
-echo "⚠️  HAPUS deploy.php dan superbas-v3.9.zip dari server!\n";
+echo "\n=== Done: $success deployed, $errors errors, $skipped skipped ===\n";
+echo "Site: https://super-bas.com\n";
