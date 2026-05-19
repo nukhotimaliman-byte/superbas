@@ -1,22 +1,28 @@
 # Super-BAS Robots.txt
+# PT Barokah Amanah Sentosa — Vendor Outsourcing & Rekrutmen Logistik
 User-agent: *
 Allow: /
 
 # Block admin/owner areas
 Disallow: /owner/
-Disallow: /driver/admin.html
-Disallow: /driver/owner.html
-Disallow: /driver/login.html
-Disallow: /kurir/admin.html
-Disallow: /kurir/owner.html
-Disallow: /kurir/login.html
-Disallow: /daily-worker/admin.html
-Disallow: /daily-worker/owner.html
-Disallow: /daily-worker/login.html
+Disallow: /driver/admin
+Disallow: /driver/owner
+Disallow: /kurir/admin
+Disallow: /kurir/owner
+Disallow: /daily-worker/admin
+Disallow: /daily-worker/owner
 
-# Block API endpoints
+# Block API endpoints & deploy scripts
+Disallow: /*/api/
 Disallow: /owner/api/
+Disallow: /deploy.php
+Disallow: /raw-deploy.php
 Disallow: /git-deploy.php
+Disallow: /upload-zip.php
+
+# Block config & database files
+Disallow: /*/config.php
+Disallow: /*/db/
 
 # Sitemap
 Sitemap: https://super-bas.com/sitemap.xml

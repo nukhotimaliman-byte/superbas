@@ -3,7 +3,7 @@
   <!-- Homepage -->
   <url>
     <loc>https://super-bas.com/</loc>
-    <lastmod>2026-05-08</lastmod>
+    <lastmod>2026-05-19</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
@@ -11,57 +11,95 @@
   <!-- Landing Page 2 -->
   <url>
     <loc>https://super-bas.com/lp2</loc>
-    <lastmod>2026-05-08</lastmod>
+    <lastmod>2026-05-19</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
+    <priority>0.7</priority>
   </url>
 
   <!-- Driver Portal -->
   <url>
     <loc>https://super-bas.com/driver/</loc>
-    <lastmod>2026-05-08</lastmod>
+    <lastmod>2026-05-19</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>https://super-bas.com/driver/daftar</loc>
-    <lastmod>2026-05-08</lastmod>
+    <lastmod>2026-05-19</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://super-bas.com/driver/login</loc>
+    <lastmod>2026-05-19</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
   </url>
 
   <!-- Kurir Portal -->
   <url>
     <loc>https://super-bas.com/kurir/</loc>
-    <lastmod>2026-05-08</lastmod>
+    <lastmod>2026-05-19</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>https://super-bas.com/kurir/daftar</loc>
-    <lastmod>2026-05-08</lastmod>
+    <lastmod>2026-05-19</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://super-bas.com/kurir/login</loc>
+    <lastmod>2026-05-19</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
   </url>
 
   <!-- Daily Worker Portal -->
   <url>
     <loc>https://super-bas.com/daily-worker/</loc>
-    <lastmod>2026-05-08</lastmod>
+    <lastmod>2026-05-19</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>https://super-bas.com/daily-worker/daftar</loc>
-    <lastmod>2026-05-08</lastmod>
+    <lastmod>2026-05-19</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://super-bas.com/daily-worker/login</loc>
+    <lastmod>2026-05-19</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <!-- Daily Worker Dashboard Tabs -->
+  <url>
+    <loc>https://super-bas.com/daily-worker/berkas</loc>
+    <lastmod>2026-05-19</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>https://super-bas.com/daily-worker/absensi</loc>
+    <lastmod>2026-05-19</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>https://super-bas.com/daily-worker/chat</loc>
+    <lastmod>2026-05-19</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
   </url>
 
   <!-- Privacy Policy -->
   <url>
     <loc>https://super-bas.com/privacy-policy</loc>
-    <lastmod>2026-05-08</lastmod>
+    <lastmod>2026-05-19</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
   </url>
