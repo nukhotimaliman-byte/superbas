@@ -9,7 +9,7 @@
 require_once __DIR__ . '/config.php';
 
 $action = $_GET['action'] ?? '';
-$method = getMethod();
+$method = $_SERVER['REQUEST_METHOD'];
 
 switch ($action) {
 
@@ -22,34 +22,34 @@ switch ($action) {
         $password = $body['password'] ?? '';
 
         if ($username === '' || $password === '') {
-            jsonError('Username and password are required');
+            jsonError('Username dan password harus diisi');
         }
 
         $db = getDB();
-        $stmt = $db->prepare('SELECT id, username, password, full_name FROM kalsul_admins WHERE username = :u LIMIT 1');
+        $stmt = $db->prepare('SELECT id, username, password_hash, name, role FROM kalsul_admins WHERE username = :u LIMIT 1');
         $stmt->execute([':u' => $username]);
         $admin = $stmt->fetch();
 
-        if (!$admin || !password_verify($password, $admin['password'])) {
-            jsonError('Invalid username or password', 401);
+        if (!$admin || !password_verify($password, $admin['password_hash'])) {
+            jsonError('Username atau password salah', 401);
         }
 
         // Set session
-        $_SESSION['admin_id']       = (int)$admin['id'];
-        $_SESSION['admin_username'] = $admin['username'];
-        $_SESSION['admin_name']     = $admin['full_name'];
+        $_SESSION['kalsul_admin_id']   = (int)$admin['id'];
+        $_SESSION['kalsul_admin_name'] = $admin['name'];
+        $_SESSION['kalsul_admin_role'] = $admin['role'];
 
         jsonSuccess([
-            'id'        => (int)$admin['id'],
-            'username'  => $admin['username'],
-            'full_name' => $admin['full_name'],
+            'user' => [
+                'id'   => (int)$admin['id'],
+                'name' => $admin['name'],
+                'role' => $admin['role'],
+            ]
         ]);
         break;
 
     // ── Logout ──
     case 'logout':
-        if ($method !== 'POST') jsonError('Method not allowed', 405);
-
         $_SESSION = [];
         if (ini_get('session.use_cookies')) {
             $p = session_get_cookie_params();
@@ -59,19 +59,21 @@ switch ($action) {
         }
         session_destroy();
 
-        jsonSuccess(null, 200);
+        jsonSuccess(['message' => 'Logged out']);
         break;
 
     // ── Session check ──
     case 'me':
-        if ($method !== 'GET') jsonError('Method not allowed', 405);
-
-        $admin = requireAuth();
+        if (empty($_SESSION['kalsul_admin_id'])) {
+            jsonError('Unauthorized', 401);
+        }
 
         jsonSuccess([
-            'id'        => $admin['id'],
-            'username'  => $admin['username'],
-            'full_name' => $_SESSION['admin_name'] ?? '',
+            'user' => [
+                'id'   => $_SESSION['kalsul_admin_id'],
+                'name' => $_SESSION['kalsul_admin_name'] ?? 'Admin',
+                'role' => $_SESSION['kalsul_admin_role'] ?? 'admin',
+            ]
         ]);
         break;
 

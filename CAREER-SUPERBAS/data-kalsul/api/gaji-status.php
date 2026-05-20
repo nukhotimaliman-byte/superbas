@@ -1,109 +1,82 @@
 <?php
 /**
  * Data Kalsul - Gaji Status API
- * GET ?action=summary   – overall summary of bank info completeness
- * GET ?action=detail    – per-station breakdown
- * GET ?action=missing   – employees missing bank/rekening data
+ * GET  ?action=summary  – overall completion %
+ * GET  (default)        – count of filled
+ * POST ?action=sync     – sync from GAS
  */
 
 require_once __DIR__ . '/config.php';
-requireAuth();
 
-if (getMethod() !== 'GET') {
-    jsonError('Method not allowed', 405);
+$action = $_GET['action'] ?? '';
+$method = $_SERVER['REQUEST_METHOD'];
+
+// POST sync from GAS (token-based, no session needed)
+if ($method === 'POST' && $action === 'sync') {
+    $body = getJsonBody();
+    $token = $body['token'] ?? '';
+    
+    if ($token !== 'kalsul-sync-2026') {
+        jsonError('Invalid sync token', 403);
+    }
+    
+    $data = $body['data'] ?? [];
+    if (empty($data)) jsonError('No data provided');
+    
+    $db = getDB();
+    $updated = 0;
+    $skipped = 0;
+    
+    $stmt = $db->prepare('UPDATE kalsul_employees SET gaji_link_filled = :filled WHERE ops_id = :ops_id');
+    
+    foreach ($data as $item) {
+        $opsId = trim($item['ops_id'] ?? '');
+        if (!$opsId) { $skipped++; continue; }
+        
+        $filled = !empty($item['filled']) ? 1 : 0;
+        $stmt->execute([':filled' => $filled, ':ops_id' => $opsId]);
+        
+        if ($stmt->rowCount() > 0) {
+            $updated++;
+        } else {
+            $skipped++;
+        }
+    }
+    
+    jsonSuccess(['updated' => $updated, 'skipped' => $skipped]);
 }
 
-$action = $_GET['action'] ?? 'summary';
+// GET endpoints require auth
+if (empty($_SESSION['kalsul_admin_id'])) {
+    jsonError('Unauthorized', 401);
+}
+
 $db = getDB();
 
-switch ($action) {
-
-    // ── Overall summary ──
-    case 'summary':
-        $total = (int)$db->query('SELECT COUNT(*) FROM kalsul_employees')->fetchColumn();
-
-        $complete = (int)$db->query(
-            "SELECT COUNT(*) FROM kalsul_employees WHERE no_rek IS NOT NULL AND no_rek != '' AND bank IS NOT NULL AND bank != ''"
-        )->fetchColumn();
-
-        $incomplete = $total - $complete;
-
-        // Percentage
-        $pct = ($total > 0) ? round(($complete / $total) * 100, 1) : 0;
-
-        jsonSuccess([
-            'total_employees'      => $total,
-            'data_complete'        => $complete,
-            'data_incomplete'      => $incomplete,
-            'completion_percent'   => $pct,
-        ]);
-        break;
-
-    // ── Per-station breakdown ──
-    case 'detail':
-        $sql = "
-            SELECT 
-                COALESCE(station, 'Unknown') AS station,
-                COUNT(*) AS total,
-                SUM(CASE WHEN no_rek IS NOT NULL AND no_rek != '' AND bank IS NOT NULL AND bank != '' THEN 1 ELSE 0 END) AS complete,
-                SUM(CASE WHEN no_rek IS NULL OR no_rek = '' OR bank IS NULL OR bank = '' THEN 1 ELSE 0 END) AS incomplete
-            FROM kalsul_employees
-            GROUP BY station
-            ORDER BY station ASC
-        ";
-        $rows = $db->query($sql)->fetchAll();
-
-        // Add percentage
-        foreach ($rows as &$row) {
-            $row['total']      = (int)$row['total'];
-            $row['complete']   = (int)$row['complete'];
-            $row['incomplete'] = (int)$row['incomplete'];
-            $row['percent']    = ($row['total'] > 0) ? round(($row['complete'] / $row['total']) * 100, 1) : 0;
-        }
-        unset($row);
-
-        jsonSuccess($rows);
-        break;
-
-    // ── Employees with missing bank data ──
-    case 'missing':
-        $page  = max(1, (int)($_GET['page'] ?? 1));
-        $limit = min(100, max(1, (int)($_GET['limit'] ?? 20)));
-        $offset = ($page - 1) * $limit;
-        $station = trim($_GET['station'] ?? '');
-
-        $where = "WHERE (no_rek IS NULL OR no_rek = '' OR bank IS NULL OR bank = '')";
-        $params = [];
-
-        if ($station !== '') {
-            $where .= ' AND station = :station';
-            $params[':station'] = $station;
-        }
-
-        // Count
-        $countStmt = $db->prepare("SELECT COUNT(*) FROM kalsul_employees $where");
-        $countStmt->execute($params);
-        $total = (int)$countStmt->fetchColumn();
-
-        // Fetch
-        $sql = "SELECT id, no, ops_id, nama, station, status, no_rek, bank, atas_nama, no_hp FROM kalsul_employees $where ORDER BY station ASC, nama ASC LIMIT :limit OFFSET :offset";
-        $stmt = $db->prepare($sql);
-        foreach ($params as $k => $v) {
-            $stmt->bindValue($k, $v);
-        }
-        $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
-        $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
-        $stmt->execute();
-
-        jsonSuccess([
-            'employees'   => $stmt->fetchAll(),
-            'total'       => $total,
-            'page'        => $page,
-            'limit'       => $limit,
-            'total_pages' => (int)ceil($total / $limit),
-        ]);
-        break;
-
-    default:
-        jsonError('Invalid gaji-status action', 400);
+// Get employees for GAS pull
+if ($action === 'employees') {
+    $token = $_GET['token'] ?? '';
+    if ($token !== 'kalsul-sync-2026') {
+        jsonError('Invalid token', 403);
+    }
+    
+    $stmt = $db->query('SELECT ops_id, nama FROM kalsul_employees ORDER BY ops_id ASC');
+    $employees = $stmt->fetchAll();
+    
+    http_response_code(200);
+    echo json_encode(['employees' => $employees], JSON_UNESCAPED_UNICODE);
+    exit;
 }
+
+// Default: count filled
+$total = (int)$db->query('SELECT COUNT(*) FROM kalsul_employees')->fetchColumn();
+$filled = (int)$db->query('SELECT COUNT(*) FROM kalsul_employees WHERE gaji_link_filled = 1')->fetchColumn();
+
+http_response_code(200);
+echo json_encode([
+    'total'   => $total,
+    'filled'  => $filled,
+    'unfilled' => $total - $filled,
+    'percentage' => $total > 0 ? round(($filled / $total) * 100) : 0,
+], JSON_UNESCAPED_UNICODE);
+exit;

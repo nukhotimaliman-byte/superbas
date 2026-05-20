@@ -1,41 +1,44 @@
 <?php
 /**
  * Data Kalsul - Employees API
- * GET    ?action=list&page=1&limit=20&search=&station=  – paginated list
- * GET    ?action=get&id=123                              – single employee
- * PUT    ?action=update&id=123                           – update employee
- * DELETE ?action=delete&id=123                           – delete employee
- * GET    ?action=stations                                – distinct stations
+ * GET    ?action=list&page=1&per_page=25&search=&station=  – paginated list
+ * GET    ?action=get&id=123                                 – single employee
+ * PUT    (body: {id, ...fields})                            – update employee
+ * DELETE (body: {id})                                       – delete employee
  */
 
 require_once __DIR__ . '/config.php';
-requireAuth();
+
+// Require auth for all endpoints
+if (empty($_SESSION['kalsul_admin_id'])) {
+    jsonError('Unauthorized', 401);
+}
 
 $action = $_GET['action'] ?? 'list';
-$method = getMethod();
+$method = $_SERVER['REQUEST_METHOD'];
 
 switch ($action) {
 
-    // ── List employees (paginated, searchable, filterable) ──
     case 'list':
-        if ($method !== 'GET') jsonError('Method not allowed', 405);
-
-        $page   = max(1, (int)($_GET['page'] ?? 1));
-        $limit  = min(100, max(1, (int)($_GET['limit'] ?? 20)));
-        $search = trim($_GET['search'] ?? '');
-        $station = trim($_GET['station'] ?? '');
-        $offset = ($page - 1) * $limit;
+    default:
+        if ($method !== 'GET' && $action !== 'list') {
+            jsonError('Invalid action', 400);
+        }
+        
+        $page     = max(1, (int)($_GET['page'] ?? 1));
+        $per_page = min(100, max(1, (int)($_GET['per_page'] ?? 25)));
+        $search   = trim($_GET['search'] ?? '');
+        $station  = trim($_GET['station'] ?? '');
+        $offset   = ($page - 1) * $per_page;
 
         $db = getDB();
         $where  = [];
         $params = [];
 
         if ($search !== '') {
-            $where[] = '(nama LIKE :s OR ops_id LIKE :s2 OR nik LIKE :s3 OR no_hp LIKE :s4)';
-            $params[':s']  = "%$search%";
+            $where[] = '(nama LIKE :s1 OR ops_id LIKE :s2)';
+            $params[':s1'] = "%$search%";
             $params[':s2'] = "%$search%";
-            $params[':s3'] = "%$search%";
-            $params[':s4'] = "%$search%";
         }
 
         if ($station !== '') {
@@ -51,29 +54,29 @@ switch ($action) {
         $total = (int)$countStmt->fetchColumn();
 
         // Fetch rows
-        $sql = "SELECT * FROM kalsul_employees $whereSql ORDER BY `no` ASC, id ASC LIMIT :limit OFFSET :offset";
+        $sql = "SELECT * FROM kalsul_employees $whereSql ORDER BY id ASC LIMIT :lim OFFSET :off";
         $stmt = $db->prepare($sql);
         foreach ($params as $k => $v) {
             $stmt->bindValue($k, $v);
         }
-        $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
-        $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+        $stmt->bindValue(':lim', $per_page, PDO::PARAM_INT);
+        $stmt->bindValue(':off', $offset, PDO::PARAM_INT);
         $stmt->execute();
         $rows = $stmt->fetchAll();
 
-        jsonSuccess([
-            'employees'   => $rows,
-            'total'       => $total,
-            'page'        => $page,
-            'limit'       => $limit,
-            'total_pages' => (int)ceil($total / $limit),
-        ]);
-        break;
+        http_response_code(200);
+        echo json_encode([
+            'employees'  => $rows,
+            'pagination' => [
+                'total'       => $total,
+                'page'        => $page,
+                'per_page'    => $per_page,
+                'total_pages' => (int)ceil($total / $per_page),
+            ],
+        ], JSON_UNESCAPED_UNICODE);
+        exit;
 
-    // ── Get single employee ──
     case 'get':
-        if ($method !== 'GET') jsonError('Method not allowed', 405);
-
         $id = (int)($_GET['id'] ?? 0);
         if ($id <= 0) jsonError('Invalid employee ID');
 
@@ -84,80 +87,47 @@ switch ($action) {
 
         if (!$emp) jsonError('Employee not found', 404);
 
-        jsonSuccess($emp);
-        break;
+        http_response_code(200);
+        echo json_encode($emp, JSON_UNESCAPED_UNICODE);
+        exit;
+}
 
-    // ── Update employee ──
-    case 'update':
-        if ($method !== 'PUT') jsonError('Method not allowed', 405);
+// PUT — Update
+if ($method === 'PUT') {
+    $body = getJsonBody();
+    $id = (int)($body['id'] ?? 0);
+    if ($id <= 0) jsonError('Invalid employee ID');
 
-        $id = (int)($_GET['id'] ?? 0);
-        if ($id <= 0) jsonError('Invalid employee ID');
+    $allowed = ['ops_id', 'nama', 'station', 'status', 'no_rek', 'bank', 'atas_nama', 'no_hp', 'nik', 'alamat'];
+    $sets   = [];
+    $params = [':id' => $id];
 
-        $body = getJsonBody();
-        if (empty($body)) jsonError('No data provided');
-
-        $allowed = ['no', 'ops_id', 'nama', 'station', 'status', 'no_rek', 'bank', 'atas_nama', 'no_hp', 'nik', 'alamat'];
-        $sets   = [];
-        $params = [':id' => $id];
-
-        foreach ($allowed as $field) {
-            if (array_key_exists($field, $body)) {
-                $sets[] = "`$field` = :$field";
-                $params[":$field"] = ($field === 'no') ? (int)$body[$field] : sanitize($body[$field]);
-            }
+    foreach ($allowed as $field) {
+        if (array_key_exists($field, $body)) {
+            $sets[] = "`$field` = :$field";
+            $params[":$field"] = trim((string)$body[$field]);
         }
+    }
 
-        if (empty($sets)) jsonError('No valid fields to update');
+    if (empty($sets)) jsonError('No valid fields to update');
 
-        $db = getDB();
+    $db = getDB();
+    $sql = 'UPDATE kalsul_employees SET ' . implode(', ', $sets) . ' WHERE id = :id';
+    $stmt = $db->prepare($sql);
+    $stmt->execute($params);
 
-        // Check exists
-        $check = $db->prepare('SELECT id FROM kalsul_employees WHERE id = :id LIMIT 1');
-        $check->execute([':id' => $id]);
-        if (!$check->fetch()) jsonError('Employee not found', 404);
+    jsonSuccess(['updated' => $id]);
+}
 
-        $sql = 'UPDATE kalsul_employees SET ' . implode(', ', $sets) . ' WHERE id = :id';
-        $stmt = $db->prepare($sql);
-        $stmt->execute($params);
+// DELETE
+if ($method === 'DELETE') {
+    $body = getJsonBody();
+    $id = (int)($body['id'] ?? 0);
+    if ($id <= 0) jsonError('Invalid employee ID');
 
-        // Return updated record
-        $stmt = $db->prepare('SELECT * FROM kalsul_employees WHERE id = :id LIMIT 1');
-        $stmt->execute([':id' => $id]);
+    $db = getDB();
+    $stmt = $db->prepare('DELETE FROM kalsul_employees WHERE id = :id');
+    $stmt->execute([':id' => $id]);
 
-        jsonSuccess($stmt->fetch());
-        break;
-
-    // ── Delete employee ──
-    case 'delete':
-        if ($method !== 'DELETE') jsonError('Method not allowed', 405);
-
-        $id = (int)($_GET['id'] ?? 0);
-        if ($id <= 0) jsonError('Invalid employee ID');
-
-        $db = getDB();
-
-        $check = $db->prepare('SELECT id FROM kalsul_employees WHERE id = :id LIMIT 1');
-        $check->execute([':id' => $id]);
-        if (!$check->fetch()) jsonError('Employee not found', 404);
-
-        $stmt = $db->prepare('DELETE FROM kalsul_employees WHERE id = :id');
-        $stmt->execute([':id' => $id]);
-
-        jsonSuccess(['deleted' => $id]);
-        break;
-
-    // ── Get distinct stations ──
-    case 'stations':
-        if ($method !== 'GET') jsonError('Method not allowed', 405);
-
-        $db = getDB();
-        $stmt = $db->query('SELECT DISTINCT station FROM kalsul_employees WHERE station IS NOT NULL AND station != "" ORDER BY station ASC');
-        $stations = $stmt->fetchAll(PDO::FETCH_COLUMN);
-
-        jsonSuccess($stations);
-        break;
-
-    default:
-        jsonError('Invalid employees action', 400);
+    jsonSuccess(['deleted' => $id]);
 }
