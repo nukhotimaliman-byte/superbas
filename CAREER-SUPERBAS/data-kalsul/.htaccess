@@ -1,11 +1,13 @@
 # Data KalSul — SPA routing
-# Built files are in dist/ but referenced as /data-kalsul/assets/
 
 RewriteEngine On
 RewriteBase /data-kalsul/
 
 # Don't rewrite API requests
 RewriteRule ^api/ - [L]
+
+# Don't rewrite PHP files
+RewriteRule \.php$ - [L]
 
 # Rewrite assets/ to dist/assets/ (Vite build output)
 RewriteRule ^assets/(.+)$ dist/assets/$1 [L]
