@@ -1,0 +1,25 @@
+# SPA routing for data-kalsul
+# Route all non-file requests to index.html
+
+RewriteEngine On
+RewriteBase /data-kalsul/
+
+# Don't rewrite API requests
+RewriteRule ^api/ - [L]
+
+# Don't rewrite existing files/directories
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+
+# Route all other requests to index.html (SPA)
+RewriteRule . index.html [L]
+
+# Security headers
+<IfModule mod_headers.c>
+    Header set X-Content-Type-Options "nosniff"
+    Header set X-Frame-Options "SAMEORIGIN"
+    Header set X-XSS-Protection "1; mode=block"
+</IfModule>
+
+# Disable directory listing
+Options -Indexes
