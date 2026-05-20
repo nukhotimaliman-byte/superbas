@@ -29,23 +29,23 @@ async function request(endpoint, options = {}) {
 export const api = {
   // Auth
   login: (username, password) =>
-    request('auth.php', { method: 'POST', body: JSON.stringify({ action: 'login', username, password }) }),
+    request('auth.php?action=login', { method: 'POST', body: JSON.stringify({ username, password }) }),
   logout: () =>
-    request('auth.php', { method: 'POST', body: JSON.stringify({ action: 'logout' }) }),
+    request('auth.php?action=logout', { method: 'POST' }),
   me: () =>
     request('auth.php?action=me'),
 
   // Employees
   getEmployees: (params = {}) => {
     const q = new URLSearchParams(params).toString();
-    return request(`employees.php?${q}`);
+    return request(`employees.php?action=list&${q}`);
   },
   getEmployee: (id) =>
-    request(`employees.php?id=${id}`),
+    request(`employees.php?action=get&id=${id}`),
   updateEmployee: (id, data) =>
-    request('employees.php', { method: 'PUT', body: JSON.stringify({ id, ...data }) }),
+    request('employees.php?action=update', { method: 'PUT', body: JSON.stringify({ id, ...data }) }),
   deleteEmployee: (id) =>
-    request('employees.php', { method: 'DELETE', body: JSON.stringify({ id }) }),
+    request('employees.php?action=delete', { method: 'DELETE', body: JSON.stringify({ id }) }),
 
   // Upload
   uploadFile: (formData) =>
