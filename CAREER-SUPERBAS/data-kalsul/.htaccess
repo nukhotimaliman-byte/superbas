@@ -1,5 +1,5 @@
 # Data KalSul — SPA routing
-# Serve built files from dist/ subfolder
+# Built files are in dist/ but referenced as /data-kalsul/assets/
 
 RewriteEngine On
 RewriteBase /data-kalsul/
@@ -7,21 +7,17 @@ RewriteBase /data-kalsul/
 # Don't rewrite API requests
 RewriteRule ^api/ - [L]
 
-# Serve files from dist/ if they exist there
-RewriteCond %{REQUEST_FILENAME} !-f
-RewriteCond %{REQUEST_FILENAME} !-d
-RewriteCond %{DOCUMENT_ROOT}/data-kalsul/dist%{REQUEST_URI} -f
-RewriteRule ^(.+)$ dist/$1 [L]
-
-# Serve assets from dist/assets
+# Rewrite assets/ to dist/assets/ (Vite build output)
 RewriteRule ^assets/(.+)$ dist/assets/$1 [L]
 
-# SPA fallback — route everything else to dist/index.html
-RewriteCond %{REQUEST_FILENAME} !-f
-RewriteCond %{REQUEST_FILENAME} !-d
+# Serve dist/ files directly
+RewriteRule ^dist/ - [L]
+
+# Everything else → SPA (dist/index.html)
 RewriteCond %{REQUEST_URI} !^/data-kalsul/api/
 RewriteCond %{REQUEST_URI} !^/data-kalsul/dist/
-RewriteRule . dist/index.html [L]
+RewriteCond %{REQUEST_URI} !^/data-kalsul/assets/
+RewriteRule ^(.*)$ dist/index.html [L]
 
 # Security headers
 <IfModule mod_headers.c>
@@ -30,5 +26,4 @@ RewriteRule . dist/index.html [L]
     Header set X-XSS-Protection "1; mode=block"
 </IfModule>
 
-# Disable directory listing
 Options -Indexes
