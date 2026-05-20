@@ -98,7 +98,7 @@ if ($method === 'PUT') {
     $id = (int)($body['id'] ?? 0);
     if ($id <= 0) jsonError('Invalid employee ID');
 
-    $allowed = ['ops_id', 'nama', 'station', 'status', 'no_rek', 'bank', 'atas_nama', 'no_hp', 'nik', 'alamat'];
+    $allowed = ['ops_id', 'nama', 'station', 'hk', 'status', 'no_rek', 'bank', 'atas_nama', 'no_hp', 'nik', 'alamat'];
     $sets   = [];
     $params = [':id' => $id];
 

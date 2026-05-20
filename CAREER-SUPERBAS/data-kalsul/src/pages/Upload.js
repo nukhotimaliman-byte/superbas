@@ -77,6 +77,7 @@ export async function UploadPage(container) {
                   <th>OPS ID</th>
                   <th>Nama</th>
                   <th>Station</th>
+                  <th>HK</th>
                   <th>Status</th>
                   <th>No Rek</th>
                   <th>Bank</th>
@@ -222,6 +223,7 @@ function showPreview(data) {
       <td><span class="badge badge-primary">${escapeHtml(emp.ops_id)}</span></td>
       <td style="font-weight:500">${escapeHtml(emp.nama)}</td>
       <td>${escapeHtml(emp.station)}</td>
+      <td style="text-align:center;font-weight:600">${escapeHtml(emp.hk)}</td>
       <td><span class="badge badge-accent">${escapeHtml(emp.status)}</span></td>
       <td>${escapeHtml(emp.no_rek)}</td>
       <td>${escapeHtml(emp.bank)}</td>
@@ -233,7 +235,7 @@ function showPreview(data) {
   `).join('');
 
   if (data.totalRows > 100) {
-    tbody.innerHTML += `<tr><td colspan="11" style="text-align:center;color:var(--text-tertiary);padding:16px">...dan ${data.totalRows - 100} baris lainnya</td></tr>`;
+    tbody.innerHTML += `<tr><td colspan="12" style="text-align:center;color:var(--text-tertiary);padding:16px">...dan ${data.totalRows - 100} baris lainnya</td></tr>`;
   }
 }
 

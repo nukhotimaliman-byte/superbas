@@ -66,6 +66,7 @@ export async function DataTablePage(container) {
                 <th>OPS ID</th>
                 <th>Nama</th>
                 <th>Station</th>
+                <th>HK</th>
                 <th>Status</th>
                 <th>No Rek</th>
                 <th>Bank</th>
@@ -78,7 +79,7 @@ export async function DataTablePage(container) {
               </tr>
             </thead>
             <tbody id="data-tbody">
-              <tr><td colspan="13" style="text-align:center;padding:40px;color:var(--text-tertiary)">Memuat data...</td></tr>
+              <tr><td colspan="15" style="text-align:center;padding:40px;color:var(--text-tertiary)">Memuat data...</td></tr>
             </tbody>
           </table>
         </div>
@@ -210,7 +211,7 @@ async function loadData() {
 
     if (employees.length === 0) {
       tbody.innerHTML = `
-        <tr><td colspan="13">
+        <tr><td colspan="15">
           <div class="empty-state">
             <div class="empty-state-icon">${icons.users}</div>
             <div class="empty-state-title">Tidak ada data</div>
@@ -232,6 +233,7 @@ async function loadData() {
         <td><span class="badge badge-primary">${esc(emp.ops_id)}</span></td>
         <td style="font-weight:500">${esc(emp.nama)}</td>
         <td>${esc(emp.station)}</td>
+        <td style="text-align:center;font-weight:600">${esc(emp.hk || '')}</td>
         <td><span class="badge badge-accent">${esc(emp.status)}</span></td>
         <td style="font-family:monospace;font-size:12px">${esc(emp.no_rek)}</td>
         <td>${esc(emp.bank)}</td>
@@ -345,6 +347,7 @@ function openEditModal(employee) {
     { key: 'ops_id', label: 'OPS ID', type: 'text' },
     { key: 'nama', label: 'Nama', type: 'text' },
     { key: 'station', label: 'Station', type: 'text' },
+    { key: 'hk', label: 'HK (Hari Kerja)', type: 'text' },
     { key: 'status', label: 'Status', type: 'text' },
     { key: 'no_rek', label: 'No Rekening', type: 'text' },
     { key: 'bank', label: 'Bank', type: 'text' },

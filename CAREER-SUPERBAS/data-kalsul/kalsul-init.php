@@ -200,6 +200,18 @@ try {
     
     echo "\n✅ Database setup complete!\n";
     
+    // Add HK column if not exists
+    try {
+        $pdo->exec("ALTER TABLE kalsul_employees ADD COLUMN hk VARCHAR(10) DEFAULT '' AFTER station");
+        echo "✅ Column 'hk' added\n";
+    } catch (PDOException $e) {
+        if (strpos($e->getMessage(), 'Duplicate column') !== false) {
+            echo "ℹ Column 'hk' already exists\n";
+        } else {
+            echo "⚠ HK column: " . $e->getMessage() . "\n";
+        }
+    }
+    
 } catch (PDOException $e) {
     echo "❌ Database error: " . $e->getMessage() . "\n";
 }
