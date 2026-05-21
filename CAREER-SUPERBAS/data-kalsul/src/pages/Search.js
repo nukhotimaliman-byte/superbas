@@ -126,7 +126,7 @@ async function doSearch() {
           ? '<span class="src-badge src-pergantian">PERGANTIAN REK</span>'
           : '<span class="src-badge src-gaji">LINK GAJI</span>';
         const tgl = r.timestamp_gas
-          ? new Date(r.timestamp_gas).toLocaleDateString('id-ID', {day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit'})
+          ? new Date(r.timestamp_gas.replace(' ', 'T')).toLocaleDateString('id-ID', {day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit'})
           : '-';
 
         return `<tr>
