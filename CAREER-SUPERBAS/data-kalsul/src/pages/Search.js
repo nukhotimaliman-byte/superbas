@@ -86,12 +86,12 @@ export function renderSearch() {
               <tr>
                 <th>NO</th>
                 <th>OPS ID</th>
-                <th>NAMA</th>
-                <th>STATUS REK</th>
+                <th>NAMA (WA)</th>
+                <th>STATUS</th>
                 <th>NO REKENING</th>
                 <th>BANK</th>
-                <th>ATAS NAMA</th>
-                <th>TANGGAL</th>
+                <th>ATAS NAMA (REK)</th>
+                <th>COCOK</th>
                 <th>SUMBER</th>
               </tr>
             </thead>
@@ -135,10 +135,9 @@ export function initSearch() {
     hideResults();
   });
 
-  // Auto-parse on input
   bulkInput?.addEventListener('input', () => {
-    const ids = parseOpsIds(bulkInput.value);
-    document.getElementById('bulk-parsed').textContent = `${ids.length} OPS ID terdeteksi`;
+    const parsed = parseOpsIds(bulkInput.value);
+    document.getElementById('bulk-parsed').textContent = `${parsed.length} OPS ID terdeteksi`;
   });
 
   // Bulk search
@@ -155,36 +154,50 @@ function hideResults() {
   document.getElementById('search-empty').style.display = 'none';
 }
 
-// Parse OPS IDs from any text — smart extraction
+// Parse OPS IDs + NAMA from any text — smart extraction
 function parseOpsIds(text) {
-  const ids = new Set();
+  const results = new Map(); // id -> { id, nama }
 
-  // 1. WhatsApp format: "OPS:" or "OPS: :" followed by digits
-  const opsContextRegex = /ops\s*:?\s*:?\s*(\d{5,8})/gi;
-  let m;
-  while ((m = opsContextRegex.exec(text)) !== null) {
-    ids.add(m[1]);
-  }
+  // Split into blocks by "FORMAT GAJI" or double newlines
+  const blocks = text.split(/(?=FORMAT\s+GAJI)|(?:\n\s*\n)/i);
 
-  // 2. Ops-prefixed: Ops1234567
-  const opsPrefixRegex = /\bops(\d{5,8})\b/gi;
-  while ((m = opsPrefixRegex.exec(text)) !== null) {
-    ids.add(m[1]);
-  }
-
-  // 3. If no context matches found, try standalone 6-8 digit numbers
-  //    (only when text looks like a simple list, not WhatsApp chat)
-  if (ids.size === 0) {
-    const hasContext = /nama|norek|bank|atas.nama|lokasi|periode/i.test(text);
-    if (!hasContext) {
-      const standaloneRegex = /\b(\d{6,8})\b/g;
-      while ((m = standaloneRegex.exec(text)) !== null) {
-        ids.add(m[1]);
+  for (const block of blocks) {
+    // Extract OPS ID
+    const opsMatch = block.match(/ops\s*:?\s*:?\s*(\d{5,8})/i);
+    if (opsMatch) {
+      const id = opsMatch[1];
+      // Extract NAMA
+      const namaMatch = block.match(/NAMA\s*:\s*(.+)/i);
+      const nama = namaMatch ? namaMatch[1].trim() : '';
+      if (!results.has(id)) {
+        results.set(id, { id, nama });
       }
     }
   }
 
-  return [...ids];
+  // Also try Ops-prefixed standalone: Ops1234567
+  const opsPrefixRegex = /\bops(\d{5,8})\b/gi;
+  let m;
+  while ((m = opsPrefixRegex.exec(text)) !== null) {
+    if (!results.has(m[1])) {
+      results.set(m[1], { id: m[1], nama: '' });
+    }
+  }
+
+  // Fallback: simple list of numbers (no WhatsApp context)
+  if (results.size === 0) {
+    const hasContext = /nama|norek|bank|atas.nama|lokasi|periode/i.test(text);
+    if (!hasContext) {
+      const standaloneRegex = /\b(\d{6,8})\b/g;
+      while ((m = standaloneRegex.exec(text)) !== null) {
+        if (!results.has(m[1])) {
+          results.set(m[1], { id: m[1], nama: '' });
+        }
+      }
+    }
+  }
+
+  return [...results.values()];
 }
 
 async function doSearch() {
@@ -264,8 +277,8 @@ async function doSearch() {
 
 async function doBulkSearch() {
   const text = document.getElementById('bulk-input')?.value || '';
-  const ids = parseOpsIds(text);
-  if (ids.length === 0) return;
+  const parsed = parseOpsIds(text);
+  if (parsed.length === 0) return;
 
   const resultDiv = document.getElementById('search-result');
   resultDiv.style.display = 'block';
@@ -274,65 +287,58 @@ async function doBulkSearch() {
 
   const bulkCard = document.getElementById('bulk-result-card');
   bulkCard.style.display = 'block';
-  document.getElementById('bulk-result-title').textContent = `Mencari ${ids.length} OPS ID...`;
+  document.getElementById('bulk-result-title').textContent = `Mencari ${parsed.length} OPS ID...`;
   document.getElementById('bulk-tbody').innerHTML = `<tr><td colspan="9" style="text-align:center;padding:30px;color:var(--t3)">
-    <div class="loading-spinner" style="margin:0 auto 10px"></div>Memproses ${ids.length} OPS ID...</td></tr>`;
+    <div class="loading-spinner" style="margin:0 auto 10px"></div>Memproses ${parsed.length} OPS ID...</td></tr>`;
 
   const results = [];
-  let found = 0;
-  let notFound = 0;
+  let found = 0, notFound = 0, matched = 0, mismatched = 0;
 
-  // Process in batches to avoid overwhelming the API
-  for (const id of ids) {
+  for (const entry of parsed) {
     try {
-      const opsIdFull = `Ops${id}`;
+      const opsIdFull = `Ops${entry.id}`;
       const rekRes = await api.getRekeningHistory(opsIdFull).catch(() => ({ history: [] }));
       const history = rekRes.history || [];
 
       if (history.length > 0) {
-        const latest = history[0]; // newest first
+        const latest = history[0];
+        const nameMatch = compareNames(entry.nama, latest.atas_nama || '');
+        if (nameMatch === 'match') matched++;
+        else if (nameMatch === 'mismatch') mismatched++;
         results.push({
-          opsId: id,
-          found: true,
-          noRek: latest.no_rek || '-',
-          bank: latest.bank || '-',
-          atasNama: latest.atas_nama || '-',
-          tanggal: latest.timestamp_gas || '-',
-          source: latest.source || '-',
-          historyCount: history.length,
+          opsId: entry.id, waNama: entry.nama, found: true,
+          noRek: latest.no_rek || '-', bank: latest.bank || '-',
+          atasNama: latest.atas_nama || '-', source: latest.source || '-',
+          nameMatch,
         });
         found++;
       } else {
-        // Try employee data
-        const empRes = await api.getEmployees({ search: id, per_page: 5 }).catch(() => ({ employees: [] }));
-        const emp = empRes.employees?.find(e => e.ops_id.replace(/^ops/i, '') === id);
+        const empRes = await api.getEmployees({ search: entry.id, per_page: 5 }).catch(() => ({ employees: [] }));
+        const emp = empRes.employees?.find(e => e.ops_id.replace(/^ops/i, '') === entry.id);
         if (emp) {
+          const nameMatch = compareNames(entry.nama, emp.atas_nama || '');
+          if (nameMatch === 'match') matched++;
+          else if (nameMatch === 'mismatch') mismatched++;
           results.push({
-            opsId: id,
-            found: true,
-            nama: emp.nama,
-            noRek: emp.no_rek || '-',
-            bank: emp.bank || '-',
-            atasNama: emp.atas_nama || '-',
-            tanggal: emp.rek_tanggal || '-',
-            source: '-',
-            rekStatus: emp.rek_status,
-            historyCount: 0,
+            opsId: entry.id, waNama: entry.nama, found: true,
+            noRek: emp.no_rek || '-', bank: emp.bank || '-',
+            atasNama: emp.atas_nama || '-', source: '-',
+            rekStatus: emp.rek_status, nameMatch,
           });
           found++;
         } else {
-          results.push({ opsId: id, found: false });
+          results.push({ opsId: entry.id, waNama: entry.nama, found: false });
           notFound++;
         }
       }
     } catch {
-      results.push({ opsId: id, found: false });
+      results.push({ opsId: entry.id, waNama: entry.nama, found: false });
       notFound++;
     }
   }
 
   // Render summary
-  document.getElementById('bulk-result-title').textContent = `Hasil Pencarian Bulk (${ids.length} OPS ID)`;
+  document.getElementById('bulk-result-title').textContent = `Hasil Pencarian Bulk (${parsed.length} OPS ID)`;
   document.getElementById('bulk-summary').innerHTML = `
     <div class="bulk-stats">
       <span class="bulk-stat bulk-stat-found">
@@ -343,6 +349,8 @@ async function doBulkSearch() {
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
         ${notFound} tidak ditemukan
       </span>
+      ${matched > 0 ? `<span class="bulk-stat bulk-stat-match">Nama cocok: ${matched}</span>` : ''}
+      ${mismatched > 0 ? `<span class="bulk-stat bulk-stat-mismatch">Nama beda: ${mismatched}</span>` : ''}
     </div>
   `;
 
@@ -352,7 +360,8 @@ async function doBulkSearch() {
       return `<tr class="row-notfound">
         <td>${i + 1}</td>
         <td><span class="badge badge-primary">Ops${esc(r.opsId)}</span></td>
-        <td colspan="7" style="color:var(--t3);font-style:italic">Tidak ditemukan di kedua sheet</td>
+        <td>${esc(r.waNama) || '-'}</td>
+        <td colspan="6" style="color:var(--t3);font-style:italic">Tidak ditemukan</td>
       </tr>`;
     }
 
@@ -368,24 +377,51 @@ async function doBulkSearch() {
       ? '<span class="src-badge src-gaji">LINK GAJI</span>'
       : '-';
 
-    const tgl = (r.tanggal && r.tanggal !== '-')
-      ? new Date(r.tanggal.replace(' ', 'T')).toLocaleDateString('id-ID', {day:'2-digit', month:'short', year:'numeric'})
-      : '-';
+    const matchBadge = {
+      match: '<span class="badge badge-done">COCOK</span>',
+      mismatch: '<span class="badge badge-abnormal">BEDA</span>',
+      unknown: '<span class="badge" style="background:rgba(255,255,255,.06);color:var(--t3)">-</span>',
+    }[r.nameMatch] || '-';
 
     return `<tr>
       <td>${i + 1}</td>
       <td><span class="badge badge-primary">Ops${esc(r.opsId)}</span></td>
-      <td style="font-weight:500;color:var(--t1)">${esc(r.nama || r.atasNama || '-')}</td>
+      <td style="font-weight:500;color:var(--t1)">${esc(r.waNama) || '-'}</td>
       <td>${statusBadge}</td>
       <td style="font-family:monospace">${esc(r.noRek)}</td>
       <td>${esc(r.bank)}</td>
-      <td>${esc(r.atasNama)}</td>
-      <td style="font-size:12px">${tgl}</td>
+      <td style="font-weight:500">${esc(r.atasNama)}</td>
+      <td>${matchBadge}</td>
       <td>${srcBadge}</td>
     </tr>`;
   }).join('');
 
   resultDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// Compare two names (fuzzy)
+function compareNames(name1, name2) {
+  if (!name1 || !name2) return 'unknown';
+  const a = name1.toUpperCase().trim();
+  const b = name2.toUpperCase().trim();
+  if (a === b) return 'match';
+  // Simple similarity: check if one contains the other or >80% chars match
+  if (a.includes(b) || b.includes(a)) return 'match';
+  // Levenshtein-like: count matching chars
+  const longer = a.length > b.length ? a : b;
+  const shorter = a.length > b.length ? b : a;
+  if (longer.length === 0) return 'unknown';
+  let matches = 0;
+  const longerChars = longer.split('');
+  const shorterChars = shorter.split('');
+  for (let i = 0; i < shorterChars.length; i++) {
+    if (longerChars.includes(shorterChars[i])) {
+      matches++;
+      longerChars.splice(longerChars.indexOf(shorterChars[i]), 1);
+    }
+  }
+  const similarity = matches / longer.length;
+  return similarity >= 0.7 ? 'match' : 'mismatch';
 }
 
 function renderInfoGrid(items) {

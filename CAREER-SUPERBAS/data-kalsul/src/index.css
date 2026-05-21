@@ -430,6 +430,8 @@ select.input { cursor: pointer; }
 .bulk-stat-notfound { background: rgba(239,68,68,.12); color: #fca5a5; }
 .row-notfound { opacity: .5; }
 .row-notfound td { border-bottom-color: rgba(239,68,68,.15); }
+.bulk-stat-match { background: rgba(16,185,129,.12); color: #6ee7b7; }
+.bulk-stat-mismatch { background: rgba(251,191,36,.12); color: #fcd34d; }
 
 /* ── Period Navigation ────────────────────────── */
 .period-bar {
