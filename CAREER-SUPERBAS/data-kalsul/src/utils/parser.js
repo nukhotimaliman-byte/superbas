@@ -47,13 +47,19 @@ export function parseFile(file) {
         const detectedFormat = allRows[0]?._format || 'unknown';
 
         for (const row of allRows) {
+          // Filter: hanya ambil Vendor - BAS
+          const statusLower = (row.status || '').toLowerCase();
+          if (statusLower && !statusLower.includes('vendor - bas') && !statusLower.includes('vendor-bas') && !statusLower.includes('vendor bas')) {
+            continue; // Skip non-BAS vendors
+          }
+
           const key = row.ops_id;
           if (!grouped[key]) {
             grouped[key] = {
               ops_id: row.ops_id,
               nama: row.nama,
               station: row.station || '',
-              status: row.status || 'Daily Worker',
+              status: cleanStatus(row.status),
               dates: new Set(),
             };
           }
@@ -187,4 +193,16 @@ function formatDate(val) {
   const d = new Date(val);
   if (!isNaN(d.getTime())) return d.toISOString().substring(0, 10);
   return String(val).substring(0, 10);
+}
+
+/**
+ * Clean status: remove 'Daily Worker' prefix
+ * 'Daily Worker Vendor - BAS' → 'Vendor - BAS'
+ */
+function cleanStatus(status) {
+  if (!status) return 'Vendor - BAS';
+  let s = String(status).trim();
+  // Remove 'Daily Worker' prefix
+  s = s.replace(/^daily\s*worker\s*/i, '').trim();
+  return s || 'Vendor - BAS';
 }
