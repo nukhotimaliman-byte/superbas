@@ -80,8 +80,15 @@ case 'list':
     $pergantianMap = [];
 
     if (!empty($opsIds)) {
+        // Strip 'Ops' prefix for matching (employees=Ops1234, rekening=1234)
+        $numericIds = array_map(function($id) {
+            return preg_replace('/^ops/i', '', $id);
+        }, $opsIds);
+        // Also include original format in case some match directly
+        $allIds = array_unique(array_merge($opsIds, $numericIds));
+        $placeholders = implode(',', array_fill(0, count($allIds), '?'));
+
         // Get latest rekening per ops_id
-        $placeholders = implode(',', array_fill(0, count($opsIds), '?'));
         $rekStmt = $db->prepare("
             SELECT r1.* FROM kalsul_rekening r1
             INNER JOIN (
@@ -91,7 +98,7 @@ case 'list':
             WHERE r1.ops_id IN ($placeholders)
             GROUP BY r1.ops_id
         ");
-        $rekStmt->execute($opsIds);
+        $rekStmt->execute($allIds);
         foreach ($rekStmt->fetchAll() as $r) {
             $rekMap[$r['ops_id']] = $r;
         }
@@ -102,7 +109,7 @@ case 'list':
             WHERE source='link_pergantian_rek' AND ops_id IN ($placeholders)
             GROUP BY ops_id
         ");
-        $pergStmt->execute($opsIds);
+        $pergStmt->execute($allIds);
         foreach ($pergStmt->fetchAll() as $p) {
             $pergantianMap[$p['ops_id']] = (int)$p['cnt'];
         }
@@ -111,7 +118,11 @@ case 'list':
     // Build result with rek_status
     $result = [];
     foreach ($employees as $emp) {
-        $rek = $rekMap[$emp['ops_id']] ?? null;
+        $opsOrig = $emp['ops_id'];
+        $opsNum = preg_replace('/^ops/i', '', $opsOrig);
+        // Try both formats
+        $rek = $rekMap[$opsOrig] ?? $rekMap[$opsNum] ?? null;
+        $pergCount = $pergantianMap[$opsOrig] ?? $pergantianMap[$opsNum] ?? 0;
 
         if (!$rek || empty($rek['no_rek'])) {
             $rekStatus = 'kosong';
@@ -140,8 +151,8 @@ case 'list':
         $emp['no_hp'] = $rek['no_hp'] ?? '';
         $emp['nik'] = $rek['nik'] ?? '';
         $emp['alamat'] = $rek['alamat'] ?? '';
-        $emp['has_pergantian'] = ($pergantianMap[$emp['ops_id']] ?? 0) > 0;
-        $emp['pergantian_count'] = $pergantianMap[$emp['ops_id']] ?? 0;
+        $emp['has_pergantian'] = $pergCount > 0;
+        $emp['pergantian_count'] = $pergCount;
 
         // Filter by rek_status
         if ($rekFilter !== '' && $rekStatus !== $rekFilter) continue;
@@ -167,8 +178,10 @@ case 'rekening_history':
     $opsId = trim($_GET['ops_id'] ?? '');
     if ($opsId === '') jsonError('ops_id required');
 
-    $stmt = $db->prepare('SELECT * FROM kalsul_rekening WHERE ops_id = :oid ORDER BY COALESCE(timestamp_gas, created_at) DESC');
-    $stmt->execute([':oid' => $opsId]);
+    // Try both formats: Ops1234 and 1234
+    $opsNum = preg_replace('/^ops/i', '', $opsId);
+    $stmt = $db->prepare('SELECT * FROM kalsul_rekening WHERE ops_id = :oid1 OR ops_id = :oid2 ORDER BY COALESCE(timestamp_gas, created_at) DESC');
+    $stmt->execute([':oid1' => $opsId, ':oid2' => $opsNum]);
     $rows = $stmt->fetchAll();
 
     // Clean no_rek
