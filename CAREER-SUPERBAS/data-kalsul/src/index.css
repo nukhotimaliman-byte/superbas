@@ -49,12 +49,9 @@ button { font-family: var(--font); cursor: pointer; }
 }
 .login-header { text-align: center; margin-bottom: 28px; }
 .login-logo {
-  display: inline-flex; align-items: center; justify-content: center;
-  width: 72px; height: 72px; border-radius: 16px; margin-bottom: 20px;
-  background: linear-gradient(135deg, #0ea5e9, #3b82f6, #6366f1);
-  font-weight: 900; font-size: 22px; color: white; letter-spacing: 2px;
-  box-shadow: 0 8px 32px rgba(14,165,233,.3);
+  display: block; margin: 0 auto 20px;
 }
+.login-logo img { height: 48px; filter: invert(1) brightness(2); opacity: .9; }
 .login-title {
   font-size: 28px; font-weight: 800;
   background: linear-gradient(135deg, var(--accent), #3b82f6);
@@ -86,12 +83,8 @@ button { font-family: var(--font); cursor: pointer; }
 }
 .hdr-in { display: flex; align-items: center; justify-content: space-between; height: 100%; padding: 0 20px; }
 .hdr-left { display: flex; align-items: center; gap: 14px; }
-.hdr-logo {
-  width: 36px; height: 36px; border-radius: 8px;
-  background: linear-gradient(135deg, #0ea5e9, #3b82f6);
-  display: flex; align-items: center; justify-content: center;
-  font-weight: 900; font-size: 11px; color: white; letter-spacing: 1.5px;
-}
+.hdr-logo { display: flex; align-items: center; text-decoration: none; }
+.hdr-logo img { height: 28px; filter: invert(1) brightness(2); opacity: .85; }
 .hdr-title { font-size: .78rem; font-weight: 700; color: var(--t1); }
 .hdr-divider { width: 1px; height: 24px; background: var(--border); }
 .hdr-right { display: flex; align-items: center; gap: 12px; }

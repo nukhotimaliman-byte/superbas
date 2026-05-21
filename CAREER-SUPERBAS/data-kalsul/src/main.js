@@ -27,7 +27,7 @@ function renderLogin() {
     <div class="login-page">
       <div class="login-card">
         <div class="login-header">
-          <div class="login-logo">BAS</div>
+          <div class="login-logo"><img src="/BAS.svg" alt="BAS"></div>
           <h1 class="login-title">DATA KALSUL</h1>
           <p class="login-subtitle">Kalimantan & Sulawesi Data Management</p>
         </div>
