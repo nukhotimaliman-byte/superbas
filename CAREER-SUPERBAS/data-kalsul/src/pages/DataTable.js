@@ -263,15 +263,19 @@ function renderEmployeeRow(emp, no) {
   const tgl = emp.rek_tanggal ? new Date(emp.rek_tanggal).toLocaleDateString('id-ID', {day:'2-digit',month:'short',year:'numeric'}) : '-';
   const digitBadge = emp.rek_digit_count > 0 ? `<span class="digit-badge">${emp.rek_digit_count}</span>` : '';
 
-  // Station: show first + badge if more
-  const stations = emp._stations || [emp.station];
-  const stationExtra = stations.length > 1
-    ? `<span class="badge badge-station-more" title="${stations.join(', ')}">+${stations.length - 1}</span>`
+  // Station: parse comma-separated + merge dedup stations, deduplicate
+  const rawStations = (emp.station || '').split(',').map(s => s.trim()).filter(Boolean);
+  const dedupStations = (emp._stations || []).flatMap(s => s.split(',').map(x => x.trim()).filter(Boolean));
+  const allStations = [...new Set([...rawStations, ...dedupStations])];
+  const firstStation = allStations[0] || '-';
+  const extraCount = allStations.length - 1;
+  const stationBadge = extraCount > 0
+    ? `<span class="badge badge-station-more">+${extraCount}</span>`
     : '';
-  const stationHtml = `<span class="station-cell">${esc(stations[0])}${stationExtra}</span>`;
+  const stationHtml = `<span class="station-cell">${esc(firstStation)}${stationBadge}</span>`;
 
   return `
-    <tr data-ops-id="${esc(emp.ops_id)}" data-stations="${esc(stations.join('||'))}" class="${emp.has_pergantian ? 'row-pergantian' : ''}">
+    <tr data-ops-id="${esc(emp.ops_id)}" data-stations="${esc(allStations.join('||'))}" class="${emp.has_pergantian ? 'row-pergantian' : ''}">
       <td>${no}</td>
       <td><span class="badge badge-primary">${esc(emp.ops_id)}</span></td>
       <td style="font-weight:500;color:var(--t1)">${esc(emp.nama)}</td>

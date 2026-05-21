@@ -405,15 +405,20 @@ select.input { cursor: pointer; }
 .modal-footer { display: flex; gap: 10px; justify-content: flex-end; padding: 14px 20px; border-top: 1px solid var(--border); }
 
 /* ── Station Badge & Expand ──────────────────── */
-.station-cell { display: inline-flex; align-items: center; gap: 6px; max-width: 180px; }
+.station-cell { display: inline-flex; align-items: center; gap: 6px; max-width: 160px; }
+.station-cell > span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .badge-station-more {
-  background: rgba(56,189,248,.15); color: #7dd3fc; font-size: 10px; padding: 1px 6px;
-  border-radius: 8px; font-weight: 600; white-space: nowrap; cursor: help;
+  background: linear-gradient(135deg, #f59e0b, #ef4444); color: #fff; font-size: 10px; padding: 2px 7px;
+  border-radius: 10px; font-weight: 700; white-space: nowrap; cursor: pointer;
+  box-shadow: 0 2px 8px rgba(245,158,11,.3); flex-shrink: 0;
 }
 .badge-station {
-  background: rgba(56,189,248,.1); border: 1px solid rgba(56,189,248,.2); color: #93c5fd;
-  font-size: 11px; padding: 3px 10px; border-radius: 6px;
+  background: rgba(99,102,241,.12); border: 1px solid rgba(99,102,241,.25); color: #a5b4fc;
+  font-size: 11px; padding: 4px 12px; border-radius: 8px; font-weight: 500;
 }
+.badge-station:nth-child(2n) { background: rgba(16,185,129,.12); border-color: rgba(16,185,129,.25); color: #6ee7b7; }
+.badge-station:nth-child(3n) { background: rgba(245,158,11,.12); border-color: rgba(245,158,11,.25); color: #fcd34d; }
+.badge-station:nth-child(5n) { background: rgba(236,72,153,.12); border-color: rgba(236,72,153,.25); color: #f9a8d4; }
 .expand-section { margin-top: 12px; }
 .expand-section:first-child { margin-top: 0; }
 .expand-section-title { font-size: 11px; font-weight: 600; color: var(--t2); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 8px; }
