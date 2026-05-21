@@ -48,7 +48,13 @@ button { font-family: var(--font); cursor: pointer; }
   box-shadow: 0 4px 24px rgba(0,0,0,0.3);
 }
 .login-header { text-align: center; margin-bottom: 28px; }
-.login-logo { height: 60px; width: auto; margin-bottom: 16px; }
+.login-logo {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 72px; height: 72px; border-radius: 16px; margin-bottom: 20px;
+  background: linear-gradient(135deg, #0ea5e9, #3b82f6, #6366f1);
+  font-weight: 900; font-size: 22px; color: white; letter-spacing: 2px;
+  box-shadow: 0 8px 32px rgba(14,165,233,.3);
+}
 .login-title {
   font-size: 28px; font-weight: 800;
   background: linear-gradient(135deg, var(--accent), #3b82f6);
@@ -81,8 +87,10 @@ button { font-family: var(--font); cursor: pointer; }
 .hdr-in { display: flex; align-items: center; justify-content: space-between; height: 100%; padding: 0 20px; }
 .hdr-left { display: flex; align-items: center; gap: 14px; }
 .hdr-logo {
-  height: 32px; width: auto; object-fit: contain;
-  border-radius: 4px;
+  width: 36px; height: 36px; border-radius: 8px;
+  background: linear-gradient(135deg, #0ea5e9, #3b82f6);
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 900; font-size: 11px; color: white; letter-spacing: 1.5px;
 }
 .hdr-title { font-size: .78rem; font-weight: 700; color: var(--t1); }
 .hdr-divider { width: 1px; height: 24px; background: var(--border); }

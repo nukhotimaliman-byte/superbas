@@ -12,7 +12,7 @@ export function renderShell(user) {
           <button class="sidebar-toggle" id="sidebarToggle" title="Toggle sidebar">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
           </button>
-          <img class="hdr-logo" src="/data-kalsul/LogoBas.png" alt="BAS" />
+          <div class="hdr-logo">BAS</div>
           <div class="hdr-divider"></div>
           <span class="hdr-title">Data KalSul</span>
         </div>
