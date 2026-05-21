@@ -192,6 +192,20 @@ case 'get':
     break;
 
 // ── Stations ──
+// ── Delete dataset ──
+case 'delete_dataset':
+    if ($method !== 'DELETE') jsonError('DELETE only', 405);
+    $body = getJsonBody();
+    $dsId = (int)($body['dataset_id'] ?? 0);
+    if ($dsId <= 0) jsonError('Invalid dataset_id');
+    // Only owner/admin can delete
+    if ($user['role'] === 'korlap') jsonError('Korlap tidak bisa menghapus dataset', 403);
+    // Delete employees first, then dataset
+    $db->prepare('DELETE FROM kalsul_employees WHERE dataset_id = :did')->execute([':did' => $dsId]);
+    $db->prepare('DELETE FROM kalsul_datasets WHERE id = :id')->execute([':id' => $dsId]);
+    jsonSuccess(['deleted_dataset' => $dsId]);
+    break;
+
 case 'stations':
     $stmt = $db->query("SELECT DISTINCT station FROM kalsul_employees WHERE station != '' ORDER BY station ASC");
     jsonSuccess(['stations' => $stmt->fetchAll(PDO::FETCH_COLUMN)]);

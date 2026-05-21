@@ -1,6 +1,5 @@
 /* ═══════════════════════════════════════════════════
-   DataTable v2 — Subtabs, Sortable, Expandable Rows,
-   Rek Status Filter, Fuzzy Match Badges
+   DataTable v3 — Clean, no emoji, delete dataset
    ═══════════════════════════════════════════════════ */
 import { api } from '../utils/api.js';
 
@@ -13,7 +12,7 @@ let expandedOpsId = null;
 export function renderDataTable() {
   return `
     <div class="page-header">
-      <h1>Data Karyawan</h1>
+      <div><h1>Data Karyawan</h1><p class="page-desc">Kelola data karyawan dan rekening</p></div>
       <a href="${api.exportCSV()}" class="btn btn-outline btn-sm" target="_blank">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
         Export
@@ -30,14 +29,14 @@ export function renderDataTable() {
     <!-- Filters -->
     <div class="filters-bar">
       <div class="filter-group">
-        <input type="text" id="search-input" class="input input-sm" placeholder="🔍 Cari nama atau OPS ID..." />
+        <input type="text" id="search-input" class="input input-sm" placeholder="Cari nama atau OPS ID..." />
       </div>
       <div class="filter-group">
         <select id="rek-filter" class="input input-sm">
           <option value="">Semua Status Rek</option>
-          <option value="done">✅ DONE</option>
-          <option value="kosong">⬜ KOSONG</option>
-          <option value="abnormal">🔴 ABNORMAL</option>
+          <option value="done">DONE</option>
+          <option value="kosong">KOSONG</option>
+          <option value="abnormal">ABNORMAL</option>
         </select>
       </div>
       <div class="filter-group">
@@ -78,7 +77,7 @@ export function renderDataTable() {
       <div class="modal">
         <div class="modal-header">
           <h3>Edit Karyawan</h3>
-          <button class="btn-icon modal-close" id="modal-close">&times;</button>
+          <button class="modal-close" id="modal-close">&times;</button>
         </div>
         <div class="modal-body" id="modal-body"></div>
         <div class="modal-footer">
@@ -132,7 +131,7 @@ async function loadDatasets() {
     if (!tabs) return;
 
     if (!res.datasets || res.datasets.length === 0) {
-      tabs.innerHTML = '<div class="subtab-empty">Belum ada data. Upload file terlebih dahulu.</div>';
+      tabs.innerHTML = '<div style="padding:16px;color:var(--t3);font-size:13px">Belum ada data. Upload file terlebih dahulu.</div>';
       return;
     }
 
@@ -141,16 +140,31 @@ async function loadDatasets() {
       return `<button class="subtab" data-id="${ds.id}">
         <span class="subtab-station">${esc(ds.station)}</span>
         <span class="subtab-meta">${bulan} · ${ds.periode} · ${ds.total_employees} org</span>
+        <button class="subtab-del" data-del-id="${ds.id}" title="Hapus dataset">&times;</button>
       </button>`;
     }).join('');
 
     // Tab click
     tabs.querySelectorAll('.subtab').forEach(btn => {
-      btn.addEventListener('click', () => {
+      btn.addEventListener('click', (e) => {
+        if (e.target.classList.contains('subtab-del')) return;
         tabs.querySelectorAll('.subtab').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         currentDatasetId = btn.dataset.id;
         loadEmployees();
+      });
+    });
+
+    // Delete dataset
+    tabs.querySelectorAll('.subtab-del').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const id = btn.dataset.delId;
+        if (!confirm('Hapus dataset ini beserta semua data karyawannya?')) return;
+        try {
+          await api.deleteDataset(id);
+          loadDatasets();
+        } catch (err) { alert('Error: ' + err.message); }
       });
     });
 
@@ -207,14 +221,14 @@ async function loadEmployees() {
 
 function renderEmployeeRow(emp, no) {
   const rekStatusBadge = {
-    done: '<span class="badge badge-done">✅ DONE</span>',
-    abnormal: '<span class="badge badge-abnormal">🔴 ABNORMAL</span>',
-    kosong: '<span class="badge badge-kosong">⬜ KOSONG</span>',
-  }[emp.rek_status] || '<span class="badge badge-kosong">⬜ KOSONG</span>';
+    done: '<span class="badge badge-done">DONE</span>',
+    abnormal: '<span class="badge badge-abnormal">ABNORMAL</span>',
+    kosong: '<span class="badge badge-kosong">KOSONG</span>',
+  }[emp.rek_status] || '<span class="badge badge-kosong">KOSONG</span>';
 
   const noRekClass = emp.has_pergantian ? 'cell-highlight' : '';
   const expandBtn = emp.rek_status !== 'kosong'
-    ? `<button class="btn-expand" data-ops-id="${esc(emp.ops_id)}" title="Lihat riwayat">▼</button>`
+    ? `<button class="btn-expand" data-ops-id="${esc(emp.ops_id)}" title="Lihat riwayat">\u25BC</button>`
     : '';
 
   const tgl = emp.rek_tanggal ? new Date(emp.rek_tanggal).toLocaleDateString('id-ID', {day:'2-digit',month:'short',year:'numeric'}) : '-';
@@ -224,7 +238,7 @@ function renderEmployeeRow(emp, no) {
     <tr data-ops-id="${esc(emp.ops_id)}" class="${emp.has_pergantian ? 'row-pergantian' : ''}">
       <td>${no}</td>
       <td><span class="badge badge-primary">${esc(emp.ops_id)}</span></td>
-      <td style="font-weight:500">${esc(emp.nama)}</td>
+      <td style="font-weight:500;color:var(--t1)">${esc(emp.nama)}</td>
       <td>${esc(emp.station)}</td>
       <td style="text-align:center;font-weight:700">${emp.hk || 0}</td>
       <td>${rekStatusBadge}</td>
@@ -239,8 +253,12 @@ function renderEmployeeRow(emp, no) {
       <td style="font-size:12px;font-family:monospace">${esc(emp.nik) || '-'}</td>
       <td>
         <div class="action-btns">
-          <button class="btn-icon btn-edit" data-emp='${JSON.stringify(emp).replace(/'/g, "&#39;")}' title="Edit">✏️</button>
-          <button class="btn-icon btn-delete" data-id="${emp.id}" title="Hapus">🗑️</button>
+          <button class="btn-icon btn-edit" data-emp='${JSON.stringify(emp).replace(/'/g, "&#39;")}' title="Edit">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          </button>
+          <button class="btn-icon btn-delete" data-id="${emp.id}" title="Hapus">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+          </button>
         </div>
       </td>
     </tr>
@@ -248,7 +266,6 @@ function renderEmployeeRow(emp, no) {
 }
 
 async function toggleExpand(opsId, row) {
-  // Remove existing expanded row
   const existing = document.querySelector('.expanded-row');
   if (existing) {
     existing.remove();
@@ -256,7 +273,6 @@ async function toggleExpand(opsId, row) {
   }
   expandedOpsId = opsId;
 
-  // Fetch history
   const expandedTr = document.createElement('tr');
   expandedTr.className = 'expanded-row';
   expandedTr.innerHTML = `<td colspan="13"><div class="rek-history-loading">Memuat riwayat...</div></td>`;
@@ -273,8 +289,8 @@ async function toggleExpand(opsId, row) {
 
     const rows = history.map(r => {
       const srcBadge = r.source === 'link_pergantian_rek'
-        ? '<span class="src-badge src-pergantian">🔄 LINK PERGANTIAN REK</span>'
-        : '<span class="src-badge src-gaji">💰 LINK GAJI</span>';
+        ? '<span class="src-badge src-pergantian">PERGANTIAN REK</span>'
+        : '<span class="src-badge src-gaji">LINK GAJI</span>';
       const tgl = r.timestamp_gas ? new Date(r.timestamp_gas).toLocaleDateString('id-ID', {day:'2-digit',month:'short',year:'numeric'}) : '-';
       const digitCount = r.rek_digit_count || String(r.no_rek || '').length;
 
@@ -289,7 +305,7 @@ async function toggleExpand(opsId, row) {
 
     expandedTr.innerHTML = `<td colspan="13">
       <div class="rek-history">
-        <div class="rek-history-title">📋 Riwayat Rekening — ${esc(opsId)} (terbaru → terlama)</div>
+        <div class="rek-history-title">Riwayat Rekening — ${esc(opsId)}</div>
         <table class="rek-history-table">
           <thead><tr><th>Sumber</th><th>Tanggal</th><th>No Rekening</th><th>Bank</th><th>Atas Nama</th></tr></thead>
           <tbody>${rows}</tbody>

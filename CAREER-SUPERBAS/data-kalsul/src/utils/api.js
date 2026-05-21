@@ -31,6 +31,8 @@ export const api = {
   // Datasets (subtabs)
   getDatasets: () =>
     request('employees.php?action=datasets'),
+  deleteDataset: (id) =>
+    request('employees.php?action=delete_dataset', { method: 'DELETE', body: JSON.stringify({ dataset_id: id }) }),
 
   // Employees
   getEmployees: (params = {}) => {
