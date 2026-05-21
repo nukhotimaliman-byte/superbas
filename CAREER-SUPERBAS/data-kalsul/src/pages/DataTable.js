@@ -62,7 +62,6 @@ export function renderDataTable() {
               <th>ATAS NAMA</th>
               <th>NO HP</th>
               <th>NIK</th>
-              <th style="width:60px">AKSI</th>
             </tr>
           </thead>
           <tbody id="data-tbody">
@@ -72,20 +71,6 @@ export function renderDataTable() {
       </div>
     </div>
 
-    <!-- Edit Modal -->
-    <div class="modal-overlay" id="edit-modal" style="display:none">
-      <div class="modal">
-        <div class="modal-header">
-          <h3>Edit Karyawan</h3>
-          <button class="modal-close" id="modal-close">&times;</button>
-        </div>
-        <div class="modal-body" id="modal-body"></div>
-        <div class="modal-footer">
-          <button class="btn btn-outline" id="modal-cancel">Batal</button>
-          <button class="btn btn-primary" id="modal-save">Simpan</button>
-        </div>
-      </div>
-    </div>
   `;
 }
 
@@ -118,10 +103,6 @@ export async function initDataTable() {
     currentRekFilter = e.target.value;
     loadEmployees();
   });
-
-  // Modal
-  document.getElementById('modal-close')?.addEventListener('click', closeModal);
-  document.getElementById('modal-cancel')?.addEventListener('click', closeModal);
 }
 
 async function loadDatasets() {
@@ -198,7 +179,7 @@ async function loadEmployees() {
     document.getElementById('data-count').textContent = `${employees.length} data`;
 
     if (employees.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="13"><div class="empty-state"><div class="empty-state-title">Tidak ada data</div></div></td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="12"><div class="empty-state"><div class="empty-state-title">Tidak ada data</div></div></td></tr>`;
       return;
     }
 
@@ -208,14 +189,8 @@ async function loadEmployees() {
     tbody.querySelectorAll('.btn-expand').forEach(btn => {
       btn.addEventListener('click', () => toggleExpand(btn.dataset.opsId, btn.closest('tr')));
     });
-    tbody.querySelectorAll('.btn-edit').forEach(btn => {
-      btn.addEventListener('click', () => openEditModal(JSON.parse(btn.dataset.emp)));
-    });
-    tbody.querySelectorAll('.btn-delete').forEach(btn => {
-      btn.addEventListener('click', () => deleteEmployee(btn.dataset.id));
-    });
   } catch (err) {
-    tbody.innerHTML = `<tr><td colspan="13" style="text-align:center;color:var(--danger);padding:20px">Error: ${err.message}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="12" style="text-align:center;color:var(--danger);padding:20px">Error: ${err.message}</td></tr>`;
   }
 }
 
@@ -251,16 +226,6 @@ function renderEmployeeRow(emp, no) {
       <td>${esc(emp.atas_nama) || '-'}</td>
       <td style="font-size:12px">${esc(emp.no_hp) || '-'}</td>
       <td style="font-size:12px;font-family:monospace">${esc(emp.nik) || '-'}</td>
-      <td>
-        <div class="action-btns">
-          <button class="btn-icon btn-edit" data-emp='${JSON.stringify(emp).replace(/'/g, "&#39;")}' title="Edit">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-          </button>
-          <button class="btn-icon btn-delete" data-id="${emp.id}" title="Hapus">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
-          </button>
-        </div>
-      </td>
     </tr>
   `;
 }
@@ -275,7 +240,7 @@ async function toggleExpand(opsId, row) {
 
   const expandedTr = document.createElement('tr');
   expandedTr.className = 'expanded-row';
-  expandedTr.innerHTML = `<td colspan="13"><div class="rek-history-loading">Memuat riwayat...</div></td>`;
+  expandedTr.innerHTML = `<td colspan="12"><div class="rek-history-loading">Memuat riwayat...</div></td>`;
   row.after(expandedTr);
 
   try {
@@ -283,7 +248,7 @@ async function toggleExpand(opsId, row) {
     const history = res.history || [];
 
     if (history.length === 0) {
-      expandedTr.innerHTML = `<td colspan="13"><div class="rek-history-empty">Tidak ada riwayat rekening</div></td>`;
+      expandedTr.innerHTML = `<td colspan="12"><div class="rek-history-empty">Tidak ada riwayat rekening</div></td>`;
       return;
     }
 
@@ -303,7 +268,7 @@ async function toggleExpand(opsId, row) {
       </tr>`;
     }).join('');
 
-    expandedTr.innerHTML = `<td colspan="13">
+    expandedTr.innerHTML = `<td colspan="12">
       <div class="rek-history">
         <div class="rek-history-title">Riwayat Rekening — ${esc(opsId)}</div>
         <table class="rek-history-table">
@@ -313,7 +278,7 @@ async function toggleExpand(opsId, row) {
       </div>
     </td>`;
   } catch (err) {
-    expandedTr.innerHTML = `<td colspan="13"><div class="rek-history-error">Error: ${err.message}</div></td>`;
+    expandedTr.innerHTML = `<td colspan="12"><div class="rek-history-error">Error: ${err.message}</div></td>`;
   }
 }
 
@@ -326,52 +291,7 @@ function updateSortIndicators() {
   });
 }
 
-function openEditModal(emp) {
-  const modal = document.getElementById('edit-modal');
-  const body = document.getElementById('modal-body');
-  if (!modal || !body) return;
 
-  const fields = [
-    { key: 'ops_id', label: 'OPS ID', type: 'text' },
-    { key: 'nama', label: 'Nama', type: 'text' },
-    { key: 'station', label: 'Station', type: 'text' },
-    { key: 'hk', label: 'HK (Hari Kerja)', type: 'number' },
-    { key: 'status', label: 'Status', type: 'text' },
-  ];
-
-  body.innerHTML = fields.map(f => `
-    <div class="field-group">
-      <label class="field-label">${f.label}</label>
-      <input type="${f.type}" class="input" id="edit-${f.key}" value="${esc(emp[f.key] || '')}" />
-    </div>
-  `).join('');
-
-  modal.style.display = 'flex';
-
-  const saveBtn = document.getElementById('modal-save');
-  saveBtn.onclick = async () => {
-    const data = {};
-    fields.forEach(f => { data[f.key] = document.getElementById(`edit-${f.key}`).value; });
-    try {
-      await api.updateEmployee(emp.id, data);
-      closeModal();
-      loadEmployees();
-    } catch (err) { alert('Error: ' + err.message); }
-  };
-}
-
-function closeModal() {
-  const m = document.getElementById('edit-modal');
-  if (m) m.style.display = 'none';
-}
-
-async function deleteEmployee(id) {
-  if (!confirm('Yakin hapus karyawan ini?')) return;
-  try {
-    await api.deleteEmployee(id);
-    loadEmployees();
-  } catch (err) { alert('Error: ' + err.message); }
-}
 
 function renderSubtabSkeleton() {
   return Array.from({length: 4}, (_, i) => `
