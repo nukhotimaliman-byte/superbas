@@ -111,6 +111,7 @@ async function loadDatasets() {
     const tabs = document.getElementById('dataset-tabs');
     if (!tabs) return;
 
+    console.log('getDatasets response:', JSON.stringify(res));
     if (!res.datasets || res.datasets.length === 0) {
       tabs.innerHTML = '<div style="padding:16px;color:var(--t3);font-size:13px">Belum ada data. Upload file terlebih dahulu.</div>';
       return;
@@ -165,6 +166,8 @@ async function loadDatasets() {
     loadEmployees();
   } catch (err) {
     console.error('Failed to load datasets:', err);
+    const tabs = document.getElementById('dataset-tabs');
+    if (tabs) tabs.innerHTML = `<div style="padding:16px;color:var(--danger);font-size:13px">Error: ${err.message || 'Gagal memuat dataset'}</div>`;
   }
 }
 
