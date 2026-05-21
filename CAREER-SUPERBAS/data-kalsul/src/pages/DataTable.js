@@ -8,6 +8,10 @@ let currentSort = { col: 'nama', dir: 'ASC' };
 let currentSearch = '';
 let currentRekFilter = '';
 let expandedOpsId = null;
+let _allDatasets = [];
+let _availableMonths = [];
+let _currentMonthIdx = 0;
+let _currentPeriode = '';
 
 export function renderDataTable() {
   return `
@@ -17,6 +21,20 @@ export function renderDataTable() {
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
         Export
       </a>
+    </div>
+
+    <!-- Period Selector (owner only) -->
+    <div class="period-bar" id="period-bar" style="display:none">
+      <div class="period-nav">
+        <button class="period-nav-btn" id="period-prev" title="Bulan sebelumnya">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+        </button>
+        <span class="period-label" id="period-label"></span>
+        <button class="period-nav-btn" id="period-next" title="Bulan berikutnya">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+        </button>
+      </div>
+      <div class="period-toggles" id="period-toggles"></div>
     </div>
 
     <!-- Subtabs -->
@@ -114,67 +132,67 @@ async function loadDatasets() {
     const tabs = document.getElementById('dataset-tabs');
     if (!tabs) return;
 
-    if (!res.datasets || res.datasets.length === 0) {
+    _allDatasets = res.datasets || [];
+
+    if (_allDatasets.length === 0) {
       tabs.innerHTML = '<div style="padding:16px;color:var(--t3);font-size:13px">Belum ada data. Upload file terlebih dahulu.</div>';
       return;
     }
 
     const isKorlap = _user?.role === 'korlap';
 
-    // Count total employees
-    const totalEmp = res.datasets.reduce((sum, ds) => sum + (parseInt(ds.total_employees) || 0), 0);
+    // --- Period navigation (owner/admin only) ---
+    if (!isKorlap) {
+      // Extract unique months (sorted newest first)
+      const monthSet = new Set(_allDatasets.map(ds => ds.bulan));
+      _availableMonths = [...monthSet].sort((a, b) => b.localeCompare(a));
+      if (_currentMonthIdx >= _availableMonths.length) _currentMonthIdx = 0;
 
-    // "Semua DC" tab only for owner/admin
-    const allTab = !isKorlap ? `<button class="subtab active" data-id="all">
-      <span class="subtab-station">Semua DC</span>
-      <span class="subtab-meta">${res.datasets.length} station · ${totalEmp} org</span>
-    </button>` : '';
+      const periodBar = document.getElementById('period-bar');
+      if (periodBar) {
+        periodBar.style.display = 'flex';
 
-    const stationTabs = res.datasets.map((ds, idx) => {
-      const bulan = new Date(ds.bulan).toLocaleDateString('id-ID', { month: 'short', year: 'numeric' });
-      const activeClass = isKorlap && idx === 0 ? ' active' : '';
-      return `<button class="subtab${activeClass}" data-id="${ds.id}">
-        <span class="subtab-station">${esc(ds.station)}</span>
-        <span class="subtab-meta">${bulan} · ${ds.periode} · ${ds.total_employees} org</span>
-        <button class="subtab-del" data-del-id="${ds.id}" title="Hapus dataset">&times;</button>
-      </button>`;
-    }).join('');
+        // Month label
+        const curMonth = _availableMonths[_currentMonthIdx];
+        const monthLabel = new Date(curMonth).toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
+        document.getElementById('period-label').textContent = monthLabel;
 
-    tabs.innerHTML = allTab + stationTabs;
+        // Period toggles: find which periodes exist for this month
+        const periodesForMonth = [...new Set(_allDatasets.filter(ds => ds.bulan === curMonth).map(ds => ds.periode))].sort();
+        const toggles = document.getElementById('period-toggles');
+        const allBtn = `<button class="period-btn${_currentPeriode === '' ? ' active' : ''}" data-periode="">Semua</button>`;
+        const pBtns = periodesForMonth.map(p =>
+          `<button class="period-btn${_currentPeriode === p ? ' active' : ''}" data-periode="${p}">${p}</button>`
+        ).join('');
+        toggles.innerHTML = allBtn + pBtns;
 
-    // Tab click
-    tabs.querySelectorAll('.subtab').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        if (e.target.classList.contains('subtab-del')) return;
-        tabs.querySelectorAll('.subtab').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        currentDatasetId = btn.dataset.id === 'all' ? '' : btn.dataset.id;
-        loadEmployees();
-      });
-    });
+        // Period toggle events
+        toggles.querySelectorAll('.period-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            _currentPeriode = btn.dataset.periode;
+            renderFilteredTabs();
+          });
+        });
 
-    // Delete dataset
-    tabs.querySelectorAll('.subtab-del').forEach(btn => {
-      btn.addEventListener('click', async (e) => {
-        e.stopPropagation();
-        const id = btn.dataset.delId;
-        if (!confirm('Hapus dataset ini beserta semua data karyawannya?')) return;
-        try {
-          await api.deleteDataset(id);
-          loadDatasets();
-        } catch (err) { alert('Error: ' + err.message); }
-      });
-    });
+        // Month nav events
+        document.getElementById('period-prev').onclick = () => {
+          if (_currentMonthIdx < _availableMonths.length - 1) { _currentMonthIdx++; _currentPeriode = ''; loadDatasets(); }
+        };
+        document.getElementById('period-next').onclick = () => {
+          if (_currentMonthIdx > 0) { _currentMonthIdx--; _currentPeriode = ''; loadDatasets(); }
+        };
 
-    // Auto-select and load
-    if (isKorlap) {
-      // Korlap: select first dataset
-      currentDatasetId = res.datasets[0].id;
+        // Disable buttons at edges
+        document.getElementById('period-prev').disabled = _currentMonthIdx >= _availableMonths.length - 1;
+        document.getElementById('period-next').disabled = _currentMonthIdx <= 0;
+      }
+
+      renderFilteredTabs();
     } else {
-      // Owner/admin: select "Semua DC"
-      currentDatasetId = '';
+      // Korlap: no period nav, show datasets directly
+      document.getElementById('period-bar').style.display = 'none';
+      renderStationTabs(_allDatasets, true);
     }
-    loadEmployees();
   } catch (err) {
     console.error('Failed to load datasets:', err);
     const tabs = document.getElementById('dataset-tabs');
@@ -182,11 +200,94 @@ async function loadDatasets() {
   }
 }
 
+function renderFilteredTabs() {
+  const curMonth = _availableMonths[_currentMonthIdx];
+  let filtered = _allDatasets.filter(ds => ds.bulan === curMonth);
+  if (_currentPeriode) filtered = filtered.filter(ds => ds.periode === _currentPeriode);
+
+  // Update toggles active state
+  document.querySelectorAll('.period-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.periode === _currentPeriode);
+  });
+
+  renderStationTabs(filtered, false);
+}
+
+function renderStationTabs(datasets, isKorlap) {
+  const tabs = document.getElementById('dataset-tabs');
+  if (!tabs) return;
+
+  if (datasets.length === 0) {
+    tabs.innerHTML = '<div style="padding:16px;color:var(--t3);font-size:13px">Tidak ada data untuk periode ini.</div>';
+    currentDatasetId = '__none__';
+    loadEmployees();
+    return;
+  }
+
+  const totalEmp = datasets.reduce((sum, ds) => sum + (parseInt(ds.total_employees) || 0), 0);
+
+  // "Semua DC" tab only for owner/admin
+  const allTab = !isKorlap ? `<button class="subtab active" data-id="all">
+    <span class="subtab-station">Semua DC</span>
+    <span class="subtab-meta">${datasets.length} station · ${totalEmp} org</span>
+  </button>` : '';
+
+  const stationTabs = datasets.map((ds, idx) => {
+    const bulan = new Date(ds.bulan).toLocaleDateString('id-ID', { month: 'short', year: 'numeric' });
+    const activeClass = isKorlap && idx === 0 ? ' active' : '';
+    return `<button class="subtab${activeClass}" data-id="${ds.id}">
+      <span class="subtab-station">${esc(ds.station)}</span>
+      <span class="subtab-meta">${bulan} · ${ds.periode} · ${ds.total_employees} org</span>
+      <button class="subtab-del" data-del-id="${ds.id}" title="Hapus dataset">&times;</button>
+    </button>`;
+  }).join('');
+
+  tabs.innerHTML = allTab + stationTabs;
+
+  // Tab click
+  tabs.querySelectorAll('.subtab').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      if (e.target.classList.contains('subtab-del')) return;
+      tabs.querySelectorAll('.subtab').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentDatasetId = btn.dataset.id === 'all' ? '' : btn.dataset.id;
+      loadEmployees();
+    });
+  });
+
+  // Delete dataset
+  tabs.querySelectorAll('.subtab-del').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const id = btn.dataset.delId;
+      if (!confirm('Hapus dataset ini beserta semua data karyawannya?')) return;
+      try {
+        await api.deleteDataset(id);
+        loadDatasets();
+      } catch (err) { alert('Error: ' + err.message); }
+    });
+  });
+
+  // Auto-select
+  if (isKorlap) {
+    currentDatasetId = datasets[0].id;
+  } else {
+    currentDatasetId = '';
+  }
+  loadEmployees();
+}
+
 async function loadEmployees() {
   const tbody = document.getElementById('data-tbody');
   if (!tbody) return;
 
   tbody.innerHTML = renderTableSkeleton();
+
+  if (currentDatasetId === '__none__') {
+    tbody.innerHTML = `<tr><td colspan="12"><div class="empty-state"><div class="empty-state-title">Tidak ada data untuk periode ini</div></div></td></tr>`;
+    document.getElementById('data-count').textContent = '0 data';
+    return;
+  }
 
   try {
     const params = {
