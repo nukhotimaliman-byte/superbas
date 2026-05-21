@@ -14,9 +14,10 @@ async function request(endpoint, options = {}) {
   if (options.body instanceof FormData) delete config.headers['Content-Type'];
 
   const res = await fetch(url, config);
-  const data = await res.json();
-  if (!res.ok) throw { status: res.status, message: data.error || 'Request failed', data };
-  return data;
+  const json = await res.json();
+  if (!res.ok) throw { status: res.status, message: json.error || 'Request failed', data: json };
+  // Unwrap { success: true, data: {...} } envelope
+  return json.data !== undefined ? json.data : json;
 }
 
 export const api = {
