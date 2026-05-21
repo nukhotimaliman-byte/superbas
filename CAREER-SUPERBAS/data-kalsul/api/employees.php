@@ -17,8 +17,9 @@ case 'datasets':
     $sql = 'SELECT * FROM kalsul_datasets';
     $params = [];
     if ($korlapStation) {
-        $sql .= ' WHERE station = :st';
+        $sql .= ' WHERE station = :st OR admin_id = :aid';
         $params[':st'] = $korlapStation;
+        $params[':aid'] = $user['id'];
     }
     $sql .= ' ORDER BY bulan DESC, periode DESC, station ASC';
     $stmt = $db->prepare($sql);
@@ -49,7 +50,7 @@ case 'list':
         $params[':s1'] = "%$search%";
         $params[':s2'] = "%$search%";
     }
-    if ($korlapStation) {
+    if ($korlapStation && $datasetId <= 0) {
         $where[] = 'e.station = :kst';
         $params[':kst'] = $korlapStation;
     }

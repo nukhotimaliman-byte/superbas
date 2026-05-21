@@ -111,7 +111,6 @@ async function loadDatasets() {
     const tabs = document.getElementById('dataset-tabs');
     if (!tabs) return;
 
-    console.log('getDatasets response:', JSON.stringify(res));
     if (!res.datasets || res.datasets.length === 0) {
       tabs.innerHTML = '<div style="padding:16px;color:var(--t3);font-size:13px">Belum ada data. Upload file terlebih dahulu.</div>';
       return;
