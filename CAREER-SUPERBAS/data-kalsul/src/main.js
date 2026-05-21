@@ -103,7 +103,7 @@ async function handleRoute() {
       break;
     case '/data':
       content.innerHTML = renderDataTable();
-      await initDataTable();
+      await initDataTable(currentUser);
       break;
     case '/korlap':
       if (currentUser?.role === 'korlap') { window.location.hash = '#/'; return; }

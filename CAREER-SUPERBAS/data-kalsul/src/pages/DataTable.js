@@ -74,7 +74,10 @@ export function renderDataTable() {
   `;
 }
 
-export async function initDataTable() {
+let _user = null;
+
+export async function initDataTable(user) {
+  _user = user;
   await loadDatasets();
 
   // Sort headers
@@ -116,18 +119,21 @@ async function loadDatasets() {
       return;
     }
 
+    const isKorlap = _user?.role === 'korlap';
+
     // Count total employees
     const totalEmp = res.datasets.reduce((sum, ds) => sum + (parseInt(ds.total_employees) || 0), 0);
 
-    // "Semua DC" tab + individual tabs
-    const allTab = `<button class="subtab active" data-id="all">
+    // "Semua DC" tab only for owner/admin
+    const allTab = !isKorlap ? `<button class="subtab active" data-id="all">
       <span class="subtab-station">Semua DC</span>
       <span class="subtab-meta">${res.datasets.length} station · ${totalEmp} org</span>
-    </button>`;
+    </button>` : '';
 
-    const stationTabs = res.datasets.map(ds => {
+    const stationTabs = res.datasets.map((ds, idx) => {
       const bulan = new Date(ds.bulan).toLocaleDateString('id-ID', { month: 'short', year: 'numeric' });
-      return `<button class="subtab" data-id="${ds.id}">
+      const activeClass = isKorlap && idx === 0 ? ' active' : '';
+      return `<button class="subtab${activeClass}" data-id="${ds.id}">
         <span class="subtab-station">${esc(ds.station)}</span>
         <span class="subtab-meta">${bulan} · ${ds.periode} · ${ds.total_employees} org</span>
         <button class="subtab-del" data-del-id="${ds.id}" title="Hapus dataset">&times;</button>
@@ -160,8 +166,14 @@ async function loadDatasets() {
       });
     });
 
-    // Auto-select "Semua DC" and load
-    currentDatasetId = '';
+    // Auto-select and load
+    if (isKorlap) {
+      // Korlap: select first dataset
+      currentDatasetId = res.datasets[0].id;
+    } else {
+      // Owner/admin: select "Semua DC"
+      currentDatasetId = '';
+    }
     loadEmployees();
   } catch (err) {
     console.error('Failed to load datasets:', err);
