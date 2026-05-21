@@ -80,6 +80,7 @@ export function renderDataTable() {
               <th>ATAS NAMA</th>
               <th>NO HP</th>
               <th>NIK</th>
+              <th style="width:50px">AKSI</th>
             </tr>
           </thead>
           <tbody id="data-tbody">
@@ -284,7 +285,7 @@ async function loadEmployees() {
   tbody.innerHTML = renderTableSkeleton();
 
   if (currentDatasetId === '__none__') {
-    tbody.innerHTML = `<tr><td colspan="12"><div class="empty-state"><div class="empty-state-title">Tidak ada data untuk periode ini</div></div></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="13"><div class="empty-state"><div class="empty-state-title">Tidak ada data untuk periode ini</div></div></td></tr>`;
     document.getElementById('data-count').textContent = '0 data';
     return;
   }
@@ -325,7 +326,7 @@ async function loadEmployees() {
     document.getElementById('data-count').textContent = `${employees.length} data`;
 
     if (employees.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="12"><div class="empty-state"><div class="empty-state-title">Tidak ada data</div></div></td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="13"><div class="empty-state"><div class="empty-state-title">Tidak ada data</div></div></td></tr>`;
       return;
     }
 
@@ -346,8 +347,20 @@ async function loadEmployees() {
         toggleExpand(btn.dataset.opsId, btn.closest('tr'));
       });
     });
+    // Delete employee
+    tbody.querySelectorAll('.btn-del-emp').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const id = btn.dataset.empId;
+        if (!confirm('Hapus karyawan ini?')) return;
+        try {
+          await api.deleteEmployee(id);
+          loadEmployees();
+        } catch (err) { alert('Gagal hapus: ' + err.message); }
+      });
+    });
   } catch (err) {
-    tbody.innerHTML = `<tr><td colspan="12" style="text-align:center;color:var(--danger);padding:20px">Error: ${err.message}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="13" style="text-align:center;color:var(--danger);padding:20px">Error: ${err.message}</td></tr>`;
   }
 }
 
@@ -392,6 +405,7 @@ function renderEmployeeRow(emp, no) {
       <td>${esc(emp.atas_nama) || '-'}</td>
       <td style="font-size:12px">${esc(emp.no_hp) || '-'}</td>
       <td style="font-size:12px;font-family:monospace">${esc(emp.nik) || '-'}</td>
+      <td><button class="btn-del-emp" data-emp-id="${emp.id}" title="Hapus karyawan"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg></button></td>
     </tr>
   `;
 }
@@ -406,7 +420,7 @@ async function toggleExpand(opsId, row) {
 
   const expandedTr = document.createElement('tr');
   expandedTr.className = 'expanded-row';
-  expandedTr.innerHTML = `<td colspan="12"><div class="rek-history-loading">Memuat detail...</div></td>`;
+  expandedTr.innerHTML = `<td colspan="13"><div class="rek-history-loading">Memuat detail...</div></td>`;
   row.after(expandedTr);
 
   try {
@@ -462,7 +476,7 @@ async function toggleExpand(opsId, row) {
       rekHtml = `<div class="expand-section"><div class="expand-section-title" style="color:var(--t3)">Belum ada data rekening</div></div>`;
     }
 
-    expandedTr.innerHTML = `<td colspan="12">
+    expandedTr.innerHTML = `<td colspan="13">
       <div class="rek-history">
         <div class="rek-history-title">Detail — ${esc(opsId)}</div>
         ${stationsHtml}
@@ -470,7 +484,7 @@ async function toggleExpand(opsId, row) {
       </div>
     </td>`;
   } catch (err) {
-    expandedTr.innerHTML = `<td colspan="12"><div class="rek-history-error">Error: ${err.message}</div></td>`;
+    expandedTr.innerHTML = `<td colspan="13"><div class="rek-history-error">Error: ${err.message}</div></td>`;
   }
 }
 
