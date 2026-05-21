@@ -253,6 +253,25 @@ select.input { cursor: pointer; }
 .stat-badge { background: var(--accent-g); color: var(--accent); padding: 2px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; }
 .preview-actions { display: flex; gap: 12px; justify-content: flex-end; margin-top: 16px; }
 
+/* ── Search Page ─────────────────────────────── */
+.search-box { margin-top: 4px; }
+.search-input-wrap {
+  display: flex; gap: 10px; align-items: center; position: relative;
+}
+.search-icon {
+  position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+  width: 16px; height: 16px; color: var(--t3); pointer-events: none;
+}
+.search-input { padding-left: 36px !important; }
+.search-hint { font-size: .68rem; color: var(--t3); margin-top: 8px; }
+.info-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 14px;
+}
+.info-item { padding: 10px 14px; background: var(--bg3); border-radius: var(--rs); border: 1px solid var(--border); }
+.info-label { font-size: .62rem; font-weight: 600; color: var(--t3); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 4px; }
+.info-value { font-size: .82rem; font-weight: 500; color: var(--t1); }
+
 /* ── Subtabs ──────────────────────────────────── */
 .subtabs-wrapper { margin-bottom: 16px; overflow-x: auto; scrollbar-width: thin; }
 .subtabs { display: flex; gap: 8px; padding: 4px 0; }

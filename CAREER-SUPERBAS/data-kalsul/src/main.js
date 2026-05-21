@@ -8,6 +8,7 @@ import { renderDashboard, initDashboard } from './pages/Dashboard.js';
 import { renderUpload, initUpload } from './pages/Upload.js';
 import { renderDataTable, initDataTable } from './pages/DataTable.js';
 import { renderKorlap, initKorlap } from './pages/Korlap.js';
+import { renderSearch, initSearch } from './pages/Search.js';
 
 let currentUser = null;
 
@@ -108,6 +109,10 @@ async function handleRoute() {
       if (currentUser?.role === 'korlap') { window.location.hash = '#/'; return; }
       content.innerHTML = renderKorlap();
       await initKorlap();
+      break;
+    case '/search':
+      content.innerHTML = renderSearch();
+      initSearch();
       break;
     default:
       content.innerHTML = '<div class="card"><h2>404</h2><p>Halaman tidak ditemukan</p></div>';
