@@ -59,6 +59,10 @@ function syncNewData() {
 function syncNewDataSilent() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   
+  // Migrate old SYNCED column (from end) to column A if needed
+  migrateSyncedColumn(ss, CONFIG.SHEET_GAJI);
+  migrateSyncedColumn(ss, CONFIG.SHEET_PERGANTIAN);
+  
   // Read new data from both sheets
   var gajiResult = readNewRows(ss, CONFIG.SHEET_GAJI, 'gaji');
   var pergResult = readNewRows(ss, CONFIG.SHEET_PERGANTIAN, 'pergantian');
@@ -93,29 +97,86 @@ function syncNewDataSilent() {
     server_inserted: response.inserted || 0,
   };
 }
+// ═══ MIGRASI: Pindah SYNCED dari kolom akhir ke kolom A ═══
+function migrateSyncedColumn(ss, sheetName) {
+  var sheet = ss.getSheetByName(sheetName);
+  if (!sheet) return;
+  
+  var lastCol = sheet.getLastColumn();
+  if (lastCol < 2) return;
+  
+  var headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
+  var headerLower = headers.map(function(h) { return String(h).toLowerCase().trim(); });
+  
+  var syncIdx = headerLower.indexOf('synced');
+  
+  // Already at column A (index 0)? Skip.
+  if (syncIdx === 0) return;
+  
+  // Found at another position? Move data to col A then delete old column
+  if (syncIdx > 0) {
+    var lastRow = sheet.getLastRow();
+    
+    // Insert new column A
+    sheet.insertColumnBefore(1);
+    sheet.getRange(1, 1).setValue('SYNCED');
+    sheet.getRange(1, 1).setFontWeight('bold');
+    sheet.getRange(1, 1).setBackground('#4a86e8');
+    sheet.getRange(1, 1).setFontColor('#ffffff');
+    sheet.setColumnWidth(1, 130);
+    
+    // Copy old SYNCED data to new column A (old col shifted right by 1)
+    if (lastRow > 1) {
+      var oldCol = syncIdx + 2; // +1 for 1-index, +1 for inserted col
+      var oldData = sheet.getRange(2, oldCol, lastRow - 1, 1).getValues();
+      sheet.getRange(2, 1, lastRow - 1, 1).setValues(oldData);
+      
+      // Color green rows that have ✅
+      for (var i = 0; i < oldData.length; i++) {
+        if (String(oldData[i][0]).indexOf('✅') !== -1) {
+          sheet.getRange(i + 2, 1).setBackground('#d9ead3');
+        }
+      }
+    }
+    
+    // Delete old SYNCED column
+    sheet.deleteColumn(syncIdx + 2);
+    
+    SpreadsheetApp.flush();
+  }
+  
+  // syncIdx === -1: no SYNCED column at all — readNewRows will create it
+}
 
 // ═══ BACA DATA BARU (dari bawah, yang belum ✅) ═══
 function readNewRows(ss, sheetName, type) {
   var sheet = ss.getSheetByName(sheetName);
-  if (!sheet) return { data: [], syncCol: -1, rows: [] };
+  if (!sheet) return { data: [], syncCol: 0, rows: [] };
   
   var lastRow = sheet.getLastRow();
   var lastCol = sheet.getLastColumn();
-  if (lastRow < 2) return { data: [], syncCol: -1, rows: [] };
+  if (lastRow < 2) return { data: [], syncCol: 0, rows: [] };
   
   // Get headers
   var headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
   var headerLower = headers.map(function(h) { return String(h).toLowerCase().trim(); });
   
-  // Find or create SYNCED column
+  // Find SYNCED column — should be at column A (index 0)
   var syncCol = headerLower.indexOf('synced');
+  
   if (syncCol === -1) {
-    syncCol = lastCol; // Next column
-    sheet.getRange(1, syncCol + 1).setValue('SYNCED');
-    sheet.getRange(1, syncCol + 1).setFontWeight('bold');
-    sheet.getRange(1, syncCol + 1).setBackground('#4a86e8');
-    sheet.getRange(1, syncCol + 1).setFontColor('#ffffff');
-    lastCol = syncCol + 1;
+    // SYNCED not found → insert new column A
+    sheet.insertColumnBefore(1);
+    sheet.getRange(1, 1).setValue('SYNCED');
+    sheet.getRange(1, 1).setFontWeight('bold');
+    sheet.getRange(1, 1).setBackground('#4a86e8');
+    sheet.getRange(1, 1).setFontColor('#ffffff');
+    sheet.setColumnWidth(1, 130);
+    syncCol = 0;
+    lastCol = lastCol + 1;
+    // Re-read headers after insert
+    headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
+    headerLower = headers.map(function(h) { return String(h).toLowerCase().trim(); });
   }
   
   // Read ALL data
