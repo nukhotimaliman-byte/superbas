@@ -5,7 +5,7 @@
           <button class="sidebar-toggle" id="sidebarToggle" title="Toggle sidebar">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
           </button>
-          <div class="hdr-logo">KS</div>
+          <img class="hdr-logo" src="/data-kalsul/LogoBas.png" alt="BAS" />
           <div class="hdr-divider"></div>
           <span class="hdr-title">Data KalSul</span>
         </div>
@@ -533,6 +533,7 @@
     <div class="login-page">
       <div class="login-card">
         <div class="login-header">
+          <img src="/data-kalsul/LogoBas.png" alt="BAS" class="login-logo" />
           <h1 class="login-title">DATA KALSUL</h1>
           <p class="login-subtitle">Kalimantan & Sulawesi Data Management</p>
         </div>
