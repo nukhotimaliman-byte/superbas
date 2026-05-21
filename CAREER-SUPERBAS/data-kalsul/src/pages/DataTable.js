@@ -199,7 +199,27 @@ async function loadEmployees() {
     };
 
     const res = await api.getEmployees(params);
-    const employees = res.employees || [];
+    let employees = res.employees || [];
+
+    // De-duplicate by ops_id: merge stations when viewing all
+    if (!currentDatasetId) {
+      const map = new Map();
+      for (const emp of employees) {
+        const key = emp.ops_id;
+        if (map.has(key)) {
+          const existing = map.get(key);
+          if (!existing._stations.includes(emp.station)) {
+            existing._stations.push(emp.station);
+          }
+        } else {
+          emp._stations = [emp.station];
+          map.set(key, emp);
+        }
+      }
+      employees = Array.from(map.values());
+    } else {
+      employees.forEach(e => { e._stations = [e.station]; });
+    }
 
     document.getElementById('data-count').textContent = `${employees.length} data`;
 
@@ -210,9 +230,20 @@ async function loadEmployees() {
 
     tbody.innerHTML = employees.map((emp, idx) => renderEmployeeRow(emp, idx + 1)).join('');
 
-    // Attach events
+    // Attach expand: click row or expand button
+    tbody.querySelectorAll('tr[data-ops-id]').forEach(row => {
+      row.addEventListener('click', (e) => {
+        // Don't expand if clicking a link or button
+        if (e.target.closest('a, button')) return;
+        toggleExpand(row.dataset.opsId, row);
+      });
+      row.style.cursor = 'pointer';
+    });
     tbody.querySelectorAll('.btn-expand').forEach(btn => {
-      btn.addEventListener('click', () => toggleExpand(btn.dataset.opsId, btn.closest('tr')));
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleExpand(btn.dataset.opsId, btn.closest('tr'));
+      });
     });
   } catch (err) {
     tbody.innerHTML = `<tr><td colspan="12" style="text-align:center;color:var(--danger);padding:20px">Error: ${err.message}</td></tr>`;
@@ -227,19 +258,24 @@ function renderEmployeeRow(emp, no) {
   }[emp.rek_status] || '<span class="badge badge-kosong">KOSONG</span>';
 
   const noRekClass = emp.has_pergantian ? 'cell-highlight' : '';
-  const expandBtn = emp.rek_status !== 'kosong'
-    ? `<button class="btn-expand" data-ops-id="${esc(emp.ops_id)}" title="Lihat riwayat">\u25BC</button>`
-    : '';
+  const expandBtn = `<button class="btn-expand" data-ops-id="${esc(emp.ops_id)}" title="Lihat detail">&#9660;</button>`;
 
   const tgl = emp.rek_tanggal ? new Date(emp.rek_tanggal).toLocaleDateString('id-ID', {day:'2-digit',month:'short',year:'numeric'}) : '-';
   const digitBadge = emp.rek_digit_count > 0 ? `<span class="digit-badge">${emp.rek_digit_count}</span>` : '';
 
+  // Station: show first + badge if more
+  const stations = emp._stations || [emp.station];
+  const stationExtra = stations.length > 1
+    ? `<span class="badge badge-station-more" title="${stations.join(', ')}">+${stations.length - 1}</span>`
+    : '';
+  const stationHtml = `<span class="station-cell">${esc(stations[0])}${stationExtra}</span>`;
+
   return `
-    <tr data-ops-id="${esc(emp.ops_id)}" class="${emp.has_pergantian ? 'row-pergantian' : ''}">
+    <tr data-ops-id="${esc(emp.ops_id)}" data-stations="${esc(stations.join('||'))}" class="${emp.has_pergantian ? 'row-pergantian' : ''}">
       <td>${no}</td>
       <td><span class="badge badge-primary">${esc(emp.ops_id)}</span></td>
       <td style="font-weight:500;color:var(--t1)">${esc(emp.nama)}</td>
-      <td>${esc(emp.station)}</td>
+      <td>${stationHtml}</td>
       <td style="text-align:center;font-weight:700">${emp.hk || 0}</td>
       <td>${rekStatusBadge}</td>
       <td style="font-size:12px">${tgl}</td>
@@ -265,41 +301,67 @@ async function toggleExpand(opsId, row) {
 
   const expandedTr = document.createElement('tr');
   expandedTr.className = 'expanded-row';
-  expandedTr.innerHTML = `<td colspan="12"><div class="rek-history-loading">Memuat riwayat...</div></td>`;
+  expandedTr.innerHTML = `<td colspan="12"><div class="rek-history-loading">Memuat detail...</div></td>`;
   row.after(expandedTr);
 
   try {
+    // Get stations from row data
+    const stations = (row.dataset.stations || '').split('||').filter(Boolean);
+
+    // Get rekening history
     const res = await api.getRekeningHistory(opsId);
     const history = res.history || [];
 
-    if (history.length === 0) {
-      expandedTr.innerHTML = `<td colspan="12"><div class="rek-history-empty">Tidak ada riwayat rekening</div></td>`;
-      return;
+    // Build stations section
+    let stationsHtml = '';
+    if (stations.length > 1) {
+      stationsHtml = `
+        <div class="expand-section">
+          <div class="expand-section-title">Penempatan (${stations.length} station)</div>
+          <div class="expand-stations">
+            ${stations.map(s => `<span class="badge badge-station">${esc(s)}</span>`).join('')}
+          </div>
+        </div>
+      `;
     }
 
-    const rows = history.map(r => {
-      const srcBadge = r.source === 'link_pergantian_rek'
-        ? '<span class="src-badge src-pergantian">PERGANTIAN REK</span>'
-        : '<span class="src-badge src-gaji">LINK GAJI</span>';
-      const tgl = r.timestamp_gas ? new Date(r.timestamp_gas).toLocaleDateString('id-ID', {day:'2-digit',month:'short',year:'numeric'}) : '-';
-      const digitCount = r.rek_digit_count || String(r.no_rek || '').length;
+    // Build rekening history section
+    let rekHtml = '';
+    if (history.length > 0) {
+      const rows = history.map(r => {
+        const srcBadge = r.source === 'link_pergantian_rek'
+          ? '<span class="src-badge src-pergantian">PERGANTIAN REK</span>'
+          : '<span class="src-badge src-gaji">LINK GAJI</span>';
+        const tgl = r.timestamp_gas ? new Date(r.timestamp_gas).toLocaleDateString('id-ID', {day:'2-digit',month:'short',year:'numeric'}) : '-';
+        const digitCount = r.rek_digit_count || String(r.no_rek || '').length;
 
-      return `<tr>
-        <td>${srcBadge}</td>
-        <td>${tgl}</td>
-        <td>${esc(r.no_rek) || '-'} <span class="digit-badge">${digitCount}</span></td>
-        <td>${esc(r.bank) || '-'}</td>
-        <td>${esc(r.atas_nama) || '-'}</td>
-      </tr>`;
-    }).join('');
+        return `<tr>
+          <td>${srcBadge}</td>
+          <td>${tgl}</td>
+          <td>${esc(r.no_rek) || '-'} <span class="digit-badge">${digitCount}</span></td>
+          <td>${esc(r.bank) || '-'}</td>
+          <td>${esc(r.atas_nama) || '-'}</td>
+        </tr>`;
+      }).join('');
+
+      rekHtml = `
+        <div class="expand-section">
+          <div class="expand-section-title">Riwayat Rekening (${history.length} record)</div>
+          <table class="rek-history-table">
+            <thead><tr><th>Sumber</th><th>Tanggal</th><th>No Rekening</th><th>Bank</th><th>Atas Nama</th></tr></thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+      `;
+    } else {
+      rekHtml = `<div class="expand-section"><div class="expand-section-title" style="color:var(--t3)">Belum ada data rekening</div></div>`;
+    }
 
     expandedTr.innerHTML = `<td colspan="12">
       <div class="rek-history">
-        <div class="rek-history-title">Riwayat Rekening — ${esc(opsId)}</div>
-        <table class="rek-history-table">
-          <thead><tr><th>Sumber</th><th>Tanggal</th><th>No Rekening</th><th>Bank</th><th>Atas Nama</th></tr></thead>
-          <tbody>${rows}</tbody>
-        </table>
+        <div class="rek-history-title">Detail — ${esc(opsId)}</div>
+        ${stationsHtml}
+        ${rekHtml}
       </div>
     </td>`;
   } catch (err) {

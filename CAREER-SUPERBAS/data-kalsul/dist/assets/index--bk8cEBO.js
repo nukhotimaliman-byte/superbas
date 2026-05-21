@@ -321,12 +321,12 @@
         <span class="subtab-station">${sh(e.station)}</span>
         <span class="subtab-meta">${n} · ${e.periode} · ${e.total_employees} org</span>
         <button class="subtab-del" data-del-id="${e.id}" title="Hapus dataset">&times;</button>
-      </button>`}).join(``),t.querySelectorAll(`.subtab`).forEach(e=>{e.addEventListener(`click`,n=>{n.target.classList.contains(`subtab-del`)||(t.querySelectorAll(`.subtab`).forEach(e=>e.classList.remove(`active`)),e.classList.add(`active`),Km=e.dataset.id===`all`?``:e.dataset.id,th())})}),t.querySelectorAll(`.subtab-del`).forEach(e=>{e.addEventListener(`click`,async t=>{t.stopPropagation();let r=e.dataset.delId;if(confirm(`Hapus dataset ini beserta semua data karyawannya?`))try{await n.deleteDataset(r),eh()}catch(e){alert(`Error: `+e.message)}})}),Km=r?e.datasets[0].id:``,th()}catch(e){console.error(`Failed to load datasets:`,e);let t=document.getElementById(`dataset-tabs`);t&&(t.innerHTML=`<div style="padding:16px;color:var(--danger);font-size:13px">Error: ${e.message||`Gagal memuat dataset`}</div>`)}}async function th(){let e=document.getElementById(`data-tbody`);if(e){e.innerHTML=oh();try{let t={dataset_id:Km||``,search:Jm,sort_by:qm.col,sort_dir:qm.dir,rek_status:Ym,per_page:Km?200:500},r=(await n.getEmployees(t)).employees||[];if(document.getElementById(`data-count`).textContent=`${r.length} data`,r.length===0){e.innerHTML=`<tr><td colspan="12"><div class="empty-state"><div class="empty-state-title">Tidak ada data</div></div></td></tr>`;return}e.innerHTML=r.map((e,t)=>nh(e,t+1)).join(``),e.querySelectorAll(`.btn-expand`).forEach(e=>{e.addEventListener(`click`,()=>rh(e.dataset.opsId,e.closest(`tr`)))})}catch(t){e.innerHTML=`<tr><td colspan="12" style="text-align:center;color:var(--danger);padding:20px">Error: ${t.message}</td></tr>`}}}function nh(e,t){let n={done:`<span class="badge badge-done">DONE</span>`,abnormal:`<span class="badge badge-abnormal">ABNORMAL</span>`,kosong:`<span class="badge badge-kosong">KOSONG</span>`}[e.rek_status]||`<span class="badge badge-kosong">KOSONG</span>`,r=e.has_pergantian?`cell-highlight`:``,i=e.rek_status===`kosong`?``:`<button class="btn-expand" data-ops-id="${sh(e.ops_id)}" title="Lihat riwayat">\u25BC</button>`,a=e.rek_tanggal?new Date(e.rek_tanggal).toLocaleDateString(`id-ID`,{day:`2-digit`,month:`short`,year:`numeric`}):`-`,o=e.rek_digit_count>0?`<span class="digit-badge">${e.rek_digit_count}</span>`:``;return`
-    <tr data-ops-id="${sh(e.ops_id)}" class="${e.has_pergantian?`row-pergantian`:``}">
+      </button>`}).join(``),t.querySelectorAll(`.subtab`).forEach(e=>{e.addEventListener(`click`,n=>{n.target.classList.contains(`subtab-del`)||(t.querySelectorAll(`.subtab`).forEach(e=>e.classList.remove(`active`)),e.classList.add(`active`),Km=e.dataset.id===`all`?``:e.dataset.id,th())})}),t.querySelectorAll(`.subtab-del`).forEach(e=>{e.addEventListener(`click`,async t=>{t.stopPropagation();let r=e.dataset.delId;if(confirm(`Hapus dataset ini beserta semua data karyawannya?`))try{await n.deleteDataset(r),eh()}catch(e){alert(`Error: `+e.message)}})}),Km=r?e.datasets[0].id:``,th()}catch(e){console.error(`Failed to load datasets:`,e);let t=document.getElementById(`dataset-tabs`);t&&(t.innerHTML=`<div style="padding:16px;color:var(--danger);font-size:13px">Error: ${e.message||`Gagal memuat dataset`}</div>`)}}async function th(){let e=document.getElementById(`data-tbody`);if(e){e.innerHTML=oh();try{let t={dataset_id:Km||``,search:Jm,sort_by:qm.col,sort_dir:qm.dir,rek_status:Ym,per_page:Km?200:500},r=(await n.getEmployees(t)).employees||[];if(Km)r.forEach(e=>{e._stations=[e.station]});else{let e=new Map;for(let t of r){let n=t.ops_id;if(e.has(n)){let r=e.get(n);r._stations.includes(t.station)||r._stations.push(t.station)}else t._stations=[t.station],e.set(n,t)}r=Array.from(e.values())}if(document.getElementById(`data-count`).textContent=`${r.length} data`,r.length===0){e.innerHTML=`<tr><td colspan="12"><div class="empty-state"><div class="empty-state-title">Tidak ada data</div></div></td></tr>`;return}e.innerHTML=r.map((e,t)=>nh(e,t+1)).join(``),e.querySelectorAll(`tr[data-ops-id]`).forEach(e=>{e.addEventListener(`click`,t=>{t.target.closest(`a, button`)||rh(e.dataset.opsId,e)}),e.style.cursor=`pointer`}),e.querySelectorAll(`.btn-expand`).forEach(e=>{e.addEventListener(`click`,t=>{t.stopPropagation(),rh(e.dataset.opsId,e.closest(`tr`))})})}catch(t){e.innerHTML=`<tr><td colspan="12" style="text-align:center;color:var(--danger);padding:20px">Error: ${t.message}</td></tr>`}}}function nh(e,t){let n={done:`<span class="badge badge-done">DONE</span>`,abnormal:`<span class="badge badge-abnormal">ABNORMAL</span>`,kosong:`<span class="badge badge-kosong">KOSONG</span>`}[e.rek_status]||`<span class="badge badge-kosong">KOSONG</span>`,r=e.has_pergantian?`cell-highlight`:``,i=`<button class="btn-expand" data-ops-id="${sh(e.ops_id)}" title="Lihat detail">&#9660;</button>`,a=e.rek_tanggal?new Date(e.rek_tanggal).toLocaleDateString(`id-ID`,{day:`2-digit`,month:`short`,year:`numeric`}):`-`,o=e.rek_digit_count>0?`<span class="digit-badge">${e.rek_digit_count}</span>`:``,s=e._stations||[e.station],c=s.length>1?`<span class="badge badge-station-more" title="${s.join(`, `)}">+${s.length-1}</span>`:``,l=`<span class="station-cell">${sh(s[0])}${c}</span>`;return`
+    <tr data-ops-id="${sh(e.ops_id)}" data-stations="${sh(s.join(`||`))}" class="${e.has_pergantian?`row-pergantian`:``}">
       <td>${t}</td>
       <td><span class="badge badge-primary">${sh(e.ops_id)}</span></td>
       <td style="font-weight:500;color:var(--t1)">${sh(e.nama)}</td>
-      <td>${sh(e.station)}</td>
+      <td>${l}</td>
       <td style="text-align:center;font-weight:700">${e.hk||0}</td>
       <td>${n}</td>
       <td style="font-size:12px">${a}</td>
@@ -339,19 +339,32 @@
       <td style="font-size:12px">${sh(e.no_hp)||`-`}</td>
       <td style="font-size:12px;font-family:monospace">${sh(e.nik)||`-`}</td>
     </tr>
-  `}async function rh(e,t){let r=document.querySelector(`.expanded-row`);if(r&&(r.remove(),Xm===e)){Xm=null;return}Xm=e;let i=document.createElement(`tr`);i.className=`expanded-row`,i.innerHTML=`<td colspan="12"><div class="rek-history-loading">Memuat riwayat...</div></td>`,t.after(i);try{let t=(await n.getRekeningHistory(e)).history||[];if(t.length===0){i.innerHTML=`<td colspan="12"><div class="rek-history-empty">Tidak ada riwayat rekening</div></td>`;return}let r=t.map(e=>{let t=e.source===`link_pergantian_rek`?`<span class="src-badge src-pergantian">PERGANTIAN REK</span>`:`<span class="src-badge src-gaji">LINK GAJI</span>`,n=e.timestamp_gas?new Date(e.timestamp_gas).toLocaleDateString(`id-ID`,{day:`2-digit`,month:`short`,year:`numeric`}):`-`,r=e.rek_digit_count||String(e.no_rek||``).length;return`<tr>
-        <td>${t}</td>
-        <td>${n}</td>
-        <td>${sh(e.no_rek)||`-`} <span class="digit-badge">${r}</span></td>
-        <td>${sh(e.bank)||`-`}</td>
-        <td>${sh(e.atas_nama)||`-`}</td>
-      </tr>`}).join(``);i.innerHTML=`<td colspan="12">
+  `}async function rh(e,t){let r=document.querySelector(`.expanded-row`);if(r&&(r.remove(),Xm===e)){Xm=null;return}Xm=e;let i=document.createElement(`tr`);i.className=`expanded-row`,i.innerHTML=`<td colspan="12"><div class="rek-history-loading">Memuat detail...</div></td>`,t.after(i);try{let r=(t.dataset.stations||``).split(`||`).filter(Boolean),a=(await n.getRekeningHistory(e)).history||[],o=``;r.length>1&&(o=`
+        <div class="expand-section">
+          <div class="expand-section-title">Penempatan (${r.length} station)</div>
+          <div class="expand-stations">
+            ${r.map(e=>`<span class="badge badge-station">${sh(e)}</span>`).join(``)}
+          </div>
+        </div>
+      `);let s=``;if(a.length>0){let e=a.map(e=>{let t=e.source===`link_pergantian_rek`?`<span class="src-badge src-pergantian">PERGANTIAN REK</span>`:`<span class="src-badge src-gaji">LINK GAJI</span>`,n=e.timestamp_gas?new Date(e.timestamp_gas).toLocaleDateString(`id-ID`,{day:`2-digit`,month:`short`,year:`numeric`}):`-`,r=e.rek_digit_count||String(e.no_rek||``).length;return`<tr>
+          <td>${t}</td>
+          <td>${n}</td>
+          <td>${sh(e.no_rek)||`-`} <span class="digit-badge">${r}</span></td>
+          <td>${sh(e.bank)||`-`}</td>
+          <td>${sh(e.atas_nama)||`-`}</td>
+        </tr>`}).join(``);s=`
+        <div class="expand-section">
+          <div class="expand-section-title">Riwayat Rekening (${a.length} record)</div>
+          <table class="rek-history-table">
+            <thead><tr><th>Sumber</th><th>Tanggal</th><th>No Rekening</th><th>Bank</th><th>Atas Nama</th></tr></thead>
+            <tbody>${e}</tbody>
+          </table>
+        </div>
+      `}else s=`<div class="expand-section"><div class="expand-section-title" style="color:var(--t3)">Belum ada data rekening</div></div>`;i.innerHTML=`<td colspan="12">
       <div class="rek-history">
-        <div class="rek-history-title">Riwayat Rekening — ${sh(e)}</div>
-        <table class="rek-history-table">
-          <thead><tr><th>Sumber</th><th>Tanggal</th><th>No Rekening</th><th>Bank</th><th>Atas Nama</th></tr></thead>
-          <tbody>${r}</tbody>
-        </table>
+        <div class="rek-history-title">Detail — ${sh(e)}</div>
+        ${o}
+        ${s}
       </div>
     </td>`}catch(e){i.innerHTML=`<td colspan="12"><div class="rek-history-error">Error: ${e.message}</div></td>`}}function ih(){document.querySelectorAll(`.th-sortable`).forEach(e=>{e.classList.remove(`sort-asc`,`sort-desc`),e.dataset.sort===qm.col&&e.classList.add(qm.dir===`ASC`?`sort-asc`:`sort-desc`)})}function ah(){return Array.from({length:4},(e,t)=>`
     <div class="skel-subtab" style="animation-delay:${t*.1}s">
