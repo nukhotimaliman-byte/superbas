@@ -20,7 +20,7 @@ function requireLinktreeAuth() {
 }
 
 $action = $_GET['action'] ?? '';
-$TABLE  = 'bas_linktree';  // Shared across all projects
+$TABLE  = 'drv_linktree';  // Driver-specific linktree table
 
 // ── Public: get active links (for beranda) ──
 if ($_SERVER['REQUEST_METHOD'] === 'GET' && $action === 'list') {
@@ -47,6 +47,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && $action === 'list') {
             PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
             PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
         ]));
+        // Auto-create table with V2 schema if not exists
+        $pdo->exec("CREATE TABLE IF NOT EXISTS `{$TABLE}` (
+            id INT AUTO_INCREMENT PRIMARY KEY, title VARCHAR(100) NOT NULL,
+            url VARCHAR(500) NOT NULL, icon VARCHAR(10) DEFAULT '🔗',
+            icon_key VARCHAR(30) DEFAULT 'link', description VARCHAR(200) DEFAULT NULL,
+            group_name VARCHAR(50) DEFAULT NULL, group_order INT DEFAULT 0,
+            is_active TINYINT(1) DEFAULT 1, sort_order INT DEFAULT 0,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+        // One-time migration: copy from shared bas_linktree if this table is empty
+        if ($pdo->query("SELECT COUNT(*) FROM `{$TABLE}`")->fetchColumn() == 0) {
+            try {
+                $pdo->exec("INSERT INTO `{$TABLE}` (title, url, icon, icon_key, description, group_name, group_order, is_active, sort_order)
+                            SELECT title, url, icon, icon_key, description, group_name, group_order, is_active, sort_order FROM `bas_linktree`");
+            } catch (Throwable $e) {}
+        }
         $stmt = $pdo->query("SELECT id, title, url, icon, icon_key, description, group_name, group_order FROM {$TABLE} WHERE is_active = 1 ORDER BY group_order, group_name, sort_order, id");
         $links = $stmt->fetchAll(PDO::FETCH_ASSOC);
         jsonResponse(['ok' => true, 'links' => count($links) > 0 ? $links : $DEMO_LINKS]);

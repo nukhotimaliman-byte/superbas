@@ -6,8 +6,16 @@
  */
 require_once __DIR__ . '/../config.php';
 
-$action = $_GET['action'] ?? '';
-$TABLE  = 'bas_linktree';
+$action  = $_GET['action'] ?? '';
+$project = $_GET['project'] ?? '';
+
+// Map project to specific linktree table
+$TABLE_MAP = [
+    'driver' => 'drv_linktree',
+    'kurir'  => 'krr_linktree',
+    'dw'     => 'dw_linktree',
+];
+$TABLE = $TABLE_MAP[$project] ?? 'bas_linktree';
 
 // ── Public: get active links (for all project beranda) ──
 if ($_SERVER['REQUEST_METHOD'] === 'GET' && $action === 'list') {
