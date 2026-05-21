@@ -116,7 +116,16 @@ async function loadDatasets() {
       return;
     }
 
-    tabs.innerHTML = res.datasets.map(ds => {
+    // Count total employees
+    const totalEmp = res.datasets.reduce((sum, ds) => sum + (parseInt(ds.total_employees) || 0), 0);
+
+    // "Semua DC" tab + individual tabs
+    const allTab = `<button class="subtab active" data-id="all">
+      <span class="subtab-station">Semua DC</span>
+      <span class="subtab-meta">${res.datasets.length} station · ${totalEmp} org</span>
+    </button>`;
+
+    const stationTabs = res.datasets.map(ds => {
       const bulan = new Date(ds.bulan).toLocaleDateString('id-ID', { month: 'short', year: 'numeric' });
       return `<button class="subtab" data-id="${ds.id}">
         <span class="subtab-station">${esc(ds.station)}</span>
@@ -125,13 +134,15 @@ async function loadDatasets() {
       </button>`;
     }).join('');
 
+    tabs.innerHTML = allTab + stationTabs;
+
     // Tab click
     tabs.querySelectorAll('.subtab').forEach(btn => {
       btn.addEventListener('click', (e) => {
         if (e.target.classList.contains('subtab-del')) return;
         tabs.querySelectorAll('.subtab').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
-        currentDatasetId = btn.dataset.id;
+        currentDatasetId = btn.dataset.id === 'all' ? '' : btn.dataset.id;
         loadEmployees();
       });
     });
@@ -149,9 +160,9 @@ async function loadDatasets() {
       });
     });
 
-    // Auto-select first
-    const first = tabs.querySelector('.subtab');
-    if (first) { first.click(); }
+    // Auto-select "Semua DC" and load
+    currentDatasetId = '';
+    loadEmployees();
   } catch (err) {
     console.error('Failed to load datasets:', err);
   }
@@ -170,7 +181,7 @@ async function loadEmployees() {
       sort_by: currentSort.col,
       sort_dir: currentSort.dir,
       rek_status: currentRekFilter,
-      per_page: 200,
+      per_page: currentDatasetId ? 200 : 500,
     };
 
     const res = await api.getEmployees(params);

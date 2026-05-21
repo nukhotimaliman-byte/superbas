@@ -34,7 +34,7 @@ case 'list':
     $sortDir = strtoupper($_GET['sort_dir'] ?? 'ASC') === 'DESC' ? 'DESC' : 'ASC';
     $rekFilter = $_GET['rek_status'] ?? '';
     $page = max(1, (int)($_GET['page'] ?? 1));
-    $perPage = min(100, max(1, (int)($_GET['per_page'] ?? 50)));
+    $perPage = min(500, max(1, (int)($_GET['per_page'] ?? 50)));
     $offset = ($page - 1) * $perPage;
 
     $where = [];
