@@ -55,6 +55,15 @@ button { font-family: var(--font); cursor: pointer; }
 }
 .login-subtitle { color: var(--t3); font-size: 13px; margin-top: 4px; }
 .login-footer { text-align: center; color: var(--t3); font-size: 12px; margin-top: 20px; }
+.input-password-wrap { position: relative; }
+.input-password-wrap .input { padding-right: 40px; }
+.btn-toggle-pw {
+  position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+  background: none; border: none; color: var(--t3); cursor: pointer;
+  padding: 4px; display: flex; align-items: center; justify-content: center;
+  border-radius: 4px; transition: color .2s;
+}
+.btn-toggle-pw:hover { color: var(--accent); }
 .alert-error {
   background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.3);
   color: #fca5a5; padding: 10px 14px; border-radius: var(--rs); font-size: 13px; margin-bottom: 16px;
