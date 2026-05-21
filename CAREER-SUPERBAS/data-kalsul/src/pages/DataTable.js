@@ -23,7 +23,7 @@ export function renderDataTable() {
     <!-- Subtabs -->
     <div class="subtabs-wrapper">
       <div class="subtabs" id="dataset-tabs">
-        <div class="subtab-loading">Memuat dataset...</div>
+        ${renderSubtabSkeleton()}
       </div>
     </div>
 
@@ -67,7 +67,7 @@ export function renderDataTable() {
             </tr>
           </thead>
           <tbody id="data-tbody">
-            <tr><td colspan="13" style="text-align:center;padding:40px;color:var(--text-tertiary)">Pilih dataset di atas</td></tr>
+            ${renderTableSkeleton()}
           </tbody>
         </table>
       </div>
@@ -166,7 +166,7 @@ async function loadEmployees() {
   const tbody = document.getElementById('data-tbody');
   if (!tbody) return;
 
-  tbody.innerHTML = `<tr><td colspan="13" style="text-align:center;padding:40px;color:var(--text-tertiary)">Memuat data...</td></tr>`;
+  tbody.innerHTML = renderTableSkeleton();
 
   try {
     const params = {
@@ -355,6 +355,33 @@ async function deleteEmployee(id) {
     await api.deleteEmployee(id);
     loadEmployees();
   } catch (err) { alert('Error: ' + err.message); }
+}
+
+function renderSubtabSkeleton() {
+  return Array.from({length: 4}, (_, i) => `
+    <div class="skel-subtab" style="animation-delay:${i*0.1}s">
+      <div class="skel-cell skel-cell-lg"></div>
+      <div class="skel-cell skel-cell-md" style="margin-top:4px"></div>
+    </div>`).join('');
+}
+
+function renderTableSkeleton() {
+  return Array.from({length: 8}, (_, i) => `
+    <tr style="animation: skeleton-pulse 1.5s ease-in-out infinite ${i*0.1}s">
+      <td><div class="skel-cell skel-cell-sm"></div></td>
+      <td><div class="skel-cell skel-cell-md" style="height:20px;border-radius:4px"></div></td>
+      <td><div class="skel-cell skel-cell-xl"></div></td>
+      <td><div class="skel-cell skel-cell-lg"></div></td>
+      <td><div class="skel-cell skel-cell-sm" style="margin:0 auto"></div></td>
+      <td><div class="skel-cell skel-cell-md" style="height:20px;border-radius:4px"></div></td>
+      <td><div class="skel-cell skel-cell-md"></div></td>
+      <td><div class="skel-cell skel-cell-lg"></div></td>
+      <td><div class="skel-cell skel-cell-md"></div></td>
+      <td><div class="skel-cell skel-cell-lg"></div></td>
+      <td><div class="skel-cell skel-cell-md"></div></td>
+      <td><div class="skel-cell skel-cell-lg"></div></td>
+      <td><div class="skel-cell skel-cell-sm"></div></td>
+    </tr>`).join('');
 }
 
 function esc(str) {

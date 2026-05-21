@@ -89,6 +89,7 @@ async function handleRoute() {
   if (!content) return;
 
   setActiveTab(hash);
+  content.className = 'shell-content page-enter';
 
   switch (hash) {
     case '/':

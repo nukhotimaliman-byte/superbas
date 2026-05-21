@@ -1,253 +1,317 @@
 /**
  * ════════════════════════════════════════════════
- * DATA KALSUL — Google Apps Script
- * 1 Script, 2 Sheet: LINK GAJI + LINK PERGANTIAN REKENING
- * Sync ke: https://super-bas.com/data-kalsul/api/gaji-status.php?action=sync
+ * DATA KALSUL — Google Apps Script v3
+ * SMART SYNC: Hanya kirim data BARU (belum ✅)
+ * Auto-refresh setiap 5 menit
  * ════════════════════════════════════════════════
  */
 
-const CONFIG = {
+var CONFIG = {
   API_URL: 'https://super-bas.com/data-kalsul/api/gaji-status.php?action=sync',
   TOKEN: 'kalsul-sync-2026',
-  SHEET_GAJI: 'Sheet1',            // Nama sheet Link Gaji (sesuaikan)
-  SHEET_PERGANTIAN: 'Sheet2',      // Nama sheet Pergantian Rek (sesuaikan)
+  SHEET_GAJI: 'Sheet1',
+  SHEET_PERGANTIAN: 'Sheet2',
+  SYNCED_MARK: '✅',
 };
 
-/**
- * Menu di spreadsheet
- */
+// ═══ MENU ═══
 function onOpen() {
   SpreadsheetApp.getUi()
     .createMenu('🔄 Data KalSul')
-    .addItem('Sync ke Server', 'syncToServer')
-    .addItem('Sync Link Gaji saja', 'syncGajiOnly')
-    .addItem('Sync Pergantian Rek saja', 'syncPergantianOnly')
+    .addItem('🔄 Sync Data Baru', 'syncNewData')
+    .addItem('⏰ Aktifkan Auto-Sync (5 menit)', 'setupAutoSync')
+    .addItem('⛔ Matikan Auto-Sync', 'removeAutoSync')
+    .addItem('📊 Status Sync', 'showSyncStatus')
     .addToUi();
 }
 
-/**
- * Web App — GET request (bisa diakses via URL /exec)
- */
+// ═══ WEB APP ═══
 function doGet(e) {
   try {
-    const gajiData = readSheetGaji();
-    const pergantianData = readSheetPergantian();
-    const payload = {
-      token: CONFIG.TOKEN,
-      link_gaji: gajiData,
-      link_pergantian_rek: pergantianData,
-    };
-    const response = sendToServer(payload);
-
-    return ContentService.createTextOutput(JSON.stringify({
-      success: true,
-      message: 'Sync berhasil!',
-      link_gaji: gajiData.length,
-      link_pergantian_rek: pergantianData.length,
-      server_inserted: response.inserted || 0,
-    })).setMimeType(ContentService.MimeType.JSON);
+    var result = syncNewDataSilent();
+    return ContentService.createTextOutput(JSON.stringify(result))
+      .setMimeType(ContentService.MimeType.JSON);
   } catch (err) {
     return ContentService.createTextOutput(JSON.stringify({
-      success: false,
-      error: err.message,
+      success: false, error: err.message
     })).setMimeType(ContentService.MimeType.JSON);
   }
 }
 
-/**
- * Web App — POST request
- */
-function doPost(e) {
-  return doGet(e);
-}
+function doPost(e) { return doGet(e); }
 
-/**
- * Sync kedua sheet ke server
- */
-function syncToServer() {
-  const ui = SpreadsheetApp.getUi();
-  
+// ═══ SYNC DATA BARU ═══
+function syncNewData() {
+  var ui = SpreadsheetApp.getUi();
   try {
-    const gajiData = readSheetGaji();
-    const pergantianData = readSheetPergantian();
-    
-    const payload = {
-      token: CONFIG.TOKEN,
-      link_gaji: gajiData,
-      link_pergantian_rek: pergantianData,
-    };
-    
-    const response = sendToServer(payload);
-    
-    ui.alert(
-      '✅ Sync Berhasil!',
-      `Link Gaji: ${gajiData.length} data\n` +
-      `Pergantian Rek: ${pergantianData.length} data\n\n` +
-      `Server: ${response.inserted || 0} data disimpan`,
-      ui.ButtonSet.OK
-    );
+    var result = syncNewDataSilent();
+    ui.alert('✅ Sync Selesai!',
+      'Link Gaji: ' + result.gaji_synced + ' data baru\n' +
+      'Pergantian Rek: ' + result.pergantian_synced + ' data baru\n\n' +
+      'Server: ' + result.server_inserted + ' data disimpan',
+      ui.ButtonSet.OK);
   } catch (err) {
     ui.alert('❌ Sync Gagal', err.message, ui.ButtonSet.OK);
   }
 }
 
-function syncGajiOnly() {
-  const ui = SpreadsheetApp.getUi();
-  try {
-    const data = readSheetGaji();
-    const response = sendToServer({ token: CONFIG.TOKEN, link_gaji: data, link_pergantian_rek: [] });
-    ui.alert('✅ Sync Link Gaji Berhasil!', `${data.length} data → ${response.inserted || 0} disimpan`, ui.ButtonSet.OK);
-  } catch (err) { ui.alert('❌ Gagal', err.message, ui.ButtonSet.OK); }
-}
-
-function syncPergantianOnly() {
-  const ui = SpreadsheetApp.getUi();
-  try {
-    const data = readSheetPergantian();
-    const response = sendToServer({ token: CONFIG.TOKEN, link_gaji: [], link_pergantian_rek: data });
-    ui.alert('✅ Sync Pergantian Rek Berhasil!', `${data.length} data → ${response.inserted || 0} disimpan`, ui.ButtonSet.OK);
-  } catch (err) { ui.alert('❌ Gagal', err.message, ui.ButtonSet.OK); }
-}
-
-/**
- * Baca Sheet Link Gaji
- * Kolom: Timestamp | Email | NAMA SESUAI KTP | NIK | OPS ID | Lokasi Kerja |
- *        TANGGAL LAHIR | ALAMAT | NO WHATSAPP | MEMBER ID/BPJS | NO REKENING | ATAS NAMA | NAMA BANK
- */
-function readSheetGaji() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const sheet = ss.getSheetByName(CONFIG.SHEET_GAJI);
-  if (!sheet) throw new Error(`Sheet "${CONFIG.SHEET_GAJI}" tidak ditemukan!`);
+// ═══ CORE SYNC (silent, untuk auto-trigger & web) ═══
+function syncNewDataSilent() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
   
-  const data = sheet.getDataRange().getValues();
-  if (data.length < 2) return [];
+  // Read new data from both sheets
+  var gajiResult = readNewRows(ss, CONFIG.SHEET_GAJI, 'gaji');
+  var pergResult = readNewRows(ss, CONFIG.SHEET_PERGANTIAN, 'pergantian');
   
-  const header = data[0].map(h => String(h).toLowerCase().trim());
+  var totalNew = gajiResult.data.length + pergResult.data.length;
   
-  // Auto-detect column indices
-  const cols = {
-    timestamp: findCol(header, ['timestamp', 'waktu']),
-    email: findCol(header, ['email', 'email address']),
-    nama_ktp: findCol(header, ['nama sesuai ktp', 'nama', 'nama lengkap', 'name']),
-    nik: findCol(header, ['nik', 'no ktp', 'nomor ktp']),
-    ops_id: findCol(header, ['ops id', 'ops_id', 'opsid', 'id ops']),
-    lokasi_kerja: findCol(header, ['lokasi kerja', 'lokasi', 'penempatan', 'station']),
-    tgl_lahir: findCol(header, ['tanggal lahir', 'tgl lahir']),
-    alamat: findCol(header, ['alamat', 'alamat sesuai domisili', 'alamat domisili']),
-    no_hp: findCol(header, ['no whatsapp', 'no whatshapp', 'no hp', 'whatsapp', 'telepon']),
-    no_rek: findCol(header, ['no rekening', 'no rek', 'norek', 'rekening', 'nomor rekening']),
-    atas_nama: findCol(header, ['atas nama', 'atas nama rekening', 'nama rekening']),
-    bank: findCol(header, ['nama bank', 'bank']),
+  if (totalNew === 0) {
+    return { success: true, gaji_synced: 0, pergantian_synced: 0, server_inserted: 0, message: 'Tidak ada data baru' };
+  }
+  
+  // Send to server
+  var payload = {
+    token: CONFIG.TOKEN,
+    link_gaji: gajiResult.data,
+    link_pergantian_rek: pergResult.data,
   };
   
-  const result = [];
-  for (let i = 1; i < data.length; i++) {
-    const row = data[i];
-    const opsId = getVal(row, cols.ops_id);
-    if (!opsId) continue;
-    
-    result.push({
-      timestamp: formatTimestamp(getVal(row, cols.timestamp)),
-      email: getVal(row, cols.email),
-      nama_ktp: getVal(row, cols.nama_ktp),
-      nik: getVal(row, cols.nik),
-      ops_id: opsId,
-      lokasi_kerja: getVal(row, cols.lokasi_kerja),
-      tgl_lahir: getVal(row, cols.tgl_lahir),
-      alamat: getVal(row, cols.alamat),
-      no_hp: cleanPhone(getVal(row, cols.no_hp)),
-      no_rek: cleanRek(getVal(row, cols.no_rek)),
-      atas_nama: getVal(row, cols.atas_nama),
-      bank: getVal(row, cols.bank),
-    });
+  var response = sendToServer(payload);
+  
+  // Mark as synced
+  if (gajiResult.data.length > 0) {
+    markSynced(ss, CONFIG.SHEET_GAJI, gajiResult.syncCol, gajiResult.rows);
+  }
+  if (pergResult.data.length > 0) {
+    markSynced(ss, CONFIG.SHEET_PERGANTIAN, pergResult.syncCol, pergResult.rows);
   }
   
-  return result;
-}
-
-/**
- * Baca Sheet Pergantian Rekening
- * Kolom: Timestamp | Email | Nama | Ops ID | Penempatan |
- *        NOMOR REKENING | NAMA REKENING | NAMA BANK | FOTO
- */
-function readSheetPergantian() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const sheet = ss.getSheetByName(CONFIG.SHEET_PERGANTIAN);
-  if (!sheet) throw new Error(`Sheet "${CONFIG.SHEET_PERGANTIAN}" tidak ditemukan!`);
-  
-  const data = sheet.getDataRange().getValues();
-  if (data.length < 2) return [];
-  
-  const header = data[0].map(h => String(h).toLowerCase().trim());
-  
-  const cols = {
-    timestamp: findCol(header, ['timestamp', 'waktu']),
-    email: findCol(header, ['email', 'email address']),
-    nama: findCol(header, ['nama', 'name']),
-    ops_id: findCol(header, ['ops id', 'ops_id', 'opsid']),
-    penempatan: findCol(header, ['penempatan', 'lokasi', 'station']),
-    no_rek: findCol(header, ['nomor rekening', 'no rekening', 'no rek', 'norek', 'rekening']),
-    atas_nama: findCol(header, ['nama rekening', 'atas nama', 'atas nama rekening']),
-    bank: findCol(header, ['nama bank', 'bank']),
+  return {
+    success: true,
+    gaji_synced: gajiResult.data.length,
+    pergantian_synced: pergResult.data.length,
+    server_inserted: response.inserted || 0,
   };
+}
+
+// ═══ BACA DATA BARU (dari bawah, yang belum ✅) ═══
+function readNewRows(ss, sheetName, type) {
+  var sheet = ss.getSheetByName(sheetName);
+  if (!sheet) return { data: [], syncCol: -1, rows: [] };
   
-  const result = [];
-  for (let i = 1; i < data.length; i++) {
-    const row = data[i];
-    const opsId = getVal(row, cols.ops_id);
-    if (!opsId) continue;
+  var lastRow = sheet.getLastRow();
+  var lastCol = sheet.getLastColumn();
+  if (lastRow < 2) return { data: [], syncCol: -1, rows: [] };
+  
+  // Get headers
+  var headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
+  var headerLower = headers.map(function(h) { return String(h).toLowerCase().trim(); });
+  
+  // Find or create SYNCED column
+  var syncCol = headerLower.indexOf('synced');
+  if (syncCol === -1) {
+    syncCol = lastCol; // Next column
+    sheet.getRange(1, syncCol + 1).setValue('SYNCED');
+    sheet.getRange(1, syncCol + 1).setFontWeight('bold');
+    sheet.getRange(1, syncCol + 1).setBackground('#4a86e8');
+    sheet.getRange(1, syncCol + 1).setFontColor('#ffffff');
+    lastCol = syncCol + 1;
+  }
+  
+  // Read ALL data
+  var allData = sheet.getRange(2, 1, lastRow - 1, lastCol).getValues();
+  
+  // Collect rows WITHOUT ✅ — read from BOTTOM
+  var newData = [];
+  var newRowIndices = [];
+  
+  for (var i = allData.length - 1; i >= 0; i--) {
+    var row = allData[i];
+    var syncVal = String(row[syncCol] || '').trim();
     
-    result.push({
-      timestamp: formatTimestamp(getVal(row, cols.timestamp)),
-      email: getVal(row, cols.email),
-      nama: getVal(row, cols.nama),
-      ops_id: opsId,
-      penempatan: getVal(row, cols.penempatan),
-      no_rek: cleanRek(getVal(row, cols.no_rek)),
-      atas_nama: getVal(row, cols.atas_nama),
-      bank: getVal(row, cols.bank),
-    });
+    if (syncVal.indexOf('✅') !== -1) continue; // Already synced
+    
+    var parsed = parseRow(row, headerLower, type);
+    if (parsed) {
+      newData.push(parsed);
+      newRowIndices.push(i + 2); // +2 because row 1 = header, array is 0-indexed
+    }
   }
   
-  return result;
+  return { data: newData, syncCol: syncCol, rows: newRowIndices };
 }
 
-// ── Helpers ──
-
-function findCol(header, keywords) {
-  for (const kw of keywords) {
-    const idx = header.indexOf(kw);
-    if (idx >= 0) return idx;
+// ═══ PARSE ROW ═══
+function parseRow(row, header, type) {
+  if (type === 'gaji') {
+    var opsId = getColVal(row, header, ['ops id', 'ops_id', 'opsid']);
+    if (!opsId) return null;
+    
+    return {
+      ops_id: opsId,
+      timestamp: formatTS(getColVal(row, header, ['timestamp', 'waktu'])),
+      email: getColVal(row, header, ['email', 'email address']),
+      nama_ktp: getColVal(row, header, ['nama sesuai ktp', 'nama', 'nama lengkap']),
+      nik: getColVal(row, header, ['nik', 'no ktp']),
+      lokasi_kerja: getColVal(row, header, ['lokasi kerja', 'lokasi', 'penempatan']),
+      tgl_lahir: getColVal(row, header, ['tanggal lahir', 'tgl lahir']),
+      alamat: getColVal(row, header, ['alamat', 'alamat sesuai domisili']),
+      no_hp: cleanPhone(getColVal(row, header, ['no whatsapp', 'no whatshapp', 'no hp', 'whatsapp'])),
+      no_rek: cleanRek(getColVal(row, header, ['no rekening', 'no rek', 'norek', 'rekening', 'nomor rekening'])),
+      atas_nama: getColVal(row, header, ['atas nama', 'atas nama rekening', 'nama rekening']),
+      bank: getColVal(row, header, ['nama bank', 'bank']),
+    };
+  } else {
+    var opsId2 = getColVal(row, header, ['ops id', 'ops_id', 'opsid']);
+    if (!opsId2) return null;
+    
+    return {
+      ops_id: opsId2,
+      timestamp: formatTS(getColVal(row, header, ['timestamp', 'waktu'])),
+      email: getColVal(row, header, ['email', 'email address']),
+      nama: getColVal(row, header, ['nama', 'name']),
+      penempatan: getColVal(row, header, ['penempatan', 'lokasi', 'station']),
+      no_rek: cleanRek(getColVal(row, header, ['nomor rekening', 'no rekening', 'no rek', 'norek'])),
+      atas_nama: getColVal(row, header, ['nama rekening', 'atas nama']),
+      bank: getColVal(row, header, ['nama bank', 'bank']),
+    };
   }
-  return -1;
 }
 
-function getVal(row, colIdx) {
-  if (colIdx < 0 || colIdx >= row.length) return '';
-  const val = row[colIdx];
+// ═══ TANDAI ✅ DI SHEET ═══
+function markSynced(ss, sheetName, syncCol, rowIndices) {
+  var sheet = ss.getSheetByName(sheetName);
+  if (!sheet) return;
+  
+  var now = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'dd/MM/yyyy HH:mm');
+  
+  for (var i = 0; i < rowIndices.length; i++) {
+    var cell = sheet.getRange(rowIndices[i], syncCol + 1);
+    cell.setValue('✅ ' + now);
+    cell.setBackground('#d9ead3'); // Light green
+  }
+  
+  SpreadsheetApp.flush();
+}
+
+// ═══ AUTO-SYNC TRIGGER ═══
+function setupAutoSync() {
+  // Remove old triggers
+  removeAutoSync();
+  
+  // Create new: every 5 minutes
+  ScriptApp.newTrigger('autoSync')
+    .timeBased()
+    .everyMinutes(5)
+    .create();
+  
+  SpreadsheetApp.getUi().alert('✅ Auto-Sync Aktif!',
+    'Data baru akan otomatis di-sync ke server setiap 5 menit.\n\n' +
+    'Untuk mematikan: Menu 🔄 Data KalSul → Matikan Auto-Sync',
+    SpreadsheetApp.getUi().ButtonSet.OK);
+}
+
+function removeAutoSync() {
+  var triggers = ScriptApp.getProjectTriggers();
+  for (var i = 0; i < triggers.length; i++) {
+    if (triggers[i].getHandlerFunction() === 'autoSync') {
+      ScriptApp.deleteTrigger(triggers[i]);
+    }
+  }
+  
+  try {
+    SpreadsheetApp.getUi().alert('⛔ Auto-Sync Dimatikan', 'Trigger auto-sync telah dihapus.', SpreadsheetApp.getUi().ButtonSet.OK);
+  } catch(e) {}
+}
+
+function autoSync() {
+  try {
+    syncNewDataSilent();
+  } catch (err) {
+    Logger.log('Auto-sync error: ' + err.message);
+  }
+}
+
+// ═══ STATUS ═══
+function showSyncStatus() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var ui = SpreadsheetApp.getUi();
+  
+  var sheet1 = ss.getSheetByName(CONFIG.SHEET_GAJI);
+  var sheet2 = ss.getSheetByName(CONFIG.SHEET_PERGANTIAN);
+  
+  var total1 = sheet1 ? Math.max(0, sheet1.getLastRow() - 1) : 0;
+  var total2 = sheet2 ? Math.max(0, sheet2.getLastRow() - 1) : 0;
+  
+  var synced1 = countSynced(ss, CONFIG.SHEET_GAJI);
+  var synced2 = countSynced(ss, CONFIG.SHEET_PERGANTIAN);
+  
+  // Check auto-sync
+  var triggers = ScriptApp.getProjectTriggers();
+  var autoActive = false;
+  for (var i = 0; i < triggers.length; i++) {
+    if (triggers[i].getHandlerFunction() === 'autoSync') autoActive = true;
+  }
+  
+  ui.alert('📊 Status Sync',
+    '── Link Gaji ──\n' +
+    'Total: ' + total1 + ' baris\n' +
+    'Sudah sync: ' + synced1 + ' ✅\n' +
+    'Belum sync: ' + (total1 - synced1) + '\n\n' +
+    '── Pergantian Rek ──\n' +
+    'Total: ' + total2 + ' baris\n' +
+    'Sudah sync: ' + synced2 + ' ✅\n' +
+    'Belum sync: ' + (total2 - synced2) + '\n\n' +
+    '── Auto-Sync ──\n' +
+    'Status: ' + (autoActive ? '✅ AKTIF (setiap 5 menit)' : '⛔ TIDAK AKTIF'),
+    ui.ButtonSet.OK);
+}
+
+function countSynced(ss, sheetName) {
+  var sheet = ss.getSheetByName(sheetName);
+  if (!sheet || sheet.getLastRow() < 2) return 0;
+  
+  var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  var headerLower = headers.map(function(h) { return String(h).toLowerCase().trim(); });
+  var syncCol = headerLower.indexOf('synced');
+  if (syncCol === -1) return 0;
+  
+  var vals = sheet.getRange(2, syncCol + 1, sheet.getLastRow() - 1, 1).getValues();
+  var count = 0;
+  for (var i = 0; i < vals.length; i++) {
+    if (String(vals[i][0]).indexOf('✅') !== -1) count++;
+  }
+  return count;
+}
+
+// ═══ HELPERS ═══
+function getColVal(row, header, keywords) {
+  for (var k = 0; k < keywords.length; k++) {
+    var idx = header.indexOf(keywords[k]);
+    if (idx >= 0 && idx < row.length) {
+      var val = row[idx];
+      if (val instanceof Date) return Utilities.formatDate(val, Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm:ss');
+      return String(val || '').trim();
+    }
+  }
+  return '';
+}
+
+function cleanRek(val) { return String(val || '').replace(/[^0-9]/g, ''); }
+function cleanPhone(val) { return String(val || '').replace(/[^0-9+]/g, ''); }
+
+function formatTS(val) {
+  if (!val) return Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm:ss');
   if (val instanceof Date) return Utilities.formatDate(val, Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm:ss');
-  return String(val || '').trim();
-}
-
-function cleanRek(val) {
-  return String(val || '').replace(/[^0-9]/g, '');
-}
-
-function cleanPhone(val) {
-  return String(val || '').replace(/[^0-9+]/g, '');
-}
-
-function formatTimestamp(val) {
-  if (!val) return new Date().toISOString().replace('T', ' ').substring(0, 19);
-  if (val instanceof Date) return Utilities.formatDate(val, Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm:ss');
-  // Try parse
-  const d = new Date(val);
-  if (!isNaN(d.getTime())) return Utilities.formatDate(d, Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm:ss');
+  try {
+    var d = new Date(val);
+    if (!isNaN(d.getTime())) return Utilities.formatDate(d, Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm:ss');
+  } catch(e) {}
   return String(val);
 }
 
 function sendToServer(payload) {
-  const options = {
+  var options = {
     method: 'post',
     contentType: 'application/json',
     payload: JSON.stringify(payload),
@@ -255,12 +319,12 @@ function sendToServer(payload) {
     validateHttpsCertificates: false,
   };
   
-  const response = UrlFetchApp.fetch(CONFIG.API_URL, options);
-  const code = response.getResponseCode();
-  const body = response.getContentText();
+  var response = UrlFetchApp.fetch(CONFIG.API_URL, options);
+  var code = response.getResponseCode();
+  var body = response.getContentText();
   
   if (code !== 200) {
-    throw new Error('Server error (' + code + '): ' + body.substring(0, 500));
+    throw new Error('Server error (' + code + '): ' + body.substring(0, 300));
   }
   
   return JSON.parse(body);

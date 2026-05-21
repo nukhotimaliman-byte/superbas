@@ -232,7 +232,7 @@
     <!-- Subtabs -->
     <div class="subtabs-wrapper">
       <div class="subtabs" id="dataset-tabs">
-        <div class="subtab-loading">Memuat dataset...</div>
+        ${sh()}
       </div>
     </div>
 
@@ -276,7 +276,7 @@
             </tr>
           </thead>
           <tbody id="data-tbody">
-            <tr><td colspan="13" style="text-align:center;padding:40px;color:var(--text-tertiary)">Pilih dataset di atas</td></tr>
+            ${ch()}
           </tbody>
         </table>
       </div>
@@ -297,25 +297,25 @@
       </div>
     </div>
   `}async function Qm(){await $m(),document.querySelectorAll(`.th-sortable`).forEach(e=>{e.addEventListener(`click`,()=>{let t=e.dataset.sort;qm.col===t?qm.dir=qm.dir===`ASC`?`DESC`:`ASC`:qm={col:t,dir:`ASC`},rh(),eh()})});let e;document.getElementById(`search-input`)?.addEventListener(`input`,t=>{clearTimeout(e),e=setTimeout(()=>{Jm=t.target.value,eh()},300)}),document.getElementById(`rek-filter`)?.addEventListener(`change`,e=>{Ym=e.target.value,eh()}),document.getElementById(`modal-close`)?.addEventListener(`click`,ah),document.getElementById(`modal-cancel`)?.addEventListener(`click`,ah)}async function $m(){try{let e=await n.getDatasets(),t=document.getElementById(`dataset-tabs`);if(!t)return;if(!e.datasets||e.datasets.length===0){t.innerHTML=`<div class="subtab-empty">Belum ada data. Upload file terlebih dahulu.</div>`;return}t.innerHTML=e.datasets.map(e=>{let t=new Date(e.bulan).toLocaleDateString(`id-ID`,{month:`short`,year:`numeric`});return`<button class="subtab" data-id="${e.id}">
-        <span class="subtab-station">${sh(e.station)}</span>
+        <span class="subtab-station">${lh(e.station)}</span>
         <span class="subtab-meta">${t} · ${e.periode} · ${e.total_employees} org</span>
-      </button>`}).join(``),t.querySelectorAll(`.subtab`).forEach(e=>{e.addEventListener(`click`,()=>{t.querySelectorAll(`.subtab`).forEach(e=>e.classList.remove(`active`)),e.classList.add(`active`),Km=e.dataset.id,eh()})});let r=t.querySelector(`.subtab`);r&&r.click()}catch(e){console.error(`Failed to load datasets:`,e)}}async function eh(){let e=document.getElementById(`data-tbody`);if(e){e.innerHTML=`<tr><td colspan="13" style="text-align:center;padding:40px;color:var(--text-tertiary)">Memuat data...</td></tr>`;try{let t={dataset_id:Km||``,search:Jm,sort_by:qm.col,sort_dir:qm.dir,rek_status:Ym,per_page:200},r=(await n.getEmployees(t)).employees||[];if(document.getElementById(`data-count`).textContent=`${r.length} data`,r.length===0){e.innerHTML=`<tr><td colspan="13"><div class="empty-state"><div class="empty-state-title">Tidak ada data</div></div></td></tr>`;return}e.innerHTML=r.map((e,t)=>th(e,t+1)).join(``),e.querySelectorAll(`.btn-expand`).forEach(e=>{e.addEventListener(`click`,()=>nh(e.dataset.opsId,e.closest(`tr`)))}),e.querySelectorAll(`.btn-edit`).forEach(e=>{e.addEventListener(`click`,()=>ih(JSON.parse(e.dataset.emp)))}),e.querySelectorAll(`.btn-delete`).forEach(e=>{e.addEventListener(`click`,()=>oh(e.dataset.id))})}catch(t){e.innerHTML=`<tr><td colspan="13" style="text-align:center;color:var(--danger);padding:20px">Error: ${t.message}</td></tr>`}}}function th(e,t){let n={done:`<span class="badge badge-done">✅ DONE</span>`,abnormal:`<span class="badge badge-abnormal">🔴 ABNORMAL</span>`,kosong:`<span class="badge badge-kosong">⬜ KOSONG</span>`}[e.rek_status]||`<span class="badge badge-kosong">⬜ KOSONG</span>`,r=e.has_pergantian?`cell-highlight`:``,i=e.rek_status===`kosong`?``:`<button class="btn-expand" data-ops-id="${sh(e.ops_id)}" title="Lihat riwayat">▼</button>`,a=e.rek_tanggal?new Date(e.rek_tanggal).toLocaleDateString(`id-ID`,{day:`2-digit`,month:`short`,year:`numeric`}):`-`,o=e.rek_digit_count>0?`<span class="digit-badge">${e.rek_digit_count}</span>`:``;return`
-    <tr data-ops-id="${sh(e.ops_id)}" class="${e.has_pergantian?`row-pergantian`:``}">
+      </button>`}).join(``),t.querySelectorAll(`.subtab`).forEach(e=>{e.addEventListener(`click`,()=>{t.querySelectorAll(`.subtab`).forEach(e=>e.classList.remove(`active`)),e.classList.add(`active`),Km=e.dataset.id,eh()})});let r=t.querySelector(`.subtab`);r&&r.click()}catch(e){console.error(`Failed to load datasets:`,e)}}async function eh(){let e=document.getElementById(`data-tbody`);if(e){e.innerHTML=ch();try{let t={dataset_id:Km||``,search:Jm,sort_by:qm.col,sort_dir:qm.dir,rek_status:Ym,per_page:200},r=(await n.getEmployees(t)).employees||[];if(document.getElementById(`data-count`).textContent=`${r.length} data`,r.length===0){e.innerHTML=`<tr><td colspan="13"><div class="empty-state"><div class="empty-state-title">Tidak ada data</div></div></td></tr>`;return}e.innerHTML=r.map((e,t)=>th(e,t+1)).join(``),e.querySelectorAll(`.btn-expand`).forEach(e=>{e.addEventListener(`click`,()=>nh(e.dataset.opsId,e.closest(`tr`)))}),e.querySelectorAll(`.btn-edit`).forEach(e=>{e.addEventListener(`click`,()=>ih(JSON.parse(e.dataset.emp)))}),e.querySelectorAll(`.btn-delete`).forEach(e=>{e.addEventListener(`click`,()=>oh(e.dataset.id))})}catch(t){e.innerHTML=`<tr><td colspan="13" style="text-align:center;color:var(--danger);padding:20px">Error: ${t.message}</td></tr>`}}}function th(e,t){let n={done:`<span class="badge badge-done">✅ DONE</span>`,abnormal:`<span class="badge badge-abnormal">🔴 ABNORMAL</span>`,kosong:`<span class="badge badge-kosong">⬜ KOSONG</span>`}[e.rek_status]||`<span class="badge badge-kosong">⬜ KOSONG</span>`,r=e.has_pergantian?`cell-highlight`:``,i=e.rek_status===`kosong`?``:`<button class="btn-expand" data-ops-id="${lh(e.ops_id)}" title="Lihat riwayat">▼</button>`,a=e.rek_tanggal?new Date(e.rek_tanggal).toLocaleDateString(`id-ID`,{day:`2-digit`,month:`short`,year:`numeric`}):`-`,o=e.rek_digit_count>0?`<span class="digit-badge">${e.rek_digit_count}</span>`:``;return`
+    <tr data-ops-id="${lh(e.ops_id)}" class="${e.has_pergantian?`row-pergantian`:``}">
       <td>${t}</td>
-      <td><span class="badge badge-primary">${sh(e.ops_id)}</span></td>
-      <td style="font-weight:500">${sh(e.nama)}</td>
-      <td>${sh(e.station)}</td>
+      <td><span class="badge badge-primary">${lh(e.ops_id)}</span></td>
+      <td style="font-weight:500">${lh(e.nama)}</td>
+      <td>${lh(e.station)}</td>
       <td style="text-align:center;font-weight:700">${e.hk||0}</td>
       <td>${n}</td>
       <td style="font-size:12px">${a}</td>
       <td class="${r}">
-        <span class="norek-cell">${sh(e.no_rek)||`-`} ${o}</span>
+        <span class="norek-cell">${lh(e.no_rek)||`-`} ${o}</span>
         ${i}
       </td>
-      <td>${sh(e.bank)||`-`}</td>
-      <td>${sh(e.atas_nama)||`-`}</td>
-      <td style="font-size:12px">${sh(e.no_hp)||`-`}</td>
-      <td style="font-size:12px;font-family:monospace">${sh(e.nik)||`-`}</td>
+      <td>${lh(e.bank)||`-`}</td>
+      <td>${lh(e.atas_nama)||`-`}</td>
+      <td style="font-size:12px">${lh(e.no_hp)||`-`}</td>
+      <td style="font-size:12px;font-family:monospace">${lh(e.nik)||`-`}</td>
       <td>
         <div class="action-btns">
           <button class="btn-icon btn-edit" data-emp='${JSON.stringify(e).replace(/'/g,`&#39;`)}' title="Edit">✏️</button>
@@ -326,12 +326,12 @@
   `}async function nh(e,t){let r=document.querySelector(`.expanded-row`);if(r&&(r.remove(),Xm===e)){Xm=null;return}Xm=e;let i=document.createElement(`tr`);i.className=`expanded-row`,i.innerHTML=`<td colspan="13"><div class="rek-history-loading">Memuat riwayat...</div></td>`,t.after(i);try{let t=(await n.getRekeningHistory(e)).history||[];if(t.length===0){i.innerHTML=`<td colspan="13"><div class="rek-history-empty">Tidak ada riwayat rekening</div></td>`;return}let r=t.map(e=>{let t=e.source===`link_pergantian_rek`?`<span class="src-badge src-pergantian">🔄 LINK PERGANTIAN REK</span>`:`<span class="src-badge src-gaji">💰 LINK GAJI</span>`,n=e.timestamp_gas?new Date(e.timestamp_gas).toLocaleDateString(`id-ID`,{day:`2-digit`,month:`short`,year:`numeric`}):`-`,r=e.rek_digit_count||String(e.no_rek||``).length;return`<tr>
         <td>${t}</td>
         <td>${n}</td>
-        <td>${sh(e.no_rek)||`-`} <span class="digit-badge">${r}</span></td>
-        <td>${sh(e.bank)||`-`}</td>
-        <td>${sh(e.atas_nama)||`-`}</td>
+        <td>${lh(e.no_rek)||`-`} <span class="digit-badge">${r}</span></td>
+        <td>${lh(e.bank)||`-`}</td>
+        <td>${lh(e.atas_nama)||`-`}</td>
       </tr>`}).join(``);i.innerHTML=`<td colspan="13">
       <div class="rek-history">
-        <div class="rek-history-title">📋 Riwayat Rekening — ${sh(e)} (terbaru → terlama)</div>
+        <div class="rek-history-title">📋 Riwayat Rekening — ${lh(e)} (terbaru → terlama)</div>
         <table class="rek-history-table">
           <thead><tr><th>Sumber</th><th>Tanggal</th><th>No Rekening</th><th>Bank</th><th>Atas Nama</th></tr></thead>
           <tbody>${r}</tbody>
@@ -340,9 +340,28 @@
     </td>`}catch(e){i.innerHTML=`<td colspan="13"><div class="rek-history-error">Error: ${e.message}</div></td>`}}function rh(){document.querySelectorAll(`.th-sortable`).forEach(e=>{e.classList.remove(`sort-asc`,`sort-desc`),e.dataset.sort===qm.col&&e.classList.add(qm.dir===`ASC`?`sort-asc`:`sort-desc`)})}function ih(e){let t=document.getElementById(`edit-modal`),r=document.getElementById(`modal-body`);if(!t||!r)return;let i=[{key:`ops_id`,label:`OPS ID`,type:`text`},{key:`nama`,label:`Nama`,type:`text`},{key:`station`,label:`Station`,type:`text`},{key:`hk`,label:`HK (Hari Kerja)`,type:`number`},{key:`status`,label:`Status`,type:`text`}];r.innerHTML=i.map(t=>`
     <div class="field-group">
       <label class="field-label">${t.label}</label>
-      <input type="${t.type}" class="input" id="edit-${t.key}" value="${sh(e[t.key]||``)}" />
+      <input type="${t.type}" class="input" id="edit-${t.key}" value="${lh(e[t.key]||``)}" />
     </div>
-  `).join(``),t.style.display=`flex`;let a=document.getElementById(`modal-save`);a.onclick=async()=>{let t={};i.forEach(e=>{t[e.key]=document.getElementById(`edit-${e.key}`).value});try{await n.updateEmployee(e.id,t),ah(),eh()}catch(e){alert(`Error: `+e.message)}}}function ah(){let e=document.getElementById(`edit-modal`);e&&(e.style.display=`none`)}async function oh(e){if(confirm(`Yakin hapus karyawan ini?`))try{await n.deleteEmployee(e),eh()}catch(e){alert(`Error: `+e.message)}}function sh(e){let t=document.createElement(`div`);return t.textContent=e??``,t.innerHTML}function ch(){return`
+  `).join(``),t.style.display=`flex`;let a=document.getElementById(`modal-save`);a.onclick=async()=>{let t={};i.forEach(e=>{t[e.key]=document.getElementById(`edit-${e.key}`).value});try{await n.updateEmployee(e.id,t),ah(),eh()}catch(e){alert(`Error: `+e.message)}}}function ah(){let e=document.getElementById(`edit-modal`);e&&(e.style.display=`none`)}async function oh(e){if(confirm(`Yakin hapus karyawan ini?`))try{await n.deleteEmployee(e),eh()}catch(e){alert(`Error: `+e.message)}}function sh(){return Array.from({length:4},(e,t)=>`
+    <div class="skel-subtab" style="animation-delay:${t*.1}s">
+      <div class="skel-cell skel-cell-lg"></div>
+      <div class="skel-cell skel-cell-md" style="margin-top:4px"></div>
+    </div>`).join(``)}function ch(){return Array.from({length:8},(e,t)=>`
+    <tr style="animation: skeleton-pulse 1.5s ease-in-out infinite ${t*.1}s">
+      <td><div class="skel-cell skel-cell-sm"></div></td>
+      <td><div class="skel-cell skel-cell-md" style="height:20px;border-radius:4px"></div></td>
+      <td><div class="skel-cell skel-cell-xl"></div></td>
+      <td><div class="skel-cell skel-cell-lg"></div></td>
+      <td><div class="skel-cell skel-cell-sm" style="margin:0 auto"></div></td>
+      <td><div class="skel-cell skel-cell-md" style="height:20px;border-radius:4px"></div></td>
+      <td><div class="skel-cell skel-cell-md"></div></td>
+      <td><div class="skel-cell skel-cell-lg"></div></td>
+      <td><div class="skel-cell skel-cell-md"></div></td>
+      <td><div class="skel-cell skel-cell-lg"></div></td>
+      <td><div class="skel-cell skel-cell-md"></div></td>
+      <td><div class="skel-cell skel-cell-lg"></div></td>
+      <td><div class="skel-cell skel-cell-sm"></div></td>
+    </tr>`).join(``)}function lh(e){let t=document.createElement(`div`);return t.textContent=e??``,t.innerHTML}function uh(){return`
     <div class="page-header">
       <h1>Kelola Korlap</h1>
       <button class="btn btn-primary" id="btn-add-korlap">
@@ -402,21 +421,21 @@
         </div>
       </div>
     </div>
-  `}var lh=null;async function uh(){document.getElementById(`btn-add-korlap`)?.addEventListener(`click`,()=>fh()),document.getElementById(`korlap-modal-close`)?.addEventListener(`click`,ph),document.getElementById(`korlap-modal-cancel`)?.addEventListener(`click`,ph),document.getElementById(`korlap-modal-save`)?.addEventListener(`click`,mh),await dh()}async function dh(){let e=document.getElementById(`korlap-tbody`);if(e)try{let t=(await n.getKorlaps()).korlaps||[];if(t.length===0){e.innerHTML=`<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--text-tertiary)">
+  `}var dh=null;async function fh(){document.getElementById(`btn-add-korlap`)?.addEventListener(`click`,()=>mh()),document.getElementById(`korlap-modal-close`)?.addEventListener(`click`,hh),document.getElementById(`korlap-modal-cancel`)?.addEventListener(`click`,hh),document.getElementById(`korlap-modal-save`)?.addEventListener(`click`,gh),await ph()}async function ph(){let e=document.getElementById(`korlap-tbody`);if(e)try{let t=(await n.getKorlaps()).korlaps||[];if(t.length===0){e.innerHTML=`<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--text-tertiary)">
         Belum ada akun korlap. Klik <strong>Tambah Korlap</strong> untuk membuat.
       </td></tr>`;return}e.innerHTML=t.map((e,t)=>{let n=new Date(e.created_at).toLocaleDateString(`id-ID`,{day:`2-digit`,month:`short`,year:`numeric`});return`<tr>
         <td>${t+1}</td>
-        <td><span class="badge badge-primary">${hh(e.username)}</span></td>
-        <td style="font-weight:500">${hh(e.name)}</td>
-        <td>${hh(e.station)||`<span style="color:var(--text-tertiary)">-</span>`}</td>
+        <td><span class="badge badge-primary">${_h(e.username)}</span></td>
+        <td style="font-weight:500">${_h(e.name)}</td>
+        <td>${_h(e.station)||`<span style="color:var(--text-tertiary)">-</span>`}</td>
         <td style="font-size:12px">${n}</td>
         <td>
           <div class="action-btns">
-            <button class="btn-icon btn-edit-k" data-id="${e.id}" data-name="${hh(e.name)}" data-station="${hh(e.station||``)}" data-username="${hh(e.username)}" title="Edit">✏️</button>
-            <button class="btn-icon btn-del-k" data-id="${e.id}" data-name="${hh(e.name)}" title="Hapus">🗑️</button>
+            <button class="btn-icon btn-edit-k" data-id="${e.id}" data-name="${_h(e.name)}" data-station="${_h(e.station||``)}" data-username="${_h(e.username)}" title="Edit">✏️</button>
+            <button class="btn-icon btn-del-k" data-id="${e.id}" data-name="${_h(e.name)}" title="Hapus">🗑️</button>
           </div>
         </td>
-      </tr>`}).join(``),e.querySelectorAll(`.btn-edit-k`).forEach(e=>{e.addEventListener(`click`,()=>{fh({id:e.dataset.id,username:e.dataset.username,name:e.dataset.name,station:e.dataset.station})})}),e.querySelectorAll(`.btn-del-k`).forEach(e=>{e.addEventListener(`click`,async()=>{if(confirm(`Hapus korlap "${e.dataset.name}"?`))try{await n.deleteKorlap(e.dataset.id),dh()}catch(e){alert(`Error: `+e.message)}})})}catch(t){e.innerHTML=`<tr><td colspan="6" style="text-align:center;color:var(--danger)">${t.message}</td></tr>`}}function fh(e=null){lh=e?.id||null,document.getElementById(`korlap-modal-title`).textContent=lh?`Edit Korlap`:`Tambah Korlap`,document.getElementById(`k-username`).value=e?.username||``,document.getElementById(`k-username`).disabled=!!lh,document.getElementById(`k-name`).value=e?.name||``,document.getElementById(`k-password`).value=``,document.getElementById(`k-password`).placeholder=lh?`Kosongkan jika tidak diubah`:`Min 6 karakter`,document.getElementById(`k-station`).value=e?.station||``,document.getElementById(`korlap-modal`).style.display=`flex`}function ph(){document.getElementById(`korlap-modal`).style.display=`none`,lh=null}async function mh(){let e=document.getElementById(`k-username`).value.trim(),t=document.getElementById(`k-name`).value.trim(),r=document.getElementById(`k-password`).value,i=document.getElementById(`k-station`).value.trim();if(!t){alert(`Nama harus diisi`);return}try{if(lh){let e={name:t,station:i};r&&(e.password=r),await n.updateKorlap(lh,e)}else{if(!e||!r){alert(`Username dan password harus diisi`);return}await n.createKorlap({username:e,password:r,name:t,station:i})}ph(),dh()}catch(e){alert(`Error: `+e.message)}}function hh(e){let t=document.createElement(`div`);return t.textContent=e??``,t.innerHTML}var gh=null;async function _h(){try{gh=(await n.me()).user,bh()}catch{vh()}}function vh(){document.getElementById(`app`).innerHTML=`
+      </tr>`}).join(``),e.querySelectorAll(`.btn-edit-k`).forEach(e=>{e.addEventListener(`click`,()=>{mh({id:e.dataset.id,username:e.dataset.username,name:e.dataset.name,station:e.dataset.station})})}),e.querySelectorAll(`.btn-del-k`).forEach(e=>{e.addEventListener(`click`,async()=>{if(confirm(`Hapus korlap "${e.dataset.name}"?`))try{await n.deleteKorlap(e.dataset.id),ph()}catch(e){alert(`Error: `+e.message)}})})}catch(t){e.innerHTML=`<tr><td colspan="6" style="text-align:center;color:var(--danger)">${t.message}</td></tr>`}}function mh(e=null){dh=e?.id||null,document.getElementById(`korlap-modal-title`).textContent=dh?`Edit Korlap`:`Tambah Korlap`,document.getElementById(`k-username`).value=e?.username||``,document.getElementById(`k-username`).disabled=!!dh,document.getElementById(`k-name`).value=e?.name||``,document.getElementById(`k-password`).value=``,document.getElementById(`k-password`).placeholder=dh?`Kosongkan jika tidak diubah`:`Min 6 karakter`,document.getElementById(`k-station`).value=e?.station||``,document.getElementById(`korlap-modal`).style.display=`flex`}function hh(){document.getElementById(`korlap-modal`).style.display=`none`,dh=null}async function gh(){let e=document.getElementById(`k-username`).value.trim(),t=document.getElementById(`k-name`).value.trim(),r=document.getElementById(`k-password`).value,i=document.getElementById(`k-station`).value.trim();if(!t){alert(`Nama harus diisi`);return}try{if(dh){let e={name:t,station:i};r&&(e.password=r),await n.updateKorlap(dh,e)}else{if(!e||!r){alert(`Username dan password harus diisi`);return}await n.createKorlap({username:e,password:r,name:t,station:i})}hh(),ph()}catch(e){alert(`Error: `+e.message)}}function _h(e){let t=document.createElement(`div`);return t.textContent=e??``,t.innerHTML}var vh=null;async function yh(){try{vh=(await n.me()).user,Sh()}catch{bh()}}function bh(){document.getElementById(`app`).innerHTML=`
     <div class="login-page">
       <div class="login-card">
         <div class="login-header">
@@ -436,4 +455,4 @@
         <p class="login-footer">Super-BAS © 2026</p>
       </div>
     </div>
-  `,document.getElementById(`btn-login`)?.addEventListener(`click`,yh),document.getElementById(`login-pass`)?.addEventListener(`keydown`,e=>{e.key===`Enter`&&yh()}),document.getElementById(`login-user`)?.addEventListener(`keydown`,e=>{e.key===`Enter`&&document.getElementById(`login-pass`)?.focus()})}async function yh(){let e=document.getElementById(`login-user`)?.value.trim(),t=document.getElementById(`login-pass`)?.value,r=document.getElementById(`login-error`);if(!e||!t){r.textContent=`Username dan password harus diisi`,r.style.display=`block`;return}try{gh=(await n.login(e,t)).user,bh()}catch(e){r.textContent=e.message||`Login gagal`,r.style.display=`block`}}function bh(){document.getElementById(`app`).innerHTML=i(gh),a(xh),window.addEventListener(`hashchange`,Sh),Sh()}async function xh(){try{await n.logout()}catch{}gh=null,vh()}async function Sh(){let e=window.location.hash.replace(`#`,``)||`/`,t=document.getElementById(`page-content`);if(t)switch(o(e),e){case`/`:t.innerHTML=s(),await c();break;case`/upload`:t.innerHTML=Lm(),Rm();break;case`/data`:t.innerHTML=Zm(),await Qm();break;case`/korlap`:if(gh?.role===`korlap`){window.location.hash=`#/`;return}t.innerHTML=ch(),await uh();break;default:t.innerHTML=`<div class="card"><h2>404</h2><p>Halaman tidak ditemukan</p></div>`}}_h();
+  `,document.getElementById(`btn-login`)?.addEventListener(`click`,xh),document.getElementById(`login-pass`)?.addEventListener(`keydown`,e=>{e.key===`Enter`&&xh()}),document.getElementById(`login-user`)?.addEventListener(`keydown`,e=>{e.key===`Enter`&&document.getElementById(`login-pass`)?.focus()})}async function xh(){let e=document.getElementById(`login-user`)?.value.trim(),t=document.getElementById(`login-pass`)?.value,r=document.getElementById(`login-error`);if(!e||!t){r.textContent=`Username dan password harus diisi`,r.style.display=`block`;return}try{vh=(await n.login(e,t)).user,Sh()}catch(e){r.textContent=e.message||`Login gagal`,r.style.display=`block`}}function Sh(){document.getElementById(`app`).innerHTML=i(vh),a(Ch),window.addEventListener(`hashchange`,wh),wh()}async function Ch(){try{await n.logout()}catch{}vh=null,bh()}async function wh(){let e=window.location.hash.replace(`#`,``)||`/`,t=document.getElementById(`page-content`);if(t)switch(o(e),t.className=`shell-content page-enter`,e){case`/`:t.innerHTML=s(),await c();break;case`/upload`:t.innerHTML=Lm(),Rm();break;case`/data`:t.innerHTML=Zm(),await Qm();break;case`/korlap`:if(vh?.role===`korlap`){window.location.hash=`#/`;return}t.innerHTML=uh(),await fh();break;default:t.innerHTML=`<div class="card"><h2>404</h2><p>Halaman tidak ditemukan</p></div>`}}yh();
