@@ -1,25 +1,8 @@
 <?php
-/* Debug: test datasets + employees API response */
 require_once __DIR__ . '/config.php';
-session_name('BAS_KALSUL_SESS');
-session_start();
+$db = getDB();
+$admins = $db->query('SELECT id, username, name, role, station FROM kalsul_admins')->fetchAll();
+$datasets = $db->query('SELECT id, station, bulan, periode, total_employees FROM kalsul_datasets')->fetchAll();
 
 header('Content-Type: application/json');
-
-$db = getDB();
-
-// Datasets
-$datasets = $db->query('SELECT * FROM kalsul_datasets ORDER BY id DESC LIMIT 5')->fetchAll();
-
-// Employees count
-$empCount = (int)$db->query('SELECT COUNT(*) FROM kalsul_employees')->fetchColumn();
-
-// Sample employees
-$emps = $db->query('SELECT id, ops_id, nama, station, dataset_id FROM kalsul_employees LIMIT 5')->fetchAll();
-
-echo json_encode([
-    'session_id' => $_SESSION['kalsul_admin_id'] ?? null,
-    'datasets' => $datasets,
-    'employee_count' => $empCount,
-    'employee_sample' => $emps,
-], JSON_PRETTY_PRINT);
+echo json_encode(['admins' => $admins, 'datasets' => $datasets], JSON_PRETTY_PRINT);
