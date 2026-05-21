@@ -127,7 +127,7 @@ function validateFields() {
   if (!periode) missing.push('Periode');
 
   if (missing.length > 0) {
-    showStatus(`⚠️ Harap isi dulu: <strong>${missing.join(', ')}</strong>`, 'warning');
+    showStatus(`Harap isi dulu: <strong>${missing.join(', ')}</strong>`, 'warning');
     return false;
   }
   return true;
@@ -135,24 +135,24 @@ function validateFields() {
 
 async function handleFile(file) {
   if (file.size > 10 * 1024 * 1024) {
-    showStatus('❌ File terlalu besar. Maksimal 10MB.', 'error');
+    showStatus('File terlalu besar. Maksimal 10MB.', 'error');
     return;
   }
 
-  showStatus('⏳ Memproses file... Deteksi format otomatis...', 'loading');
+  showStatus('Memproses file... Deteksi format otomatis...', 'loading');
 
   try {
     parsedData = await parseFile(file);
 
     showStatus(
-      `✅ File berhasil diproses! Format: <strong>${parsedData.format.toUpperCase()}</strong> ` +
-      `| ${parsedData.totalRows} baris → <strong>${parsedData.uniqueEmployees} karyawan</strong> unik`,
+      `File berhasil diproses! Format: <strong>${parsedData.format.toUpperCase()}</strong> ` +
+      `| ${parsedData.totalRows} baris — <strong>${parsedData.uniqueEmployees} karyawan</strong> unik`,
       'success'
     );
 
     renderPreview(parsedData);
   } catch (err) {
-    showStatus(`❌ ${err.message}`, 'error');
+    showStatus(`${err.message}`, 'error');
   }
 }
 
@@ -205,7 +205,7 @@ async function doImport() {
     });
 
     showStatus(
-      `🎉 Import berhasil! <strong>${res.imported}</strong> karyawan diimport` +
+      `Import berhasil! <strong>${res.imported}</strong> karyawan diimport` +
       (res.skipped > 0 ? `, ${res.skipped} dilewati` : ''),
       'success'
     );
@@ -214,7 +214,7 @@ async function doImport() {
     // Redirect to data page after 1.5s
     setTimeout(() => { window.location.hash = '#/data'; }, 1500);
   } catch (err) {
-    showStatus(`❌ Import gagal: ${err.message}`, 'error');
+    showStatus(`Import gagal: ${err.message}`, 'error');
     btn.disabled = false;
     btn.textContent = 'Import Data';
   }
