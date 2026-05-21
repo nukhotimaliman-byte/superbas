@@ -405,6 +405,32 @@ select.input { cursor: pointer; }
 }
 .btn-del-emp:hover { color: #ef4444; background: rgba(239,68,68,.1); border-color: rgba(239,68,68,.25); }
 
+/* ── Bulk Search Mode ─────────────────────────── */
+.bulk-textarea {
+  width: 100%; resize: vertical; min-height: 120px; font-family: 'Inter', monospace;
+  font-size: 13px; line-height: 1.6; background: var(--bg2); border: 1px solid var(--border);
+  border-radius: var(--rs); padding: 12px 14px; color: var(--t1); transition: .2s;
+}
+.bulk-textarea:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0 3px rgba(14,165,233,.15); }
+.bulk-textarea::placeholder { color: var(--t3); }
+.bulk-bar {
+  display: flex; align-items: center; justify-content: space-between; margin-top: 10px;
+}
+.bulk-parsed {
+  font-size: 13px; font-weight: 600; color: var(--accent);
+  background: rgba(14,165,233,.1); padding: 4px 12px; border-radius: 8px;
+}
+.bulk-summary { margin-bottom: 14px; }
+.bulk-stats { display: flex; gap: 12px; flex-wrap: wrap; }
+.bulk-stat {
+  display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px;
+  border-radius: 8px; font-size: 13px; font-weight: 600;
+}
+.bulk-stat-found { background: rgba(16,185,129,.12); color: #6ee7b7; }
+.bulk-stat-notfound { background: rgba(239,68,68,.12); color: #fca5a5; }
+.row-notfound { opacity: .5; }
+.row-notfound td { border-bottom-color: rgba(239,68,68,.15); }
+
 /* ── Period Navigation ────────────────────────── */
 .period-bar {
   display: flex; align-items: center; gap: 16px; padding: 12px 16px;
