@@ -33,7 +33,7 @@ export function renderSearch() {
 
       <!-- Bulk mode -->
       <div class="search-box" id="bulk-mode" style="display:none">
-        <textarea id="bulk-input" class="input bulk-textarea" rows="6" placeholder="Paste OPS ID di sini (bisa dari Excel, pisah dengan Enter/koma/spasi)&#10;&#10;Contoh:&#10;Ops1698202&#10;1851978, 1234567&#10;OPS1596181"></textarea>
+        <textarea id="bulk-input" class="input bulk-textarea" rows="6" placeholder="Paste OPS ID di sini — bisa dari Excel, WhatsApp, atau teks apapun&#10;&#10;Contoh:&#10;Ops1698202&#10;1851978, 1234567&#10;OPS: : 1826863&#10;&#10;Format WhatsApp korlap juga otomatis ke-detect!"></textarea>
         <div class="bulk-bar">
           <span class="bulk-parsed" id="bulk-parsed">0 OPS ID terdeteksi</span>
           <button class="btn btn-primary" id="btn-bulk-search">
@@ -41,7 +41,7 @@ export function renderSearch() {
             Cari Semua
           </button>
         </div>
-        <p class="search-hint">Paste langsung dari Excel/Spreadsheet — auto-parse OPS ID otomatis</p>
+        <p class="search-hint">Paste langsung dari Excel, Spreadsheet, atau chat WhatsApp — auto-parse OPS ID otomatis</p>
       </div>
     </div>
 
@@ -155,12 +155,36 @@ function hideResults() {
   document.getElementById('search-empty').style.display = 'none';
 }
 
-// Parse OPS IDs from any text (newline, comma, space, tab separated)
+// Parse OPS IDs from any text — smart extraction
 function parseOpsIds(text) {
-  // Match patterns: Ops1234567, OPS1234567, ops1234567, or just numbers 6-8 digits
-  const matches = text.match(/(?:ops)?(\d{5,10})/gi) || [];
-  const ids = [...new Set(matches.map(m => m.replace(/^ops/i, '')))];
-  return ids;
+  const ids = new Set();
+
+  // 1. WhatsApp format: "OPS:" or "OPS: :" followed by digits
+  const opsContextRegex = /ops\s*:?\s*:?\s*(\d{5,8})/gi;
+  let m;
+  while ((m = opsContextRegex.exec(text)) !== null) {
+    ids.add(m[1]);
+  }
+
+  // 2. Ops-prefixed: Ops1234567
+  const opsPrefixRegex = /\bops(\d{5,8})\b/gi;
+  while ((m = opsPrefixRegex.exec(text)) !== null) {
+    ids.add(m[1]);
+  }
+
+  // 3. If no context matches found, try standalone 6-8 digit numbers
+  //    (only when text looks like a simple list, not WhatsApp chat)
+  if (ids.size === 0) {
+    const hasContext = /nama|norek|bank|atas.nama|lokasi|periode/i.test(text);
+    if (!hasContext) {
+      const standaloneRegex = /\b(\d{6,8})\b/g;
+      while ((m = standaloneRegex.exec(text)) !== null) {
+        ids.add(m[1]);
+      }
+    }
+  }
+
+  return [...ids];
 }
 
 async function doSearch() {
