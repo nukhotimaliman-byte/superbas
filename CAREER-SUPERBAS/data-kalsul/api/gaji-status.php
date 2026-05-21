@@ -1,5 +1,7 @@
 <?php
 /* Data KalSul — Gaji Status / Rekening Sync API v2 */
+ini_set('display_errors', 1);
+error_reporting(E_ALL);
 require_once __DIR__ . '/config.php';
 
 $action = $_GET['action'] ?? '';
