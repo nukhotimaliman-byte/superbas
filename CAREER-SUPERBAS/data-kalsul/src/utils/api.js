@@ -45,7 +45,7 @@ export const api = {
   updateEmployee: (id, data) =>
     request('employees.php', { method: 'PUT', body: JSON.stringify({ id, ...data }) }),
   deleteEmployee: (id) =>
-    request('employees.php', { method: 'DELETE', body: JSON.stringify({ id }) }),
+    request('employees.php?action=delete', { method: 'DELETE', body: JSON.stringify({ id }) }),
   getStations: () =>
     request('employees.php?action=stations'),
 

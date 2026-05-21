@@ -232,6 +232,16 @@ case 'stations':
     jsonSuccess(['stations' => $stmt->fetchAll(PDO::FETCH_COLUMN)]);
     break;
 
+// ── Delete single employee ──
+case 'delete':
+    if ($method !== 'DELETE') jsonError('DELETE only', 405);
+    $body = getJsonBody();
+    $id = (int)($body['id'] ?? 0);
+    if ($id <= 0) jsonError('Invalid ID');
+    $db->prepare('DELETE FROM kalsul_employees WHERE id = :id')->execute([':id' => $id]);
+    jsonSuccess(['deleted' => $id]);
+    break;
+
 default:
     // PUT = update
     if ($method === 'PUT') {
