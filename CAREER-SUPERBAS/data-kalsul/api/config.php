@@ -108,12 +108,14 @@ function jsonError(string $message, int $code = 400): void {
  * Require authenticated session or die.
  */
 function requireAuth(): array {
-    if (empty($_SESSION['admin_id'])) {
+    if (empty($_SESSION['kalsul_admin_id'])) {
         jsonError('Unauthorized – please login', 401);
     }
     return [
-        'id'       => $_SESSION['admin_id'],
-        'username' => $_SESSION['admin_username'] ?? '',
+        'id'       => $_SESSION['kalsul_admin_id'],
+        'username' => $_SESSION['kalsul_admin_name'] ?? '',
+        'role'     => $_SESSION['kalsul_admin_role'] ?? 'admin',
+        'station'  => $_SESSION['kalsul_admin_station'] ?? null,
     ];
 }
 
