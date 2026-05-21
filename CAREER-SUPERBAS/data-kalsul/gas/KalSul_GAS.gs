@@ -1,252 +1,230 @@
-// ═══════════════════════════════════════════════════
-// DATA KALSUL — Google Apps Script
-// Sinkronisasi data gaji dari Google Sheets ke API
-// ═══════════════════════════════════════════════════
+/**
+ * ════════════════════════════════════════════════
+ * DATA KALSUL — Google Apps Script
+ * 1 Script, 2 Sheet: LINK GAJI + LINK PERGANTIAN REKENING
+ * Sync ke: https://super-bas.com/data-kalsul/api/gaji-status.php?action=sync
+ * ════════════════════════════════════════════════
+ */
 
-// ── CONFIG ──────────────────────────────────────────
-var KALSUL_CONFIG = {
-  // API endpoint di super-bas.com
-  API_URL: 'https://super-bas.com/data-kalsul/api/gaji-status.php',
-  SYNC_TOKEN: 'kalsul-sync-2026',
-  
-  // Sheet names
-  SHEET_GAJI: 'GAJI',
-  
-  // Column mapping GAJI (0-indexed)
-  // A:OPS_ID  B:NAMA  C:STATUS_ISI  D:TANGGAL_ISI  E:NOMINAL
-  GAJI_COLS: {
-    OPS_ID:      0,
-    NAMA:        1,
-    STATUS_ISI:  2,  // "sudah" / "belum"
-    TANGGAL_ISI: 3,
-    NOMINAL:     4
-  }
+const CONFIG = {
+  API_URL: 'https://super-bas.com/data-kalsul/api/gaji-status.php?action=sync',
+  TOKEN: 'kalsul-sync-2026',
+  SHEET_GAJI: 'Sheet1',            // Nama sheet Link Gaji (sesuaikan)
+  SHEET_PERGANTIAN: 'Sheet2',      // Nama sheet Pergantian Rek (sesuaikan)
 };
 
-// ── MENU ────────────────────────────────────────────
+/**
+ * Menu di spreadsheet
+ */
 function onOpen() {
   SpreadsheetApp.getUi()
-    .createMenu('🔄 KalSul Sync')
-    .addItem('Sync Status Gaji ke Server', 'syncGajiStatus')
-    .addItem('Ambil Data Karyawan dari Server', 'pullEmployees')
-    .addSeparator()
-    .addItem('Setup Auto Sync (Setiap Jam)', 'setupAutoSync')
-    .addItem('Hapus Auto Sync', 'removeAutoSync')
+    .createMenu('🔄 Data KalSul')
+    .addItem('Sync ke Server', 'syncToServer')
+    .addItem('Sync Link Gaji saja', 'syncGajiOnly')
+    .addItem('Sync Pergantian Rek saja', 'syncPergantianOnly')
     .addToUi();
 }
 
-// ── SYNC GAJI STATUS ────────────────────────────────
-function syncGajiStatus() {
-  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(KALSUL_CONFIG.SHEET_GAJI);
-  if (!sheet) {
-    SpreadsheetApp.getUi().alert('Sheet "' + KALSUL_CONFIG.SHEET_GAJI + '" tidak ditemukan!');
-    return;
-  }
+/**
+ * Sync kedua sheet ke server
+ */
+function syncToServer() {
+  const ui = SpreadsheetApp.getUi();
   
-  var data = sheet.getDataRange().getValues();
-  if (data.length < 2) {
-    SpreadsheetApp.getUi().alert('Sheet kosong atau hanya berisi header.');
-    return;
-  }
-  
-  var cols = KALSUL_CONFIG.GAJI_COLS;
-  var gajiData = [];
-  
-  for (var i = 1; i < data.length; i++) {
-    var row = data[i];
-    var opsId = String(row[cols.OPS_ID]).trim();
-    if (!opsId) continue;
+  try {
+    const gajiData = readSheetGaji();
+    const pergantianData = readSheetPergantian();
     
-    var statusIsi = String(row[cols.STATUS_ISI]).trim().toLowerCase();
-    var filled = (statusIsi === 'sudah' || statusIsi === 'yes' || statusIsi === '1' || statusIsi === 'true');
+    const payload = {
+      token: CONFIG.TOKEN,
+      link_gaji: gajiData,
+      link_pergantian_rek: pergantianData,
+    };
     
-    gajiData.push({
-      ops_id: opsId,
-      nama: String(row[cols.NAMA]).trim(),
-      filled: filled,
-      tanggal_isi: row[cols.TANGGAL_ISI] ? Utilities.formatDate(new Date(row[cols.TANGGAL_ISI]), 'Asia/Jakarta', 'yyyy-MM-dd') : '',
-      nominal: row[cols.NOMINAL] || 0
-    });
+    const response = sendToServer(payload);
+    
+    ui.alert(
+      '✅ Sync Berhasil!',
+      `Link Gaji: ${gajiData.length} data\n` +
+      `Pergantian Rek: ${pergantianData.length} data\n\n` +
+      `Server: ${response.inserted || 0} data disimpan`,
+      ui.ButtonSet.OK
+    );
+  } catch (err) {
+    ui.alert('❌ Sync Gagal', err.message, ui.ButtonSet.OK);
   }
+}
+
+function syncGajiOnly() {
+  const ui = SpreadsheetApp.getUi();
+  try {
+    const data = readSheetGaji();
+    const response = sendToServer({ token: CONFIG.TOKEN, link_gaji: data, link_pergantian_rek: [] });
+    ui.alert('✅ Sync Link Gaji Berhasil!', `${data.length} data → ${response.inserted || 0} disimpan`, ui.ButtonSet.OK);
+  } catch (err) { ui.alert('❌ Gagal', err.message, ui.ButtonSet.OK); }
+}
+
+function syncPergantianOnly() {
+  const ui = SpreadsheetApp.getUi();
+  try {
+    const data = readSheetPergantian();
+    const response = sendToServer({ token: CONFIG.TOKEN, link_gaji: [], link_pergantian_rek: data });
+    ui.alert('✅ Sync Pergantian Rek Berhasil!', `${data.length} data → ${response.inserted || 0} disimpan`, ui.ButtonSet.OK);
+  } catch (err) { ui.alert('❌ Gagal', err.message, ui.ButtonSet.OK); }
+}
+
+/**
+ * Baca Sheet Link Gaji
+ * Kolom: Timestamp | Email | NAMA SESUAI KTP | NIK | OPS ID | Lokasi Kerja |
+ *        TANGGAL LAHIR | ALAMAT | NO WHATSAPP | MEMBER ID/BPJS | NO REKENING | ATAS NAMA | NAMA BANK
+ */
+function readSheetGaji() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName(CONFIG.SHEET_GAJI);
+  if (!sheet) throw new Error(`Sheet "${CONFIG.SHEET_GAJI}" tidak ditemukan!`);
   
-  // Send to API
-  var payload = {
-    action: 'sync',
-    token: KALSUL_CONFIG.SYNC_TOKEN,
-    data: gajiData,
-    synced_at: new Date().toISOString()
+  const data = sheet.getDataRange().getValues();
+  if (data.length < 2) return [];
+  
+  const header = data[0].map(h => String(h).toLowerCase().trim());
+  
+  // Auto-detect column indices
+  const cols = {
+    timestamp: findCol(header, ['timestamp', 'waktu']),
+    email: findCol(header, ['email', 'email address']),
+    nama_ktp: findCol(header, ['nama sesuai ktp', 'nama', 'nama lengkap', 'name']),
+    nik: findCol(header, ['nik', 'no ktp', 'nomor ktp']),
+    ops_id: findCol(header, ['ops id', 'ops_id', 'opsid', 'id ops']),
+    lokasi_kerja: findCol(header, ['lokasi kerja', 'lokasi', 'penempatan', 'station']),
+    tgl_lahir: findCol(header, ['tanggal lahir', 'tgl lahir']),
+    alamat: findCol(header, ['alamat', 'alamat sesuai domisili', 'alamat domisili']),
+    no_hp: findCol(header, ['no whatsapp', 'no whatshapp', 'no hp', 'whatsapp', 'telepon']),
+    no_rek: findCol(header, ['no rekening', 'no rek', 'norek', 'rekening', 'nomor rekening']),
+    atas_nama: findCol(header, ['atas nama', 'atas nama rekening', 'nama rekening']),
+    bank: findCol(header, ['nama bank', 'bank']),
   };
   
-  try {
-    var response = UrlFetchApp.fetch(KALSUL_CONFIG.API_URL, {
-      method: 'POST',
-      contentType: 'application/json',
-      payload: JSON.stringify(payload),
-      muteHttpExceptions: true
-    });
-    
-    var result = JSON.parse(response.getContentText());
-    
-    if (response.getResponseCode() === 200) {
-      SpreadsheetApp.getUi().alert(
-        '✅ Sync Berhasil!\n\n' +
-        'Total: ' + gajiData.length + ' data\n' +
-        'Updated: ' + (result.updated || 0) + '\n' +
-        'Skipped: ' + (result.skipped || 0)
-      );
-    } else {
-      SpreadsheetApp.getUi().alert('❌ Sync Gagal: ' + (result.error || 'Unknown error'));
-    }
-  } catch (err) {
-    SpreadsheetApp.getUi().alert('❌ Error: ' + err.message);
-  }
-}
-
-// ── PULL EMPLOYEES ──────────────────────────────────
-function pullEmployees() {
-  var ui = SpreadsheetApp.getUi();
-  var confirm = ui.alert(
-    'Ambil Data Karyawan',
-    'Ini akan menambah/update sheet GAJI dengan data karyawan terbaru dari server. Lanjutkan?',
-    ui.ButtonSet.YES_NO
-  );
-  
-  if (confirm !== ui.Button.YES) return;
-  
-  try {
-    var response = UrlFetchApp.fetch(
-      KALSUL_CONFIG.API_URL + '?action=employees&token=' + KALSUL_CONFIG.SYNC_TOKEN,
-      { muteHttpExceptions: true }
-    );
-    
-    var result = JSON.parse(response.getContentText());
-    
-    if (!result.employees || result.employees.length === 0) {
-      ui.alert('Tidak ada data karyawan dari server.');
-      return;
-    }
-    
-    // Get or create GAJI sheet
-    var ss = SpreadsheetApp.getActiveSpreadsheet();
-    var sheet = ss.getSheetByName(KALSUL_CONFIG.SHEET_GAJI);
-    if (!sheet) {
-      sheet = ss.insertSheet(KALSUL_CONFIG.SHEET_GAJI);
-    }
-    
-    // Set headers
-    var headers = ['OPS ID', 'NAMA', 'STATUS ISI', 'TANGGAL ISI', 'NOMINAL'];
-    sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
-    sheet.getRange(1, 1, 1, headers.length)
-      .setFontWeight('bold')
-      .setBackground('#1a1a2e')
-      .setFontColor('#00d4ff');
-    
-    // Get existing data to preserve status
-    var existing = {};
-    var existingData = sheet.getDataRange().getValues();
-    for (var i = 1; i < existingData.length; i++) {
-      var opsId = String(existingData[i][0]).trim();
-      if (opsId) {
-        existing[opsId] = {
-          status: existingData[i][2],
-          tanggal: existingData[i][3],
-          nominal: existingData[i][4]
-        };
-      }
-    }
-    
-    // Write data
-    var rows = result.employees.map(function(emp) {
-      var prev = existing[emp.ops_id] || {};
-      return [
-        emp.ops_id,
-        emp.nama,
-        prev.status || 'belum',
-        prev.tanggal || '',
-        prev.nominal || ''
-      ];
-    });
-    
-    if (rows.length > 0) {
-      // Clear old data (keep header)
-      if (sheet.getLastRow() > 1) {
-        sheet.getRange(2, 1, sheet.getLastRow() - 1, headers.length).clear();
-      }
-      sheet.getRange(2, 1, rows.length, headers.length).setValues(rows);
-    }
-    
-    // Auto-resize
-    for (var c = 1; c <= headers.length; c++) {
-      sheet.autoResizeColumn(c);
-    }
-    
-    ui.alert('✅ Berhasil!\n\n' + rows.length + ' data karyawan berhasil dimuat.');
-    
-  } catch (err) {
-    ui.alert('❌ Error: ' + err.message);
-  }
-}
-
-// ── AUTO SYNC TRIGGER ───────────────────────────────
-function setupAutoSync() {
-  // Remove existing triggers first
-  removeAutoSync();
-  
-  // Create hourly trigger
-  ScriptApp.newTrigger('autoSyncGaji')
-    .timeBased()
-    .everyHours(1)
-    .create();
-  
-  SpreadsheetApp.getUi().alert('✅ Auto sync dijadwalkan setiap 1 jam.');
-}
-
-function removeAutoSync() {
-  var triggers = ScriptApp.getProjectTriggers();
-  triggers.forEach(function(trigger) {
-    if (trigger.getHandlerFunction() === 'autoSyncGaji') {
-      ScriptApp.deleteTrigger(trigger);
-    }
-  });
-}
-
-function autoSyncGaji() {
-  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(KALSUL_CONFIG.SHEET_GAJI);
-  if (!sheet) return;
-  
-  var data = sheet.getDataRange().getValues();
-  if (data.length < 2) return;
-  
-  var cols = KALSUL_CONFIG.GAJI_COLS;
-  var gajiData = [];
-  
-  for (var i = 1; i < data.length; i++) {
-    var row = data[i];
-    var opsId = String(row[cols.OPS_ID]).trim();
+  const result = [];
+  for (let i = 1; i < data.length; i++) {
+    const row = data[i];
+    const opsId = getVal(row, cols.ops_id);
     if (!opsId) continue;
     
-    var statusIsi = String(row[cols.STATUS_ISI]).trim().toLowerCase();
-    var filled = (statusIsi === 'sudah' || statusIsi === 'yes' || statusIsi === '1' || statusIsi === 'true');
-    
-    gajiData.push({
+    result.push({
+      timestamp: formatTimestamp(getVal(row, cols.timestamp)),
+      email: getVal(row, cols.email),
+      nama_ktp: getVal(row, cols.nama_ktp),
+      nik: getVal(row, cols.nik),
       ops_id: opsId,
-      filled: filled
+      lokasi_kerja: getVal(row, cols.lokasi_kerja),
+      tgl_lahir: getVal(row, cols.tgl_lahir),
+      alamat: getVal(row, cols.alamat),
+      no_hp: cleanPhone(getVal(row, cols.no_hp)),
+      no_rek: cleanRek(getVal(row, cols.no_rek)),
+      atas_nama: getVal(row, cols.atas_nama),
+      bank: getVal(row, cols.bank),
     });
   }
   
-  try {
-    UrlFetchApp.fetch(KALSUL_CONFIG.API_URL, {
-      method: 'POST',
-      contentType: 'application/json',
-      payload: JSON.stringify({
-        action: 'sync',
-        token: KALSUL_CONFIG.SYNC_TOKEN,
-        data: gajiData,
-        synced_at: new Date().toISOString()
-      }),
-      muteHttpExceptions: true
+  return result;
+}
+
+/**
+ * Baca Sheet Pergantian Rekening
+ * Kolom: Timestamp | Email | Nama | Ops ID | Penempatan |
+ *        NOMOR REKENING | NAMA REKENING | NAMA BANK | FOTO
+ */
+function readSheetPergantian() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName(CONFIG.SHEET_PERGANTIAN);
+  if (!sheet) throw new Error(`Sheet "${CONFIG.SHEET_PERGANTIAN}" tidak ditemukan!`);
+  
+  const data = sheet.getDataRange().getValues();
+  if (data.length < 2) return [];
+  
+  const header = data[0].map(h => String(h).toLowerCase().trim());
+  
+  const cols = {
+    timestamp: findCol(header, ['timestamp', 'waktu']),
+    email: findCol(header, ['email', 'email address']),
+    nama: findCol(header, ['nama', 'name']),
+    ops_id: findCol(header, ['ops id', 'ops_id', 'opsid']),
+    penempatan: findCol(header, ['penempatan', 'lokasi', 'station']),
+    no_rek: findCol(header, ['nomor rekening', 'no rekening', 'no rek', 'norek', 'rekening']),
+    atas_nama: findCol(header, ['nama rekening', 'atas nama', 'atas nama rekening']),
+    bank: findCol(header, ['nama bank', 'bank']),
+  };
+  
+  const result = [];
+  for (let i = 1; i < data.length; i++) {
+    const row = data[i];
+    const opsId = getVal(row, cols.ops_id);
+    if (!opsId) continue;
+    
+    result.push({
+      timestamp: formatTimestamp(getVal(row, cols.timestamp)),
+      email: getVal(row, cols.email),
+      nama: getVal(row, cols.nama),
+      ops_id: opsId,
+      penempatan: getVal(row, cols.penempatan),
+      no_rek: cleanRek(getVal(row, cols.no_rek)),
+      atas_nama: getVal(row, cols.atas_nama),
+      bank: getVal(row, cols.bank),
     });
-  } catch (err) {
-    Logger.log('KalSul auto sync error: ' + err.message);
   }
+  
+  return result;
+}
+
+// ── Helpers ──
+
+function findCol(header, keywords) {
+  for (const kw of keywords) {
+    const idx = header.indexOf(kw);
+    if (idx >= 0) return idx;
+  }
+  return -1;
+}
+
+function getVal(row, colIdx) {
+  if (colIdx < 0 || colIdx >= row.length) return '';
+  const val = row[colIdx];
+  if (val instanceof Date) return Utilities.formatDate(val, Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm:ss');
+  return String(val || '').trim();
+}
+
+function cleanRek(val) {
+  return String(val || '').replace(/[^0-9]/g, '');
+}
+
+function cleanPhone(val) {
+  return String(val || '').replace(/[^0-9+]/g, '');
+}
+
+function formatTimestamp(val) {
+  if (!val) return new Date().toISOString().replace('T', ' ').substring(0, 19);
+  if (val instanceof Date) return Utilities.formatDate(val, Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm:ss');
+  // Try parse
+  const d = new Date(val);
+  if (!isNaN(d.getTime())) return Utilities.formatDate(d, Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm:ss');
+  return String(val);
+}
+
+function sendToServer(payload) {
+  const options = {
+    method: 'post',
+    contentType: 'application/json',
+    payload: JSON.stringify(payload),
+    muteHttpExceptions: true,
+  };
+  
+  const response = UrlFetchApp.fetch(CONFIG.API_URL, options);
+  const code = response.getResponseCode();
+  const body = response.getContentText();
+  
+  if (code !== 200) {
+    throw new Error(`Server error (${code}): ${body}`);
+  }
+  
+  return JSON.parse(body);
 }

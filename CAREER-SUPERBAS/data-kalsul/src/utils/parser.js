@@ -1,143 +1,190 @@
 /* ═══════════════════════════════════════════════════
-   Excel/CSV Parser using SheetJS
+   Smart Parser v2 — Auto-detect format, multi-sheet,
+   group by OPS ID, calculate HK
    ═══════════════════════════════════════════════════ */
-
 import * as XLSX from 'xlsx';
 
 /**
- * Parse uploaded file (Excel or CSV) and return structured data
- * Expected columns: No, OPS ID, Nama, Station, Status, No Rek, Bank, Atas Nama, No HP, NIK, Alamat
+ * Parse uploaded file and return aggregated employee data.
+ * Supports: SPX Attendance Export (45-col) and Internal BAS (10-col)
+ * @returns {{ employees: Array, totalRows: number, format: string, stations: string[] }}
  */
 export function parseFile(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
-
+    reader.onerror = () => reject(new Error('Gagal membaca file'));
     reader.onload = (e) => {
       try {
-        const data = new Uint8Array(e.target.result);
-        const workbook = XLSX.read(data, { type: 'array' });
-        const sheetName = workbook.SheetNames[0];
-        const worksheet = workbook.Sheets[sheetName];
+        const wb = XLSX.read(e.target.result, { type: 'array', cellDates: true });
+        const allRows = [];
 
-        // Get raw data as array of arrays
-        const raw = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '' });
+        // Merge all sheets
+        for (const sheetName of wb.SheetNames) {
+          const ws = wb.Sheets[sheetName];
+          const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+          if (rows.length < 2) continue;
 
-        if (raw.length < 2) {
-          reject(new Error('File kosong atau hanya berisi header'));
+          const header = rows[0].map(h => String(h || '').trim().toLowerCase());
+          const format = detectFormat(header);
+
+          if (!format) continue;
+
+          for (let i = 1; i < rows.length; i++) {
+            const row = rows[i];
+            if (!row || row.length === 0) continue;
+            const parsed = extractRow(row, header, format);
+            if (parsed) allRows.push(parsed);
+          }
+        }
+
+        if (allRows.length === 0) {
+          reject(new Error('Tidak ada data yang bisa diproses. Pastikan file berisi kolom OPS ID dan Nama.'));
           return;
         }
 
-        // First row is header
-        const headers = raw[0].map(h => String(h).trim().toLowerCase());
-        const rows = raw.slice(1).filter(row => row.some(cell => cell !== ''));
+        // Group by OPS ID → calculate HK
+        const grouped = {};
+        const detectedFormat = allRows[0]?._format || 'unknown';
 
-        // Try to map columns
-        const mapping = autoMapColumns(headers);
-        
-        const employees = rows.map((row, i) => ({
-          no: i + 1,
-          ops_id: getCell(row, mapping.ops_id),
-          nama: getCell(row, mapping.nama),
-          station: getCell(row, mapping.station),
-          hk: getCell(row, mapping.hk),
-          status: getCell(row, mapping.status) || 'Daily Worker',
-          no_rek: getCell(row, mapping.no_rek),
-          bank: getCell(row, mapping.bank),
-          atas_nama: getCell(row, mapping.atas_nama),
-          no_hp: getCell(row, mapping.no_hp),
-          nik: getCell(row, mapping.nik),
-          alamat: getCell(row, mapping.alamat),
-        })).filter(emp => emp.ops_id || emp.nama); // Filter out empty rows
+        for (const row of allRows) {
+          const key = row.ops_id;
+          if (!grouped[key]) {
+            grouped[key] = {
+              ops_id: row.ops_id,
+              nama: row.nama,
+              station: row.station || '',
+              status: row.status || 'Daily Worker',
+              dates: new Set(),
+            };
+          }
+          if (row.date) grouped[key].dates.add(row.date);
+          // Keep the longest name
+          if (row.nama.length > grouped[key].nama.length) grouped[key].nama = row.nama;
+          // Keep station if not empty
+          if (row.station && !grouped[key].station) grouped[key].station = row.station;
+        }
+
+        // Build result
+        const employees = Object.values(grouped).map((g, idx) => ({
+          no: idx + 1,
+          ops_id: g.ops_id,
+          nama: g.nama,
+          station: g.station,
+          hk: g.dates.size,
+          status: g.status,
+        }));
+
+        // Sort by nama
+        employees.sort((a, b) => a.nama.localeCompare(b.nama));
+        employees.forEach((e, i) => e.no = i + 1);
+
+        // Unique stations
+        const stations = [...new Set(employees.map(e => e.station).filter(Boolean))];
 
         resolve({
-          sheetName,
-          totalSheets: workbook.SheetNames.length,
-          headers: raw[0],
-          mapping,
           employees,
-          totalRows: employees.length,
+          totalRows: allRows.length,
+          uniqueEmployees: employees.length,
+          format: detectedFormat,
+          stations,
         });
       } catch (err) {
-        reject(new Error('Gagal membaca file: ' + err.message));
+        reject(new Error('Gagal memproses file: ' + err.message));
       }
     };
-
-    reader.onerror = () => reject(new Error('Gagal membaca file'));
     reader.readAsArrayBuffer(file);
   });
 }
 
-function getCell(row, index) {
-  if (index === -1 || index === undefined) return '';
-  return String(row[index] ?? '').trim();
-}
-
 /**
- * Auto-map column headers to expected fields
+ * Detect file format from header row
  */
-function autoMapColumns(headers) {
-  const mapping = {
-    ops_id: -1,
-    nama: -1,
-    station: -1,
-    hk: -1,
-    status: -1,
-    no_rek: -1,
-    bank: -1,
-    atas_nama: -1,
-    no_hp: -1,
-    nik: -1,
-    alamat: -1,
-  };
+function detectFormat(header) {
+  const headerStr = header.join('|');
 
-  const patterns = {
-    ops_id: ['ops_id', 'ops id', 'opsid', 'ops', 'id ops', 'kode', 'id'],
-    nama: ['nama', 'name', 'nama lengkap', 'nama karyawan', 'employee'],
-    station: ['station', 'stasiun', 'lokasi', 'location', 'penempatan', 'site'],
-    hk: ['hk', 'hari kerja', 'total hk', 'working days', 'jumlah hari'],
-    status: ['status', 'tipe', 'type', 'jenis', 'kategori'],
-    no_rek: ['no_rek', 'no rek', 'norek', 'rekening', 'no rekening', 'account', 'nomor rekening'],
-    bank: ['bank', 'nama bank'],
-    atas_nama: ['atas_nama', 'atas nama', 'a/n', 'an', 'nama rekening', 'account name'],
-    no_hp: ['no_hp', 'no hp', 'nohp', 'hp', 'telepon', 'phone', 'wa', 'whatsapp', 'no telp', 'no wa'],
-    nik: ['nik', 'no ktp', 'ktp', 'nomor ktp', 'nomor identitas'],
-    alamat: ['alamat', 'address', 'alamat lengkap', 'domisili'],
-  };
-
-  for (const [field, keywords] of Object.entries(patterns)) {
-    const idx = headers.findIndex(h => keywords.some(k => h.includes(k)));
-    if (idx !== -1) mapping[field] = idx;
+  // SPX format: has "staff id" and "staff name"
+  if (header.includes('staff id') && header.includes('staff name')) {
+    return 'spx';
   }
 
-  return mapping;
+  // Internal BAS format: has "ops id" and "nama"
+  if (header.includes('ops id') && header.includes('nama')) {
+    return 'bas';
+  }
+
+  // Try fuzzy match
+  const hasOpsLike = header.some(h => h.includes('ops') || h.includes('staff id'));
+  const hasNameLike = header.some(h => h.includes('nama') || h.includes('name') || h.includes('staff name'));
+  if (hasOpsLike && hasNameLike) return 'generic';
+
+  return null;
 }
 
 /**
- * Validate parsed employee data
+ * Extract one row based on format
  */
-export function validateEmployees(employees) {
-  const errors = [];
-  const opsIds = new Set();
+function extractRow(row, header, format) {
+  const get = (col) => {
+    const idx = header.indexOf(col);
+    return idx >= 0 ? String(row[idx] ?? '').trim() : '';
+  };
 
-  employees.forEach((emp, i) => {
-    const row = i + 2; // +2 because header=1, 0-indexed
-
-    if (!emp.ops_id) {
-      errors.push({ row, field: 'ops_id', message: 'OPS ID kosong' });
-    } else if (opsIds.has(emp.ops_id)) {
-      errors.push({ row, field: 'ops_id', message: `OPS ID "${emp.ops_id}" duplikat` });
-    } else {
-      opsIds.add(emp.ops_id);
+  const find = (keywords) => {
+    for (const kw of keywords) {
+      const idx = header.indexOf(kw);
+      if (idx >= 0) return String(row[idx] ?? '').trim();
     }
+    return '';
+  };
 
-    if (!emp.nama) {
-      errors.push({ row, field: 'nama', message: 'Nama kosong' });
-    }
+  let opsId, nama, station, date, status;
 
-    if (emp.nik && !/^\d{16}$/.test(emp.nik.replace(/\s/g, ''))) {
-      errors.push({ row, field: 'nik', message: `NIK "${emp.nik}" bukan 16 digit` });
-    }
-  });
+  if (format === 'spx') {
+    opsId = get('staff id');
+    nama = get('staff name');
+    station = get('profile station') || get('event station') || get('reporting station');
+    date = formatDate(get('date'));
+    status = get('contract type') || 'Daily Worker';
+  } else if (format === 'bas') {
+    opsId = get('ops id');
+    nama = get('nama');
+    station = get('station');
+    date = formatDate(get('date'));
+    status = get('contract type') || 'Daily Worker';
+  } else {
+    opsId = find(['ops id', 'ops_id', 'opsid', 'staff id', 'id ops', 'ops']);
+    nama = find(['nama', 'name', 'staff name', 'nama lengkap', 'nama karyawan']);
+    station = find(['station', 'stasiun', 'lokasi', 'profile station', 'penempatan']);
+    date = formatDate(find(['date', 'tanggal', 'tgl']));
+    status = find(['status', 'contract type', 'tipe']) || 'Daily Worker';
+  }
 
-  return errors;
+  if (!opsId || !nama) return null;
+
+  // Clean OPS ID: ensure it starts with Ops
+  opsId = opsId.trim();
+
+  return { ops_id: opsId, nama: nama, station, date, status, _format: format };
+}
+
+/**
+ * Format date to YYYY-MM-DD string
+ */
+function formatDate(val) {
+  if (!val) return '';
+  // Already a date string
+  if (typeof val === 'string' && val.match(/^\d{4}-\d{2}-\d{2}/)) return val.substring(0, 10);
+  // Date object
+  if (val instanceof Date) {
+    return val.toISOString().substring(0, 10);
+  }
+  // Excel serial number
+  if (typeof val === 'number' && val > 40000 && val < 60000) {
+    const d = new Date((val - 25569) * 86400 * 1000);
+    return d.toISOString().substring(0, 10);
+  }
+  // Try parse
+  const d = new Date(val);
+  if (!isNaN(d.getTime())) return d.toISOString().substring(0, 10);
+  return String(val).substring(0, 10);
 }

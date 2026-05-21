@@ -1,133 +1,230 @@
 <?php
-/**
- * Data Kalsul - Employees API
- * GET    ?action=list&page=1&per_page=25&search=&station=  – paginated list
- * GET    ?action=get&id=123                                 – single employee
- * PUT    (body: {id, ...fields})                            – update employee
- * DELETE (body: {id})                                       – delete employee
- */
-
+/* Data KalSul — Employees API v2 */
 require_once __DIR__ . '/config.php';
-
-// Require auth for all endpoints
-if (empty($_SESSION['kalsul_admin_id'])) {
-    jsonError('Unauthorized', 401);
-}
+$user = requireAuth();
 
 $action = $_GET['action'] ?? 'list';
 $method = $_SERVER['REQUEST_METHOD'];
+$db = getDB();
+
+// Korlap station filter
+$korlapStation = ($user['role'] === 'korlap' && !empty($user['station'])) ? $user['station'] : null;
 
 switch ($action) {
 
-    case 'list':
-    default:
-        if ($method !== 'GET' && $action !== 'list') {
-            jsonError('Invalid action', 400);
+// ── List datasets (for subtabs) ──
+case 'datasets':
+    $sql = 'SELECT * FROM kalsul_datasets';
+    $params = [];
+    if ($korlapStation) {
+        $sql .= ' WHERE station = :st';
+        $params[':st'] = $korlapStation;
+    }
+    $sql .= ' ORDER BY bulan DESC, periode DESC, station ASC';
+    $stmt = $db->prepare($sql);
+    $stmt->execute($params);
+    jsonSuccess(['datasets' => $stmt->fetchAll()]);
+    break;
+
+// ── List employees ──
+case 'list':
+    $datasetId = (int)($_GET['dataset_id'] ?? 0);
+    $search = trim($_GET['search'] ?? '');
+    $sortBy = $_GET['sort_by'] ?? 'id';
+    $sortDir = strtoupper($_GET['sort_dir'] ?? 'ASC') === 'DESC' ? 'DESC' : 'ASC';
+    $rekFilter = $_GET['rek_status'] ?? '';
+    $page = max(1, (int)($_GET['page'] ?? 1));
+    $perPage = min(100, max(1, (int)($_GET['per_page'] ?? 50)));
+    $offset = ($page - 1) * $perPage;
+
+    $where = [];
+    $params = [];
+
+    if ($datasetId > 0) {
+        $where[] = 'e.dataset_id = :did';
+        $params[':did'] = $datasetId;
+    }
+    if ($search !== '') {
+        $where[] = '(e.nama LIKE :s1 OR e.ops_id LIKE :s2)';
+        $params[':s1'] = "%$search%";
+        $params[':s2'] = "%$search%";
+    }
+    if ($korlapStation) {
+        $where[] = 'e.station = :kst';
+        $params[':kst'] = $korlapStation;
+    }
+
+    $whereSql = $where ? 'WHERE ' . implode(' AND ', $where) : '';
+
+    // Allowed sort columns
+    $allowedSort = ['id','ops_id','nama','station','hk','status'];
+    $sortCol = in_array($sortBy, $allowedSort) ? "e.$sortBy" : 'e.id';
+
+    // Count
+    $countStmt = $db->prepare("SELECT COUNT(*) FROM kalsul_employees e $whereSql");
+    $countStmt->execute($params);
+    $total = (int)$countStmt->fetchColumn();
+
+    // Fetch employees
+    $sql = "SELECT e.* FROM kalsul_employees e $whereSql ORDER BY $sortCol $sortDir LIMIT :lim OFFSET :off";
+    $stmt = $db->prepare($sql);
+    foreach ($params as $k => $v) $stmt->bindValue($k, $v);
+    $stmt->bindValue(':lim', $perPage, PDO::PARAM_INT);
+    $stmt->bindValue(':off', $offset, PDO::PARAM_INT);
+    $stmt->execute();
+    $employees = $stmt->fetchAll();
+
+    // Enrich with latest rekening data
+    $opsIds = array_column($employees, 'ops_id');
+    $rekMap = [];
+    $pergantianMap = [];
+
+    if (!empty($opsIds)) {
+        // Get latest rekening per ops_id
+        $placeholders = implode(',', array_fill(0, count($opsIds), '?'));
+        $rekStmt = $db->prepare("
+            SELECT r1.* FROM kalsul_rekening r1
+            INNER JOIN (
+                SELECT ops_id, MAX(COALESCE(timestamp_gas, created_at)) as max_ts
+                FROM kalsul_rekening GROUP BY ops_id
+            ) r2 ON r1.ops_id = r2.ops_id AND COALESCE(r1.timestamp_gas, r1.created_at) = r2.max_ts
+            WHERE r1.ops_id IN ($placeholders)
+            GROUP BY r1.ops_id
+        ");
+        $rekStmt->execute($opsIds);
+        foreach ($rekStmt->fetchAll() as $r) {
+            $rekMap[$r['ops_id']] = $r;
         }
-        
-        $page     = max(1, (int)($_GET['page'] ?? 1));
-        $per_page = min(100, max(1, (int)($_GET['per_page'] ?? 25)));
-        $search   = trim($_GET['search'] ?? '');
-        $station  = trim($_GET['station'] ?? '');
-        $offset   = ($page - 1) * $per_page;
 
-        $db = getDB();
-        $where  = [];
-        $params = [];
-
-        if ($search !== '') {
-            $where[] = '(nama LIKE :s1 OR ops_id LIKE :s2)';
-            $params[':s1'] = "%$search%";
-            $params[':s2'] = "%$search%";
-        }
-
-        if ($station !== '') {
-            $where[] = 'station = :station';
-            $params[':station'] = $station;
-        }
-
-        $whereSql = $where ? 'WHERE ' . implode(' AND ', $where) : '';
-
-        // Count total
-        $countStmt = $db->prepare("SELECT COUNT(*) FROM kalsul_employees $whereSql");
-        $countStmt->execute($params);
-        $total = (int)$countStmt->fetchColumn();
-
-        // Fetch rows
-        $sql = "SELECT * FROM kalsul_employees $whereSql ORDER BY id ASC LIMIT :lim OFFSET :off";
-        $stmt = $db->prepare($sql);
-        foreach ($params as $k => $v) {
-            $stmt->bindValue($k, $v);
-        }
-        $stmt->bindValue(':lim', $per_page, PDO::PARAM_INT);
-        $stmt->bindValue(':off', $offset, PDO::PARAM_INT);
-        $stmt->execute();
-        $rows = $stmt->fetchAll();
-
-        http_response_code(200);
-        echo json_encode([
-            'employees'  => $rows,
-            'pagination' => [
-                'total'       => $total,
-                'page'        => $page,
-                'per_page'    => $per_page,
-                'total_pages' => (int)ceil($total / $per_page),
-            ],
-        ], JSON_UNESCAPED_UNICODE);
-        exit;
-
-    case 'get':
-        $id = (int)($_GET['id'] ?? 0);
-        if ($id <= 0) jsonError('Invalid employee ID');
-
-        $db = getDB();
-        $stmt = $db->prepare('SELECT * FROM kalsul_employees WHERE id = :id LIMIT 1');
-        $stmt->execute([':id' => $id]);
-        $emp = $stmt->fetch();
-
-        if (!$emp) jsonError('Employee not found', 404);
-
-        http_response_code(200);
-        echo json_encode($emp, JSON_UNESCAPED_UNICODE);
-        exit;
-}
-
-// PUT — Update
-if ($method === 'PUT') {
-    $body = getJsonBody();
-    $id = (int)($body['id'] ?? 0);
-    if ($id <= 0) jsonError('Invalid employee ID');
-
-    $allowed = ['ops_id', 'nama', 'station', 'hk', 'status', 'no_rek', 'bank', 'atas_nama', 'no_hp', 'nik', 'alamat'];
-    $sets   = [];
-    $params = [':id' => $id];
-
-    foreach ($allowed as $field) {
-        if (array_key_exists($field, $body)) {
-            $sets[] = "`$field` = :$field";
-            $params[":$field"] = trim((string)$body[$field]);
+        // Check pergantian rek
+        $pergStmt = $db->prepare("
+            SELECT ops_id, COUNT(*) as cnt FROM kalsul_rekening
+            WHERE source='link_pergantian_rek' AND ops_id IN ($placeholders)
+            GROUP BY ops_id
+        ");
+        $pergStmt->execute($opsIds);
+        foreach ($pergStmt->fetchAll() as $p) {
+            $pergantianMap[$p['ops_id']] = (int)$p['cnt'];
         }
     }
 
-    if (empty($sets)) jsonError('No valid fields to update');
+    // Build result with rek_status
+    $result = [];
+    foreach ($employees as $emp) {
+        $rek = $rekMap[$emp['ops_id']] ?? null;
 
-    $db = getDB();
-    $sql = 'UPDATE kalsul_employees SET ' . implode(', ', $sets) . ' WHERE id = :id';
-    $stmt = $db->prepare($sql);
-    $stmt->execute($params);
+        if (!$rek || empty($rek['no_rek'])) {
+            $rekStatus = 'kosong';
+        } else {
+            // Fuzzy match nama vs atas_nama
+            $namaClean = mb_strtoupper(trim($emp['nama']));
+            $atasNamaClean = mb_strtoupper(trim($rek['atas_nama'] ?? ''));
+            if ($atasNamaClean === '') {
+                $rekStatus = 'kosong';
+            } else {
+                similar_text($namaClean, $atasNamaClean, $pct);
+                $rekStatus = ($pct >= 80) ? 'done' : 'abnormal';
+            }
+        }
 
-    jsonSuccess(['updated' => $id]);
-}
+        // Clean no_rek (digits only)
+        $noRekClean = $rek ? preg_replace('/[^0-9]/', '', $rek['no_rek'] ?? '') : '';
+        $digitCount = strlen($noRekClean);
 
-// DELETE
-if ($method === 'DELETE') {
-    $body = getJsonBody();
-    $id = (int)($body['id'] ?? 0);
-    if ($id <= 0) jsonError('Invalid employee ID');
+        $emp['rek_status'] = $rekStatus;
+        $emp['rek_tanggal'] = $rek['timestamp_gas'] ?? $rek['created_at'] ?? null;
+        $emp['no_rek'] = $noRekClean;
+        $emp['rek_digit_count'] = $digitCount;
+        $emp['bank'] = $rek['bank'] ?? '';
+        $emp['atas_nama'] = $rek['atas_nama'] ?? '';
+        $emp['no_hp'] = $rek['no_hp'] ?? '';
+        $emp['nik'] = $rek['nik'] ?? '';
+        $emp['alamat'] = $rek['alamat'] ?? '';
+        $emp['has_pergantian'] = ($pergantianMap[$emp['ops_id']] ?? 0) > 0;
+        $emp['pergantian_count'] = $pergantianMap[$emp['ops_id']] ?? 0;
 
-    $db = getDB();
-    $stmt = $db->prepare('DELETE FROM kalsul_employees WHERE id = :id');
+        // Filter by rek_status
+        if ($rekFilter !== '' && $rekStatus !== $rekFilter) continue;
+
+        $result[] = $emp;
+    }
+
+    $filteredTotal = ($rekFilter !== '') ? count($result) : $total;
+
+    jsonSuccess([
+        'employees' => $result,
+        'pagination' => [
+            'total' => $filteredTotal,
+            'page' => $page,
+            'per_page' => $perPage,
+            'total_pages' => (int)ceil($filteredTotal / $perPage),
+        ],
+    ]);
+    break;
+
+// ── Rekening history ──
+case 'rekening_history':
+    $opsId = trim($_GET['ops_id'] ?? '');
+    if ($opsId === '') jsonError('ops_id required');
+
+    $stmt = $db->prepare('SELECT * FROM kalsul_rekening WHERE ops_id = :oid ORDER BY COALESCE(timestamp_gas, created_at) DESC');
+    $stmt->execute([':oid' => $opsId]);
+    $rows = $stmt->fetchAll();
+
+    // Clean no_rek
+    foreach ($rows as &$r) {
+        $r['no_rek'] = preg_replace('/[^0-9]/', '', $r['no_rek'] ?? '');
+        $r['rek_digit_count'] = strlen($r['no_rek']);
+    }
+
+    jsonSuccess(['history' => $rows]);
+    break;
+
+// ── Get single ──
+case 'get':
+    $id = (int)($_GET['id'] ?? 0);
+    if ($id <= 0) jsonError('Invalid ID');
+    $stmt = $db->prepare('SELECT * FROM kalsul_employees WHERE id = :id LIMIT 1');
     $stmt->execute([':id' => $id]);
+    $emp = $stmt->fetch();
+    if (!$emp) jsonError('Not found', 404);
+    jsonSuccess($emp);
+    break;
 
-    jsonSuccess(['deleted' => $id]);
+// ── Stations ──
+case 'stations':
+    $stmt = $db->query("SELECT DISTINCT station FROM kalsul_employees WHERE station != '' ORDER BY station ASC");
+    jsonSuccess(['stations' => $stmt->fetchAll(PDO::FETCH_COLUMN)]);
+    break;
+
+default:
+    // PUT = update
+    if ($method === 'PUT') {
+        $body = getJsonBody();
+        $id = (int)($body['id'] ?? 0);
+        if ($id <= 0) jsonError('Invalid ID');
+
+        $allowed = ['ops_id','nama','station','hk','status'];
+        $sets = []; $params = [':id' => $id];
+        foreach ($allowed as $f) {
+            if (array_key_exists($f, $body)) {
+                $sets[] = "`$f` = :$f";
+                $params[":$f"] = trim((string)$body[$f]);
+            }
+        }
+        if (empty($sets)) jsonError('No fields');
+        $db->prepare('UPDATE kalsul_employees SET ' . implode(',', $sets) . ' WHERE id = :id')->execute($params);
+        jsonSuccess(['updated' => $id]);
+    }
+
+    // DELETE
+    if ($method === 'DELETE') {
+        $body = getJsonBody();
+        $id = (int)($body['id'] ?? 0);
+        if ($id <= 0) jsonError('Invalid ID');
+        $db->prepare('DELETE FROM kalsul_employees WHERE id = :id')->execute([':id' => $id]);
+        jsonSuccess(['deleted' => $id]);
+    }
+
+    jsonError('Invalid action', 400);
 }

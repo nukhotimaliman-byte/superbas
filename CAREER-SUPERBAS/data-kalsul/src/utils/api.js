@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════
-   API Utility — Fetch wrapper for PHP Backend
+   API Utility v2 — Fetch wrapper for PHP Backend
    ═══════════════════════════════════════════════════ */
 
 const BASE = '/data-kalsul/api';
@@ -11,18 +11,11 @@ async function request(endpoint, options = {}) {
     headers: { 'Content-Type': 'application/json', ...options.headers },
     ...options,
   };
-
-  // Don't set Content-Type for FormData
-  if (options.body instanceof FormData) {
-    delete config.headers['Content-Type'];
-  }
+  if (options.body instanceof FormData) delete config.headers['Content-Type'];
 
   const res = await fetch(url, config);
   const data = await res.json();
-
-  if (!res.ok) {
-    throw { status: res.status, message: data.error || 'Request failed', data };
-  }
+  if (!res.ok) throw { status: res.status, message: data.error || 'Request failed', data };
   return data;
 }
 
@@ -35,6 +28,10 @@ export const api = {
   me: () =>
     request('auth.php?action=me'),
 
+  // Datasets (subtabs)
+  getDatasets: () =>
+    request('employees.php?action=datasets'),
+
   // Employees
   getEmployees: (params = {}) => {
     const q = new URLSearchParams(params).toString();
@@ -43,17 +40,33 @@ export const api = {
   getEmployee: (id) =>
     request(`employees.php?action=get&id=${id}`),
   updateEmployee: (id, data) =>
-    request('employees.php?action=update', { method: 'PUT', body: JSON.stringify({ id, ...data }) }),
+    request('employees.php', { method: 'PUT', body: JSON.stringify({ id, ...data }) }),
   deleteEmployee: (id) =>
-    request('employees.php?action=delete', { method: 'DELETE', body: JSON.stringify({ id }) }),
+    request('employees.php', { method: 'DELETE', body: JSON.stringify({ id }) }),
+  getStations: () =>
+    request('employees.php?action=stations'),
+
+  // Rekening history
+  getRekeningHistory: (opsId) =>
+    request(`employees.php?action=rekening_history&ops_id=${encodeURIComponent(opsId)}`),
 
   // Upload
-  uploadFile: (formData) =>
-    request('upload.php', { method: 'POST', body: formData }),
+  uploadData: (payload) =>
+    request('upload.php', { method: 'POST', body: JSON.stringify(payload) }),
 
-  // Gaji Status
-  getGajiStatus: () =>
-    request('gaji-status.php'),
+  // Korlap management
+  getKorlaps: () =>
+    request('korlap.php?action=list'),
+  createKorlap: (data) =>
+    request('korlap.php?action=create', { method: 'POST', body: JSON.stringify(data) }),
+  updateKorlap: (id, data) =>
+    request('korlap.php?action=update', { method: 'PUT', body: JSON.stringify({ id, ...data }) }),
+  deleteKorlap: (id) =>
+    request('korlap.php?action=delete', { method: 'DELETE', body: JSON.stringify({ id }) }),
+
+  // Gaji status
+  getGajiSummary: () =>
+    request('gaji-status.php?action=summary'),
 
   // Export
   exportExcel: () => `${BASE}/export.php?format=excel`,

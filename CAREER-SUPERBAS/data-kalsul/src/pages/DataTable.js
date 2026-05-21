@@ -1,425 +1,364 @@
 /* ═══════════════════════════════════════════════════
-   Data Table Page — Employee Data Management
+   DataTable v2 — Subtabs, Sortable, Expandable Rows,
+   Rek Status Filter, Fuzzy Match Badges
    ═══════════════════════════════════════════════════ */
-
-import { createShell, initShellEvents, toggleMobileMenu } from '../components/Shell.js';
 import { api } from '../utils/api.js';
-import { icons } from '../utils/icons.js';
-import { toast } from '../utils/toast.js';
 
-let currentPage = 1;
-let perPage = 25;
-let searchQuery = '';
-let stationFilter = '';
-let debounceTimer = null;
+let currentDatasetId = null;
+let currentSort = { col: 'nama', dir: 'ASC' };
+let currentSearch = '';
+let currentRekFilter = '';
+let expandedOpsId = null;
 
-export async function DataTablePage(container) {
-  container.innerHTML = createShell('data');
-  initShellEvents();
-
-  const main = document.getElementById('main-content');
-  main.innerHTML = `
+export function renderDataTable() {
+  return `
     <div class="page-header">
-      <div style="display:flex;align-items:center;gap:12px">
-        <button class="mobile-menu-btn" id="mobile-menu-toggle">${icons.menu}</button>
-        <h1 class="page-title">Data Karyawan</h1>
-      </div>
-      <div class="page-actions">
-        <div class="dropdown" style="position:relative" id="export-dropdown">
-          <button class="btn btn-secondary btn-sm" id="export-btn">
-            ${icons.download} Export
-          </button>
-          <div class="dropdown-menu" id="export-menu" style="display:none;position:absolute;right:0;top:calc(100% + 4px);background:var(--bg-tertiary);border:1px solid var(--glass-border);border-radius:var(--radius-md);padding:4px;min-width:160px;z-index:20;box-shadow:var(--shadow-lg)">
-            <a href="#" class="dropdown-item" id="export-csv" style="display:block;padding:10px 14px;border-radius:var(--radius-sm);font-size:var(--font-sm);color:var(--text-secondary);transition:background 0.15s">📄 Export CSV</a>
-            <a href="#" class="dropdown-item" id="export-excel" style="display:block;padding:10px 14px;border-radius:var(--radius-sm);font-size:var(--font-sm);color:var(--text-secondary);transition:background 0.15s">📊 Export Excel</a>
-          </div>
-        </div>
+      <h1>Data Karyawan</h1>
+      <a href="${api.exportCSV()}" class="btn btn-outline btn-sm" target="_blank">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Export
+      </a>
+    </div>
+
+    <!-- Subtabs -->
+    <div class="subtabs-wrapper">
+      <div class="subtabs" id="dataset-tabs">
+        <div class="subtab-loading">Memuat dataset...</div>
       </div>
     </div>
 
-    <div class="page-body">
-      <!-- Toolbar -->
-      <div class="toolbar">
-        <div class="toolbar-left">
-          <input type="text" class="input input-search" id="search-input" placeholder="Cari nama atau OPS ID..." style="max-width:320px" />
-          <select class="input" id="station-filter" style="max-width:200px">
-            <option value="">Semua Station</option>
-          </select>
-          <select class="input" id="perpage-select" style="max-width:120px">
-            <option value="25">25/hal</option>
-            <option value="50">50/hal</option>
-            <option value="100">100/hal</option>
-          </select>
-        </div>
-        <div class="toolbar-right">
-          <span style="font-size:var(--font-sm);color:var(--text-tertiary)" id="result-count"></span>
-        </div>
+    <!-- Filters -->
+    <div class="filters-bar">
+      <div class="filter-group">
+        <input type="text" id="search-input" class="input input-sm" placeholder="🔍 Cari nama atau OPS ID..." />
       </div>
+      <div class="filter-group">
+        <select id="rek-filter" class="input input-sm">
+          <option value="">Semua Status Rek</option>
+          <option value="done">✅ DONE</option>
+          <option value="kosong">⬜ KOSONG</option>
+          <option value="abnormal">🔴 ABNORMAL</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <span id="data-count" class="data-count"></span>
+      </div>
+    </div>
 
-      <!-- Table -->
-      <div class="glass-static" style="position:relative" id="table-container">
-        <div class="table-wrapper">
-          <table class="table" id="data-table">
-            <thead>
-              <tr>
-                <th style="width:50px">No</th>
-                <th>OPS ID</th>
-                <th>Nama</th>
-                <th>Station</th>
-                <th>HK</th>
-                <th>Status</th>
-                <th>No Rek</th>
-                <th>Bank</th>
-                <th>Atas Nama</th>
-                <th>No HP</th>
-                <th>NIK</th>
-                <th>Alamat</th>
-                <th>Gaji</th>
-                <th style="width:80px">Aksi</th>
-              </tr>
-            </thead>
-            <tbody id="data-tbody">
-              <tr><td colspan="15" style="text-align:center;padding:40px;color:var(--text-tertiary)">Memuat data...</td></tr>
-            </tbody>
-          </table>
-        </div>
-
-        <!-- Pagination -->
-        <div class="pagination" style="padding:var(--space-md) var(--space-lg)">
-          <div class="pagination-info" id="pagination-info">—</div>
-          <div class="pagination-controls" id="pagination-controls"></div>
-        </div>
+    <!-- Table -->
+    <div class="card card-table">
+      <div class="table-wrapper">
+        <table class="data-table" id="main-table">
+          <thead>
+            <tr>
+              <th class="th-sortable" data-sort="id" style="width:50px">NO</th>
+              <th class="th-sortable" data-sort="ops_id">OPS ID</th>
+              <th class="th-sortable" data-sort="nama">NAMA</th>
+              <th class="th-sortable" data-sort="station">STATION</th>
+              <th class="th-sortable" data-sort="hk" style="width:60px">HK</th>
+              <th style="width:100px">STATUS REK</th>
+              <th>TANGGAL</th>
+              <th>NO REK</th>
+              <th>BANK</th>
+              <th>ATAS NAMA</th>
+              <th>NO HP</th>
+              <th>NIK</th>
+              <th style="width:60px">AKSI</th>
+            </tr>
+          </thead>
+          <tbody id="data-tbody">
+            <tr><td colspan="13" style="text-align:center;padding:40px;color:var(--text-tertiary)">Pilih dataset di atas</td></tr>
+          </tbody>
+        </table>
       </div>
     </div>
 
     <!-- Edit Modal -->
-    <div class="modal-overlay" id="edit-modal">
-      <div class="modal glass-static">
+    <div class="modal-overlay" id="edit-modal" style="display:none">
+      <div class="modal">
         <div class="modal-header">
-          <h3 class="modal-title">Edit Karyawan</h3>
-          <button class="modal-close" id="modal-close">${icons.x}</button>
+          <h3>Edit Karyawan</h3>
+          <button class="btn-icon modal-close" id="modal-close">&times;</button>
         </div>
-        <div class="modal-body" id="edit-form-body"></div>
+        <div class="modal-body" id="modal-body"></div>
         <div class="modal-footer">
-          <button class="btn btn-secondary btn-sm" id="modal-cancel">Batal</button>
-          <button class="btn btn-primary btn-sm" id="modal-save">Simpan</button>
+          <button class="btn btn-outline" id="modal-cancel">Batal</button>
+          <button class="btn btn-primary" id="modal-save">Simpan</button>
         </div>
       </div>
     </div>
   `;
+}
 
-  // Mobile menu
-  document.getElementById('mobile-menu-toggle')?.addEventListener('click', toggleMobileMenu);
+export async function initDataTable() {
+  await loadDatasets();
+
+  // Sort headers
+  document.querySelectorAll('.th-sortable').forEach(th => {
+    th.addEventListener('click', () => {
+      const col = th.dataset.sort;
+      if (currentSort.col === col) {
+        currentSort.dir = currentSort.dir === 'ASC' ? 'DESC' : 'ASC';
+      } else {
+        currentSort = { col, dir: 'ASC' };
+      }
+      updateSortIndicators();
+      loadEmployees();
+    });
+  });
 
   // Search
+  let searchTimer;
   document.getElementById('search-input')?.addEventListener('input', (e) => {
-    clearTimeout(debounceTimer);
-    debounceTimer = setTimeout(() => {
-      searchQuery = e.target.value.trim();
-      currentPage = 1;
-      loadData();
-    }, 400);
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(() => { currentSearch = e.target.value; loadEmployees(); }, 300);
   });
 
-  // Station filter
-  document.getElementById('station-filter')?.addEventListener('change', (e) => {
-    stationFilter = e.target.value;
-    currentPage = 1;
-    loadData();
+  // Rek filter
+  document.getElementById('rek-filter')?.addEventListener('change', (e) => {
+    currentRekFilter = e.target.value;
+    loadEmployees();
   });
 
-  // Per page
-  document.getElementById('perpage-select')?.addEventListener('change', (e) => {
-    perPage = parseInt(e.target.value);
-    currentPage = 1;
-    loadData();
-  });
-
-  // Export dropdown
-  const exportBtn = document.getElementById('export-btn');
-  const exportMenu = document.getElementById('export-menu');
-  exportBtn?.addEventListener('click', (e) => {
-    e.stopPropagation();
-    exportMenu.style.display = exportMenu.style.display === 'none' ? 'block' : 'none';
-  });
-  document.addEventListener('click', () => {
-    if (exportMenu) exportMenu.style.display = 'none';
-  });
-
-  document.getElementById('export-csv')?.addEventListener('click', (e) => {
-    e.preventDefault();
-    window.open(api.exportCSV(), '_blank');
-    exportMenu.style.display = 'none';
-  });
-  document.getElementById('export-excel')?.addEventListener('click', (e) => {
-    e.preventDefault();
-    window.open(api.exportExcel(), '_blank');
-    exportMenu.style.display = 'none';
-  });
-
-  // Modal events
+  // Modal
   document.getElementById('modal-close')?.addEventListener('click', closeModal);
   document.getElementById('modal-cancel')?.addEventListener('click', closeModal);
-  document.getElementById('edit-modal')?.addEventListener('click', (e) => {
-    if (e.target.id === 'edit-modal') closeModal();
-  });
-
-  // Load stations & data
-  loadStations();
-  loadData();
-
-  return () => {
-    clearTimeout(debounceTimer);
-  };
 }
 
-async function loadStations() {
+async function loadDatasets() {
   try {
-    const data = await api.getEmployees({ page: 1, per_page: 999 });
-    const employees = data.employees || data.data || [];
-    const stations = [...new Set(employees.map(e => e.station).filter(Boolean))].sort();
-    
-    const select = document.getElementById('station-filter');
-    if (select) {
-      stations.forEach(s => {
-        const opt = document.createElement('option');
-        opt.value = s;
-        opt.textContent = s;
-        select.appendChild(opt);
-      });
-    }
-  } catch {
-    // Silent
-  }
-}
+    const res = await api.getDatasets();
+    const tabs = document.getElementById('dataset-tabs');
+    if (!tabs) return;
 
-async function loadData() {
-  const tbody = document.getElementById('data-tbody');
-  tbody.innerHTML = `<tr><td colspan="13" style="text-align:center;padding:40px"><div class="spinner" style="margin:0 auto"></div></td></tr>`;
-
-  try {
-    const params = {
-      page: currentPage,
-      per_page: perPage,
-    };
-    if (searchQuery) params.search = searchQuery;
-    if (stationFilter) params.station = stationFilter;
-
-    const data = await api.getEmployees(params);
-    const employees = data.employees || data.data || [];
-    const pagination = data.pagination || { total: 0, page: 1, per_page: perPage, total_pages: 1 };
-
-    if (employees.length === 0) {
-      tbody.innerHTML = `
-        <tr><td colspan="15">
-          <div class="empty-state">
-            <div class="empty-state-icon">${icons.users}</div>
-            <div class="empty-state-title">Tidak ada data</div>
-            <div class="empty-state-desc">${searchQuery ? 'Coba ubah kata kunci pencarian' : 'Upload file Excel/CSV untuk menambahkan data'}</div>
-          </div>
-        </td></tr>
-      `;
-      document.getElementById('result-count').textContent = '0 data';
-      document.getElementById('pagination-info').textContent = '';
-      document.getElementById('pagination-controls').innerHTML = '';
+    if (!res.datasets || res.datasets.length === 0) {
+      tabs.innerHTML = '<div class="subtab-empty">Belum ada data. Upload file terlebih dahulu.</div>';
       return;
     }
 
-    const startNum = (pagination.page - 1) * pagination.per_page;
+    tabs.innerHTML = res.datasets.map(ds => {
+      const bulan = new Date(ds.bulan).toLocaleDateString('id-ID', { month: 'short', year: 'numeric' });
+      return `<button class="subtab" data-id="${ds.id}">
+        <span class="subtab-station">${esc(ds.station)}</span>
+        <span class="subtab-meta">${bulan} · ${ds.periode} · ${ds.total_employees} org</span>
+      </button>`;
+    }).join('');
 
-    tbody.innerHTML = employees.map((emp, i) => `
-      <tr data-id="${emp.id}">
-        <td style="color:var(--text-tertiary)">${startNum + i + 1}</td>
-        <td><span class="badge badge-primary">${esc(emp.ops_id)}</span></td>
-        <td style="font-weight:500">${esc(emp.nama)}</td>
-        <td>${esc(emp.station)}</td>
-        <td style="text-align:center;font-weight:600">${esc(emp.hk || '')}</td>
-        <td><span class="badge badge-accent">${esc(emp.status)}</span></td>
-        <td style="font-family:monospace;font-size:12px">${esc(emp.no_rek)}</td>
-        <td>${esc(emp.bank)}</td>
-        <td>${esc(emp.atas_nama)}</td>
-        <td>${esc(emp.no_hp)}</td>
-        <td style="font-family:monospace;font-size:12px">${esc(emp.nik)}</td>
-        <td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(emp.alamat)}">${esc(emp.alamat)}</td>
-        <td>
-          ${emp.gaji_link_filled 
-            ? '<span class="gaji-status"><span class="gaji-dot filled"></span>Sudah</span>' 
-            : '<span class="gaji-status"><span class="gaji-dot unfilled"></span>Belum</span>'}
-        </td>
-        <td>
-          <div style="display:flex;gap:4px">
-            <button class="btn btn-ghost btn-icon btn-sm edit-btn" data-id="${emp.id}" title="Edit">
-              ${icons.edit}
-            </button>
-            <button class="btn btn-ghost btn-icon btn-sm delete-btn" data-id="${emp.id}" title="Hapus" style="color:var(--error)">
-              ${icons.trash}
-            </button>
-          </div>
-        </td>
-      </tr>
-    `).join('');
-
-    // Result count
-    document.getElementById('result-count').textContent = `${pagination.total} data`;
-
-    // Pagination
-    renderPagination(pagination);
-
-    // Edit buttons
-    tbody.querySelectorAll('.edit-btn').forEach(btn => {
-      btn.addEventListener('click', () => openEditModal(employees.find(e => e.id == btn.dataset.id)));
+    // Tab click
+    tabs.querySelectorAll('.subtab').forEach(btn => {
+      btn.addEventListener('click', () => {
+        tabs.querySelectorAll('.subtab').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentDatasetId = btn.dataset.id;
+        loadEmployees();
+      });
     });
 
-    // Delete buttons
-    tbody.querySelectorAll('.delete-btn').forEach(btn => {
-      btn.addEventListener('click', () => handleDelete(btn.dataset.id));
-    });
-
+    // Auto-select first
+    const first = tabs.querySelector('.subtab');
+    if (first) { first.click(); }
   } catch (err) {
-    tbody.innerHTML = `
-      <tr><td colspan="13" style="text-align:center;padding:40px;color:var(--error)">
-        Gagal memuat data: ${err.message || 'Unknown error'}
-      </td></tr>
-    `;
+    console.error('Failed to load datasets:', err);
   }
 }
 
-function renderPagination(pagination) {
-  const info = document.getElementById('pagination-info');
-  const controls = document.getElementById('pagination-controls');
+async function loadEmployees() {
+  const tbody = document.getElementById('data-tbody');
+  if (!tbody) return;
 
-  const start = (pagination.page - 1) * pagination.per_page + 1;
-  const end = Math.min(pagination.page * pagination.per_page, pagination.total);
-  info.textContent = `${start}–${end} dari ${pagination.total}`;
+  tbody.innerHTML = `<tr><td colspan="13" style="text-align:center;padding:40px;color:var(--text-tertiary)">Memuat data...</td></tr>`;
 
-  const totalPages = pagination.total_pages || Math.ceil(pagination.total / pagination.per_page);
-  if (totalPages <= 1) {
-    controls.innerHTML = '';
-    return;
+  try {
+    const params = {
+      dataset_id: currentDatasetId || '',
+      search: currentSearch,
+      sort_by: currentSort.col,
+      sort_dir: currentSort.dir,
+      rek_status: currentRekFilter,
+      per_page: 200,
+    };
+
+    const res = await api.getEmployees(params);
+    const employees = res.employees || [];
+
+    document.getElementById('data-count').textContent = `${employees.length} data`;
+
+    if (employees.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="13"><div class="empty-state"><div class="empty-state-title">Tidak ada data</div></div></td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = employees.map((emp, idx) => renderEmployeeRow(emp, idx + 1)).join('');
+
+    // Attach events
+    tbody.querySelectorAll('.btn-expand').forEach(btn => {
+      btn.addEventListener('click', () => toggleExpand(btn.dataset.opsId, btn.closest('tr')));
+    });
+    tbody.querySelectorAll('.btn-edit').forEach(btn => {
+      btn.addEventListener('click', () => openEditModal(JSON.parse(btn.dataset.emp)));
+    });
+    tbody.querySelectorAll('.btn-delete').forEach(btn => {
+      btn.addEventListener('click', () => deleteEmployee(btn.dataset.id));
+    });
+  } catch (err) {
+    tbody.innerHTML = `<tr><td colspan="13" style="text-align:center;color:var(--danger);padding:20px">Error: ${err.message}</td></tr>`;
   }
+}
 
-  let html = `<button class="pagination-btn" ${currentPage <= 1 ? 'disabled' : ''} data-page="${currentPage - 1}">${icons.chevronLeft}</button>`;
+function renderEmployeeRow(emp, no) {
+  const rekStatusBadge = {
+    done: '<span class="badge badge-done">✅ DONE</span>',
+    abnormal: '<span class="badge badge-abnormal">🔴 ABNORMAL</span>',
+    kosong: '<span class="badge badge-kosong">⬜ KOSONG</span>',
+  }[emp.rek_status] || '<span class="badge badge-kosong">⬜ KOSONG</span>';
 
-  // Show page numbers
-  const pages = getPageNumbers(currentPage, totalPages);
-  pages.forEach(p => {
-    if (p === '...') {
-      html += `<span style="padding:0 4px;color:var(--text-tertiary)">...</span>`;
-    } else {
-      html += `<button class="pagination-btn ${p === currentPage ? 'active' : ''}" data-page="${p}">${p}</button>`;
+  const noRekClass = emp.has_pergantian ? 'cell-highlight' : '';
+  const expandBtn = emp.rek_status !== 'kosong'
+    ? `<button class="btn-expand" data-ops-id="${esc(emp.ops_id)}" title="Lihat riwayat">▼</button>`
+    : '';
+
+  const tgl = emp.rek_tanggal ? new Date(emp.rek_tanggal).toLocaleDateString('id-ID', {day:'2-digit',month:'short',year:'numeric'}) : '-';
+  const digitBadge = emp.rek_digit_count > 0 ? `<span class="digit-badge">${emp.rek_digit_count}</span>` : '';
+
+  return `
+    <tr data-ops-id="${esc(emp.ops_id)}" class="${emp.has_pergantian ? 'row-pergantian' : ''}">
+      <td>${no}</td>
+      <td><span class="badge badge-primary">${esc(emp.ops_id)}</span></td>
+      <td style="font-weight:500">${esc(emp.nama)}</td>
+      <td>${esc(emp.station)}</td>
+      <td style="text-align:center;font-weight:700">${emp.hk || 0}</td>
+      <td>${rekStatusBadge}</td>
+      <td style="font-size:12px">${tgl}</td>
+      <td class="${noRekClass}">
+        <span class="norek-cell">${esc(emp.no_rek) || '-'} ${digitBadge}</span>
+        ${expandBtn}
+      </td>
+      <td>${esc(emp.bank) || '-'}</td>
+      <td>${esc(emp.atas_nama) || '-'}</td>
+      <td style="font-size:12px">${esc(emp.no_hp) || '-'}</td>
+      <td style="font-size:12px;font-family:monospace">${esc(emp.nik) || '-'}</td>
+      <td>
+        <div class="action-btns">
+          <button class="btn-icon btn-edit" data-emp='${JSON.stringify(emp).replace(/'/g, "&#39;")}' title="Edit">✏️</button>
+          <button class="btn-icon btn-delete" data-id="${emp.id}" title="Hapus">🗑️</button>
+        </div>
+      </td>
+    </tr>
+  `;
+}
+
+async function toggleExpand(opsId, row) {
+  // Remove existing expanded row
+  const existing = document.querySelector('.expanded-row');
+  if (existing) {
+    existing.remove();
+    if (expandedOpsId === opsId) { expandedOpsId = null; return; }
+  }
+  expandedOpsId = opsId;
+
+  // Fetch history
+  const expandedTr = document.createElement('tr');
+  expandedTr.className = 'expanded-row';
+  expandedTr.innerHTML = `<td colspan="13"><div class="rek-history-loading">Memuat riwayat...</div></td>`;
+  row.after(expandedTr);
+
+  try {
+    const res = await api.getRekeningHistory(opsId);
+    const history = res.history || [];
+
+    if (history.length === 0) {
+      expandedTr.innerHTML = `<td colspan="13"><div class="rek-history-empty">Tidak ada riwayat rekening</div></td>`;
+      return;
+    }
+
+    const rows = history.map(r => {
+      const srcBadge = r.source === 'link_pergantian_rek'
+        ? '<span class="src-badge src-pergantian">🔄 LINK PERGANTIAN REK</span>'
+        : '<span class="src-badge src-gaji">💰 LINK GAJI</span>';
+      const tgl = r.timestamp_gas ? new Date(r.timestamp_gas).toLocaleDateString('id-ID', {day:'2-digit',month:'short',year:'numeric'}) : '-';
+      const digitCount = r.rek_digit_count || String(r.no_rek || '').length;
+
+      return `<tr>
+        <td>${srcBadge}</td>
+        <td>${tgl}</td>
+        <td>${esc(r.no_rek) || '-'} <span class="digit-badge">${digitCount}</span></td>
+        <td>${esc(r.bank) || '-'}</td>
+        <td>${esc(r.atas_nama) || '-'}</td>
+      </tr>`;
+    }).join('');
+
+    expandedTr.innerHTML = `<td colspan="13">
+      <div class="rek-history">
+        <div class="rek-history-title">📋 Riwayat Rekening — ${esc(opsId)} (terbaru → terlama)</div>
+        <table class="rek-history-table">
+          <thead><tr><th>Sumber</th><th>Tanggal</th><th>No Rekening</th><th>Bank</th><th>Atas Nama</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+    </td>`;
+  } catch (err) {
+    expandedTr.innerHTML = `<td colspan="13"><div class="rek-history-error">Error: ${err.message}</div></td>`;
+  }
+}
+
+function updateSortIndicators() {
+  document.querySelectorAll('.th-sortable').forEach(th => {
+    th.classList.remove('sort-asc', 'sort-desc');
+    if (th.dataset.sort === currentSort.col) {
+      th.classList.add(currentSort.dir === 'ASC' ? 'sort-asc' : 'sort-desc');
     }
   });
-
-  html += `<button class="pagination-btn" ${currentPage >= totalPages ? 'disabled' : ''} data-page="${currentPage + 1}">${icons.chevronRight}</button>`;
-
-  controls.innerHTML = html;
-  controls.querySelectorAll('.pagination-btn:not([disabled])').forEach(btn => {
-    btn.addEventListener('click', () => {
-      currentPage = parseInt(btn.dataset.page);
-      loadData();
-      // Scroll to top
-      document.getElementById('table-container')?.scrollIntoView({ behavior: 'smooth' });
-    });
-  });
 }
 
-function getPageNumbers(current, total) {
-  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
-  
-  const pages = [];
-  if (current <= 3) {
-    pages.push(1, 2, 3, 4, '...', total);
-  } else if (current >= total - 2) {
-    pages.push(1, '...', total - 3, total - 2, total - 1, total);
-  } else {
-    pages.push(1, '...', current - 1, current, current + 1, '...', total);
-  }
-  return pages;
-}
-
-function openEditModal(employee) {
-  if (!employee) return;
-  
+function openEditModal(emp) {
   const modal = document.getElementById('edit-modal');
-  const body = document.getElementById('edit-form-body');
+  const body = document.getElementById('modal-body');
+  if (!modal || !body) return;
 
   const fields = [
     { key: 'ops_id', label: 'OPS ID', type: 'text' },
     { key: 'nama', label: 'Nama', type: 'text' },
     { key: 'station', label: 'Station', type: 'text' },
-    { key: 'hk', label: 'HK (Hari Kerja)', type: 'text' },
+    { key: 'hk', label: 'HK (Hari Kerja)', type: 'number' },
     { key: 'status', label: 'Status', type: 'text' },
-    { key: 'no_rek', label: 'No Rekening', type: 'text' },
-    { key: 'bank', label: 'Bank', type: 'text' },
-    { key: 'atas_nama', label: 'Atas Nama', type: 'text' },
-    { key: 'no_hp', label: 'No HP', type: 'text' },
-    { key: 'nik', label: 'NIK', type: 'text' },
-    { key: 'alamat', label: 'Alamat', type: 'textarea' },
   ];
 
-  body.innerHTML = `
-    <form id="edit-form" style="display:flex;flex-direction:column;gap:var(--space-md)">
-      ${fields.map(f => `
-        <div class="input-group">
-          <label for="edit-${f.key}">${f.label}</label>
-          ${f.type === 'textarea' 
-            ? `<textarea id="edit-${f.key}" class="input" rows="2" style="resize:vertical">${esc(employee[f.key])}</textarea>`
-            : `<input type="text" id="edit-${f.key}" class="input" value="${esc(employee[f.key])}" />`
-          }
-        </div>
-      `).join('')}
-    </form>
-  `;
+  body.innerHTML = fields.map(f => `
+    <div class="field-group">
+      <label class="field-label">${f.label}</label>
+      <input type="${f.type}" class="input" id="edit-${f.key}" value="${esc(emp[f.key] || '')}" />
+    </div>
+  `).join('');
 
-  modal.classList.add('show');
-  modal.dataset.employeeId = employee.id;
+  modal.style.display = 'flex';
 
-  // Save handler
   const saveBtn = document.getElementById('modal-save');
-  const newSaveBtn = saveBtn.cloneNode(true);
-  saveBtn.parentNode.replaceChild(newSaveBtn, saveBtn);
-  newSaveBtn.id = 'modal-save';
-
-  newSaveBtn.addEventListener('click', async () => {
-    const updates = {};
-    fields.forEach(f => {
-      const el = document.getElementById(`edit-${f.key}`);
-      if (el) updates[f.key] = el.value.trim();
-    });
-
-    newSaveBtn.disabled = true;
-    newSaveBtn.innerHTML = '<div class="spinner"></div>';
-    
+  saveBtn.onclick = async () => {
+    const data = {};
+    fields.forEach(f => { data[f.key] = document.getElementById(`edit-${f.key}`).value; });
     try {
-      await api.updateEmployee(employee.id, updates);
-      toast('Data berhasil diperbarui', 'success');
+      await api.updateEmployee(emp.id, data);
       closeModal();
-      loadData();
-    } catch (err) {
-      toast(err.message || 'Gagal menyimpan', 'error');
-      newSaveBtn.disabled = false;
-      newSaveBtn.textContent = 'Simpan';
-    }
-  });
+      loadEmployees();
+    } catch (err) { alert('Error: ' + err.message); }
+  };
 }
 
 function closeModal() {
-  document.getElementById('edit-modal')?.classList.remove('show');
+  const m = document.getElementById('edit-modal');
+  if (m) m.style.display = 'none';
 }
 
-async function handleDelete(id) {
-  if (!confirm('Yakin ingin menghapus data karyawan ini, Sir?')) return;
-  
+async function deleteEmployee(id) {
+  if (!confirm('Yakin hapus karyawan ini?')) return;
   try {
     await api.deleteEmployee(id);
-    toast('Data berhasil dihapus', 'success');
-    loadData();
-  } catch (err) {
-    toast(err.message || 'Gagal menghapus', 'error');
-  }
+    loadEmployees();
+  } catch (err) { alert('Error: ' + err.message); }
 }
 
 function esc(str) {
-  if (!str) return '';
-  return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  const d = document.createElement('div');
+  d.textContent = str ?? '';
+  return d.innerHTML;
 }
