@@ -309,7 +309,7 @@ async function doBulkSearch() {
           opsId: entry.id, waNama: entry.nama, found: true,
           noRek: latest.no_rek || '-', bank: latest.bank || '-',
           atasNama: latest.atas_nama || '-', source: latest.source || '-',
-          nameMatch,
+          nameMatch, history,
         });
         found++;
       } else {
@@ -383,7 +383,7 @@ async function doBulkSearch() {
       unknown: '<span class="badge" style="background:rgba(255,255,255,.06);color:var(--t3)">-</span>',
     }[r.nameMatch] || '-';
 
-    return `<tr>
+    return `<tr class="bulk-row" data-bulk-idx="${i}" style="cursor:pointer">
       <td>${i + 1}</td>
       <td><span class="badge badge-primary">Ops${esc(r.opsId)}</span></td>
       <td style="font-weight:500;color:var(--t1)">${esc(r.waNama) || '-'}</td>
@@ -393,10 +393,59 @@ async function doBulkSearch() {
       <td style="font-weight:500">${esc(r.atasNama)}</td>
       <td>${matchBadge}</td>
       <td>${srcBadge}</td>
+    </tr>
+    <tr class="bulk-detail" id="bulk-detail-${i}" style="display:none">
+      <td colspan="9">${renderBulkDetail(r)}</td>
     </tr>`;
   }).join('');
 
+  // Bind expand clicks
+  document.querySelectorAll('.bulk-row').forEach(row => {
+    row.addEventListener('click', () => {
+      const idx = row.dataset.bulkIdx;
+      const detail = document.getElementById(`bulk-detail-${idx}`);
+      const isOpen = detail.style.display !== 'none';
+      detail.style.display = isOpen ? 'none' : 'table-row';
+      row.classList.toggle('expanded', !isOpen);
+    });
+  });
+
   resultDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function renderBulkDetail(r) {
+  if (!r.history || r.history.length === 0) {
+    return `<div class="bulk-detail-inner"><span style="color:var(--t3)">Tidak ada riwayat rekening</span></div>`;
+  }
+  const rows = r.history.map((h, i) => {
+    const srcBadge = h.source === 'link_pergantian_rek'
+      ? '<span class="src-badge src-pergantian">PERGANTIAN REK</span>'
+      : '<span class="src-badge src-gaji">LINK GAJI</span>';
+    const tgl = h.timestamp_gas
+      ? new Date(h.timestamp_gas.replace(' ', 'T')).toLocaleDateString('id-ID', {day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit'})
+      : '-';
+    return `<tr>
+      <td>${i + 1}</td>
+      <td>${srcBadge}</td>
+      <td style="font-size:12px">${tgl}</td>
+      <td style="font-size:12px">${esc(h.email) || '-'}</td>
+      <td style="font-family:monospace">${esc(h.no_rek) || '-'} <span class="digit-badge">${(h.no_rek || '').length}</span></td>
+      <td>${esc(h.bank) || '-'}</td>
+      <td style="font-weight:500">${esc(h.atas_nama) || '-'}</td>
+      <td style="font-size:12px">${esc(h.no_hp) || '-'}</td>
+    </tr>`;
+  }).join('');
+
+  return `<div class="bulk-detail-inner">
+    <div class="bulk-detail-title">Riwayat Rekening (${r.history.length} record)</div>
+    <table class="data-table detail-table">
+      <thead><tr>
+        <th>NO</th><th>SUMBER</th><th>TANGGAL</th><th>EMAIL</th>
+        <th>NO REKENING</th><th>BANK</th><th>ATAS NAMA</th><th>NO HP</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+  </div>`;
 }
 
 // Compare two names (fuzzy)

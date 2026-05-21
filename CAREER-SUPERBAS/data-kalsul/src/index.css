@@ -433,6 +433,22 @@ select.input { cursor: pointer; }
 .bulk-stat-match { background: rgba(16,185,129,.12); color: #6ee7b7; }
 .bulk-stat-mismatch { background: rgba(251,191,36,.12); color: #fcd34d; }
 
+/* Bulk row expand */
+.bulk-row:hover { background: rgba(255,255,255,.03); }
+.bulk-row.expanded { background: rgba(14,165,233,.05); }
+.bulk-detail td { padding: 0 !important; border-bottom: 2px solid var(--accent) !important; }
+.bulk-detail-inner {
+  padding: 14px 20px; background: rgba(14,165,233,.03);
+  border-left: 3px solid var(--accent);
+}
+.bulk-detail-title {
+  font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px;
+  color: var(--accent); margin-bottom: 10px;
+}
+.detail-table { font-size: 12px; }
+.detail-table th { font-size: 11px; padding: 6px 10px; }
+.detail-table td { padding: 6px 10px; }
+
 /* ── Period Navigation ────────────────────────── */
 .period-bar {
   display: flex; align-items: center; gap: 16px; padding: 12px 16px;
