@@ -212,8 +212,15 @@ case 'delete_dataset':
     $body = getJsonBody();
     $dsId = (int)($body['dataset_id'] ?? 0);
     if ($dsId <= 0) jsonError('Invalid dataset_id');
-    // Only owner/admin can delete
-    if ($user['role'] === 'korlap') jsonError('Korlap tidak bisa menghapus dataset', 403);
+    // Korlap can only delete datasets they uploaded
+    if ($user['role'] === 'korlap') {
+        $ds = $db->prepare('SELECT admin_id FROM kalsul_datasets WHERE id = :id LIMIT 1');
+        $ds->execute([':id' => $dsId]);
+        $dataset = $ds->fetch();
+        if (!$dataset || (int)$dataset['admin_id'] !== (int)$user['id']) {
+            jsonError('Anda hanya bisa menghapus dataset yang Anda upload', 403);
+        }
+    }
     // Delete employees first, then dataset
     $db->prepare('DELETE FROM kalsul_employees WHERE dataset_id = :did')->execute([':did' => $dsId]);
     $db->prepare('DELETE FROM kalsul_datasets WHERE id = :id')->execute([':id' => $dsId]);
