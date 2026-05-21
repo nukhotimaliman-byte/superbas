@@ -132,14 +132,59 @@ try {
 if ($action === 'summary') {
     try {
         $db = getDB2();
-        $total = (int)$db->query('SELECT COUNT(DISTINCT ops_id) FROM kalsul_employees')->fetchColumn();
-        $withRek = (int)$db->query("SELECT COUNT(DISTINCT e.ops_id) FROM kalsul_employees e INNER JOIN kalsul_rekening r ON e.ops_id = r.ops_id WHERE r.no_rek != ''")->fetchColumn();
+
+        // Get all employees
+        $employees = $db->query('SELECT ops_id, nama FROM kalsul_employees')->fetchAll();
+        $total = count($employees);
+
+        // Get latest rekening per ops_id
+        $rekMap = [];
+        $rekRows = $db->query("
+            SELECT r1.ops_id, r1.no_rek, r1.atas_nama FROM kalsul_rekening r1
+            INNER JOIN (
+                SELECT ops_id, MAX(COALESCE(timestamp_gas, created_at)) as max_ts
+                FROM kalsul_rekening GROUP BY ops_id
+            ) r2 ON r1.ops_id = r2.ops_id AND COALESCE(r1.timestamp_gas, r1.created_at) = r2.max_ts
+            GROUP BY r1.ops_id
+        ")->fetchAll();
+        foreach ($rekRows as $r) {
+            $rekMap[$r['ops_id']] = $r;
+        }
+
+        // Count pergantian
         $pergantian = (int)$db->query("SELECT COUNT(DISTINCT ops_id) FROM kalsul_rekening WHERE source = 'link_pergantian_rek'")->fetchColumn();
+
+        // Compute stats per employee
+        $done = 0; $kosong = 0; $abnormal = 0;
+        foreach ($employees as $emp) {
+            $opsNum = preg_replace('/^ops/i', '', $emp['ops_id']);
+            $rek = $rekMap[$emp['ops_id']] ?? $rekMap[$opsNum] ?? null;
+
+            if (!$rek || empty(trim($rek['no_rek'] ?? ''))) {
+                $kosong++;
+            } else {
+                $namaClean = mb_strtoupper(trim($emp['nama']));
+                $atasNama = mb_strtoupper(trim($rek['atas_nama'] ?? ''));
+                if ($atasNama === '') {
+                    $kosong++;
+                } else {
+                    similar_text($namaClean, $atasNama, $pct);
+                    if ($pct >= 80) { $done++; } else { $abnormal++; }
+                }
+            }
+        }
+
+        // Datasets count
+        $datasets = (int)$db->query('SELECT COUNT(*) FROM kalsul_datasets')->fetchColumn();
 
         echo json_encode([
             'total_employees' => $total,
-            'with_rekening' => $withRek,
-            'without_rekening' => $total - $withRek,
+            'total_datasets' => $datasets,
+            'done' => $done,
+            'kosong' => $kosong,
+            'abnormal' => $abnormal,
+            'with_rekening' => $done + $abnormal,
+            'without_rekening' => $kosong,
             'pergantian_count' => $pergantian,
         ]);
     } catch (Exception $e) {

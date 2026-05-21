@@ -34,20 +34,29 @@ export function renderDashboard() {
         </div>
         <div class="stat-info">
           <div class="stat-value" id="stat-done">-</div>
-          <div class="stat-label">Rek. Lengkap</div>
+          <div class="stat-label">Done</div>
         </div>
       </div>
       <div class="stat-card">
         <div class="stat-icon stat-icon-amber">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="9" x2="15" y2="15"/><line x1="15" y1="9" x2="9" y2="15"/></svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
         </div>
         <div class="stat-info">
           <div class="stat-value" id="stat-kosong">-</div>
-          <div class="stat-label">Belum Isi</div>
+          <div class="stat-label">Kosong</div>
         </div>
       </div>
       <div class="stat-card">
         <div class="stat-icon stat-icon-red">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        </div>
+        <div class="stat-info">
+          <div class="stat-value" id="stat-abnormal">-</div>
+          <div class="stat-label">Abnormal</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon stat-icon-blue">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.21 15.89A10 10 0 118 2.83"/><path d="M22 12A10 10 0 0012 2v10z"/></svg>
         </div>
         <div class="stat-info">
@@ -75,18 +84,14 @@ export function renderDashboard() {
 
 export async function initDashboard() {
   try {
-    const [gajiRes, statusRes] = await Promise.all([
-      api.getGajiSummary().catch(() => ({})),
-      api.getEmployees({ per_page: 1 }).catch(() => ({ pagination: {} })),
-    ]);
+    const res = await api.getGajiSummary().catch(() => ({}));
 
-    const ds = await api.getDatasets().catch(() => ({ datasets: [] }));
-
-    setVal('stat-datasets', ds.datasets?.length || 0);
-    setVal('stat-employees', gajiRes.total_employees || 0);
-    setVal('stat-done', gajiRes.with_rekening || 0);
-    setVal('stat-kosong', gajiRes.without_rekening || 0);
-    setVal('stat-pergantian', gajiRes.pergantian_count || 0);
+    setVal('stat-datasets', res.total_datasets || 0);
+    setVal('stat-employees', res.total_employees || 0);
+    setVal('stat-done', res.done || 0);
+    setVal('stat-kosong', res.kosong || 0);
+    setVal('stat-abnormal', res.abnormal || 0);
+    setVal('stat-pergantian', res.pergantian_count || 0);
   } catch (err) {
     console.error('Dashboard error:', err);
   }
