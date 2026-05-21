@@ -26,6 +26,42 @@ function onOpen() {
 }
 
 /**
+ * Web App — GET request (bisa diakses via URL /exec)
+ */
+function doGet(e) {
+  try {
+    const gajiData = readSheetGaji();
+    const pergantianData = readSheetPergantian();
+    const payload = {
+      token: CONFIG.TOKEN,
+      link_gaji: gajiData,
+      link_pergantian_rek: pergantianData,
+    };
+    const response = sendToServer(payload);
+
+    return ContentService.createTextOutput(JSON.stringify({
+      success: true,
+      message: 'Sync berhasil!',
+      link_gaji: gajiData.length,
+      link_pergantian_rek: pergantianData.length,
+      server_inserted: response.inserted || 0,
+    })).setMimeType(ContentService.MimeType.JSON);
+  } catch (err) {
+    return ContentService.createTextOutput(JSON.stringify({
+      success: false,
+      error: err.message,
+    })).setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+/**
+ * Web App — POST request
+ */
+function doPost(e) {
+  return doGet(e);
+}
+
+/**
  * Sync kedua sheet ke server
  */
 function syncToServer() {
@@ -216,6 +252,7 @@ function sendToServer(payload) {
     contentType: 'application/json',
     payload: JSON.stringify(payload),
     muteHttpExceptions: true,
+    validateHttpsCertificates: false,
   };
   
   const response = UrlFetchApp.fetch(CONFIG.API_URL, options);
@@ -223,7 +260,7 @@ function sendToServer(payload) {
   const body = response.getContentText();
   
   if (code !== 200) {
-    throw new Error(`Server error (${code}): ${body}`);
+    throw new Error('Server error (' + code + '): ' + body.substring(0, 500));
   }
   
   return JSON.parse(body);
