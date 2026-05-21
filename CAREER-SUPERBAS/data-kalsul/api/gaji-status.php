@@ -25,6 +25,25 @@ function getDB2(): PDO {
 $action = $_GET['action'] ?? '';
 $method = $_SERVER['REQUEST_METHOD'];
 
+// Helper: parse any timestamp format to MySQL datetime
+function parseTimestamp($val) {
+    if (empty($val)) return date('Y-m-d H:i:s');
+    // Already MySQL format?
+    if (preg_match('/^\d{4}-\d{2}-\d{2}/', $val)) return substr($val, 0, 19);
+    // dd/MM/yyyy HH:mm:ss
+    if (preg_match('#^(\d{1,2})/(\d{1,2})/(\d{4})\s+(\d{1,2}):(\d{2}):(\d{2})#', $val, $m)) {
+        return sprintf('%04d-%02d-%02d %02d:%02d:%02d', $m[3], $m[2], $m[1], $m[4], $m[5], $m[6]);
+    }
+    // dd/MM/yyyy
+    if (preg_match('#^(\d{1,2})/(\d{1,2})/(\d{4})#', $val, $m)) {
+        return sprintf('%04d-%02d-%02d 00:00:00', $m[3], $m[2], $m[1]);
+    }
+    // Try PHP strtotime
+    $ts = strtotime($val);
+    if ($ts !== false) return date('Y-m-d H:i:s', $ts);
+    return date('Y-m-d H:i:s');
+}
+
 // ── POST sync from GAS (token-based) ──
 if ($method === 'POST' && $action === 'sync') {
     try {
@@ -56,7 +75,7 @@ if ($method === 'POST' && $action === 'sync') {
                 $noRek = preg_replace('/[^0-9]/', '', $row['no_rek'] ?? '');
                 $gajiStmt->execute([
                     ':oid' => $opsId,
-                    ':ts' => $row['timestamp'] ?? date('Y-m-d H:i:s'),
+                    ':ts' => parseTimestamp($row['timestamp'] ?? ''),
                     ':email' => mb_substr(trim($row['email'] ?? ''), 0, 100),
                     ':nama' => mb_substr(trim($row['nama_ktp'] ?? ''), 0, 100),
                     ':nik' => mb_substr(trim($row['nik'] ?? ''), 0, 20),
@@ -83,7 +102,7 @@ if ($method === 'POST' && $action === 'sync') {
                 $noRek = preg_replace('/[^0-9]/', '', $row['no_rek'] ?? '');
                 $pergStmt->execute([
                     ':oid' => $opsId,
-                    ':ts' => $row['timestamp'] ?? date('Y-m-d H:i:s'),
+                    ':ts' => parseTimestamp($row['timestamp'] ?? ''),
                     ':email' => mb_substr(trim($row['email'] ?? ''), 0, 100),
                     ':nama' => mb_substr(trim($row['nama'] ?? ''), 0, 100),
                     ':pen' => mb_substr(trim($row['penempatan'] ?? ''), 0, 100),
