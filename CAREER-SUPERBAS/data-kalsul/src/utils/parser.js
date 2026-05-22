@@ -84,10 +84,10 @@ export function parseFile(file) {
         // Group by OPS ID → calculate HK
         const grouped = {};
         for (const row of allRows) {
-          // Filter: only BAS vendor types (if status field exists)
+          // Filter: ONLY "Vendor - BAS" (exclude Synthesa, PSD, SOC, etc.)
           const statusLower = (row.status || '').toLowerCase();
           if (statusLower && statusLower.length > 3) {
-            const isBAS = statusLower.includes('bas') || statusLower.includes('vendor');
+            const isBAS = statusLower.includes('bas');
             if (!isBAS) continue;
           }
 
