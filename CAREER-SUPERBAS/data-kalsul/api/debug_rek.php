@@ -7,15 +7,24 @@ $pdo = new PDO('mysql:host=46.250.232.197;dbname=super-bas.com;charset=utf8mb4',
     PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
 ]);
 
-// Show latest 15 records with raw timestamp
-$stmt = $pdo->query("SELECT id, ops_id, timestamp_gas, source, no_rek, atas_nama, created_at FROM kalsul_rekening ORDER BY id DESC LIMIT 15");
+// Pick a specific OPS ID from the screenshot that showed wrong date
+$ops = $_GET['ops'] ?? '1689810';
+$stmt = $pdo->prepare("SELECT id, ops_id, timestamp_gas, source, no_rek, atas_nama, created_at FROM kalsul_rekening WHERE ops_id LIKE :ops ORDER BY id DESC LIMIT 5");
+$stmt->execute([':ops' => "%$ops%"]);
 $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
-echo "=== RAW kalsul_rekening (latest 15) ===\n\n";
+echo "Results for ops_id containing '$ops':\n\n";
 foreach ($rows as $r) {
-    echo "id={$r['id']} | ops={$r['ops_id']} | timestamp_gas=[{$r['timestamp_gas']}] | created=[{$r['created_at']}] | source={$r['source']}\n";
+    echo "id={$r['id']} | timestamp_gas=[{$r['timestamp_gas']}] | created=[{$r['created_at']}] | source={$r['source']} | norek={$r['no_rek']} | nama={$r['atas_nama']}\n";
+    
+    // Show how JS would parse it
+    $ts = $r['timestamp_gas'];
+    echo "  → PHP strtotime: " . date('d M Y H:i', strtotime($ts)) . "\n";
+    echo "  → JS new Date('$ts') → needs .replace(' ','T') → new Date('{$ts}') \n";
+    echo "  → JS with T: new Date('" . str_replace(' ', 'T', $ts) . "')\n\n";
 }
 
-// Also check column type
-echo "\n=== COLUMN INFO ===\n";
-$cols = $pdo->query("SHOW COLUMNS FROM kalsul_rekening LIKE 'timestamp_gas'")->fetch(PDO::FETCH_ASSOC);
-echo "timestamp_gas type: {$cols['Type']}\n";
+// Check MySQL timezone
+$tz = $pdo->query("SELECT @@global.time_zone, @@session.time_zone")->fetch(PDO::FETCH_ASSOC);
+echo "\nMySQL timezone: global={$tz['@@global.time_zone']}, session={$tz['@@session.time_zone']}\n";
+echo "PHP timezone: " . date_default_timezone_get() . "\n";
+echo "PHP date now: " . date('Y-m-d H:i:s') . "\n";
