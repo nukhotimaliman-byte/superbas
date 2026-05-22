@@ -244,7 +244,7 @@ async function doSearch() {
           ? '<span class="src-badge src-pergantian">PERGANTIAN REK</span>'
           : '<span class="src-badge src-gaji">LINK GAJI</span>';
         const tgl = r.timestamp_gas
-          ? new Date(r.timestamp_gas.replace(' ', 'T')).toLocaleDateString('id-ID', {day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit'})
+          ? parseWIB(r.timestamp_gas).toLocaleDateString('id-ID', {day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit'})
           : '-';
 
         return `<tr>
@@ -422,7 +422,7 @@ function renderBulkDetail(r) {
       ? '<span class="src-badge src-pergantian">PERGANTIAN REK</span>'
       : '<span class="src-badge src-gaji">LINK GAJI</span>';
     const tgl = h.timestamp_gas
-      ? new Date(h.timestamp_gas.replace(' ', 'T')).toLocaleDateString('id-ID', {day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit'})
+      ? parseWIB(h.timestamp_gas).toLocaleDateString('id-ID', {day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit'})
       : '-';
     return `<tr>
       <td>${i + 1}</td>
@@ -493,4 +493,10 @@ function esc(str) {
   const d = document.createElement('div');
   d.textContent = str ?? '';
   return d.innerHTML;
+}
+
+// Parse MySQL datetime as WIB (UTC+7) — consistent across all browsers
+function parseWIB(ts) {
+  if (!ts) return null;
+  return new Date(ts.replace(' ', 'T') + '+07:00');
 }

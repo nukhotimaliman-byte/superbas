@@ -392,7 +392,7 @@ function renderEmployeeRow(emp, no) {
   const noRekClass = emp.has_pergantian ? 'cell-highlight' : '';
   const expandBtn = `<button class="btn-expand" data-ops-id="${esc(emp.ops_id)}" title="Lihat detail">&#9660;</button>`;
 
-  const tgl = emp.rek_tanggal ? new Date(emp.rek_tanggal.replace(' ', 'T')).toLocaleDateString('id-ID', {day:'2-digit',month:'short',year:'numeric'}) : '-';
+  const tgl = emp.rek_tanggal ? parseWIB(emp.rek_tanggal).toLocaleDateString('id-ID', {day:'2-digit',month:'short',year:'numeric'}) : '-';
   const digitBadge = emp.rek_digit_count > 0 ? `<span class="digit-badge">${emp.rek_digit_count}</span>` : '';
 
   // Station: parse comma-separated + merge dedup stations, deduplicate
@@ -469,7 +469,7 @@ async function toggleExpand(opsId, row) {
         const srcBadge = r.source === 'link_pergantian_rek'
           ? '<span class="src-badge src-pergantian">PERGANTIAN REK</span>'
           : '<span class="src-badge src-gaji">LINK GAJI</span>';
-        const tgl = r.timestamp_gas ? new Date(r.timestamp_gas.replace(' ', 'T')).toLocaleDateString('id-ID', {day:'2-digit',month:'short',year:'numeric'}) : '-';
+        const tgl = r.timestamp_gas ? parseWIB(r.timestamp_gas).toLocaleDateString('id-ID', {day:'2-digit',month:'short',year:'numeric'}) : '-';
         const digitCount = r.rek_digit_count || String(r.no_rek || '').length;
 
         return `<tr>
@@ -549,3 +549,10 @@ function esc(str) {
   d.textContent = str ?? '';
   return d.innerHTML;
 }
+
+// Parse MySQL datetime as WIB (UTC+7)
+function parseWIB(ts) {
+  if (!ts) return null;
+  return new Date(ts.replace(' ', 'T') + '+07:00');
+}
+
