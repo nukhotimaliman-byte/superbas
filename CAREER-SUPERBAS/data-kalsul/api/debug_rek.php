@@ -7,24 +7,58 @@ $pdo = new PDO('mysql:host=46.250.232.197;dbname=super-bas.com;charset=utf8mb4',
     PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
 ]);
 
-// Pick a specific OPS ID from the screenshot that showed wrong date
-$ops = $_GET['ops'] ?? '1689810';
-$stmt = $pdo->prepare("SELECT id, ops_id, timestamp_gas, source, no_rek, atas_nama, created_at FROM kalsul_rekening WHERE ops_id LIKE :ops ORDER BY id DESC LIMIT 5");
-$stmt->execute([':ops' => "%$ops%"]);
-$rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
-echo "Results for ops_id containing '$ops':\n\n";
-foreach ($rows as $r) {
-    echo "id={$r['id']} | timestamp_gas=[{$r['timestamp_gas']}] | created=[{$r['created_at']}] | source={$r['source']} | norek={$r['no_rek']} | nama={$r['atas_nama']}\n";
-    
-    // Show how JS would parse it
-    $ts = $r['timestamp_gas'];
-    echo "  → PHP strtotime: " . date('d M Y H:i', strtotime($ts)) . "\n";
-    echo "  → JS new Date('$ts') → needs .replace(' ','T') → new Date('{$ts}') \n";
-    echo "  → JS with T: new Date('" . str_replace(' ', 'T', $ts) . "')\n\n";
+// Show timestamp_gas across multiple recent records from BOTH sources
+echo "=== LINK GAJI (last 10) ===\n";
+$stmt = $pdo->query("SELECT id, ops_id, timestamp_gas, created_at, atas_nama FROM kalsul_rekening WHERE source='link_gaji' ORDER BY id DESC LIMIT 10");
+foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $r) {
+    $diff = strtotime($r['timestamp_gas']) - strtotime($r['created_at']);
+    echo "id={$r['id']} | ops={$r['ops_id']} | timestamp_gas=[{$r['timestamp_gas']}] | created=[{$r['created_at']}] | diff={$diff}s | nama={$r['atas_nama']}\n";
 }
 
-// Check MySQL timezone
-$tz = $pdo->query("SELECT @@global.time_zone, @@session.time_zone")->fetch(PDO::FETCH_ASSOC);
-echo "\nMySQL timezone: global={$tz['@@global.time_zone']}, session={$tz['@@session.time_zone']}\n";
-echo "PHP timezone: " . date_default_timezone_get() . "\n";
-echo "PHP date now: " . date('Y-m-d H:i:s') . "\n";
+echo "\n=== LINK PERGANTIAN REK (last 10) ===\n";
+$stmt = $pdo->query("SELECT id, ops_id, timestamp_gas, created_at, atas_nama FROM kalsul_rekening WHERE source='link_pergantian_rek' ORDER BY id DESC LIMIT 10");
+foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $r) {
+    $diff = strtotime($r['timestamp_gas']) - strtotime($r['created_at']);
+    echo "id={$r['id']} | ops={$r['ops_id']} | timestamp_gas=[{$r['timestamp_gas']}] | created=[{$r['created_at']}] | diff={$diff}s | nama={$r['atas_nama']}\n";
+}
+
+// Also check for any dates that look wrong (year not 2025/2026, or in future)
+echo "\n=== SUSPICIOUS DATES ===\n";
+$stmt = $pdo->query("SELECT id, ops_id, timestamp_gas, source FROM kalsul_rekening WHERE timestamp_gas < '2024-01-01' OR timestamp_gas > NOW() + INTERVAL 1 DAY OR MONTH(timestamp_gas) > 12 LIMIT 20");
+$bad = $stmt->fetchAll(PDO::FETCH_ASSOC);
+if (empty($bad)) {
+    echo "None found (all dates in valid range)\n";
+} else {
+    foreach ($bad as $r) {
+        echo "BAD: id={$r['id']} | ops={$r['ops_id']} | timestamp_gas=[{$r['timestamp_gas']}] | source={$r['source']}\n";
+    }
+}
+
+// Check parseTimestamp function by testing various formats
+echo "\n=== PARSE TEST ===\n";
+function parseTimestamp($val) {
+    if (empty($val)) return date('Y-m-d H:i:s');
+    if (preg_match('/^\d{4}-\d{2}-\d{2}/', $val)) return substr($val, 0, 19);
+    // dd/MM/yyyy HH:mm:ss
+    if (preg_match('#^(\d{1,2})/(\d{1,2})/(\d{4})\s+(\d{1,2}):(\d{2}):(\d{2})#', $val, $m)) {
+        return sprintf('%04d-%02d-%02d %02d:%02d:%02d', $m[3], $m[2], $m[1], $m[4], $m[5], $m[6]);
+    }
+    if (preg_match('#^(\d{1,2})/(\d{1,2})/(\d{4})#', $val, $m)) {
+        return sprintf('%04d-%02d-%02d 00:00:00', $m[3], $m[2], $m[1]);
+    }
+    $ts = strtotime($val);
+    if ($ts !== false) return date('Y-m-d H:i:s', $ts);
+    return date('Y-m-d H:i:s');
+}
+
+$tests = [
+    '5/20/2026 9:02:15',       // US format mm/dd/yyyy (GAS default?)
+    '20/5/2026 9:02:15',       // EU format dd/mm/yyyy  
+    '05/20/2026 09:02:15',     // US padded
+    '2026-05-20 09:02:15',     // MySQL format
+    'Tue May 20 2026 09:02:15 GMT+0700',  // JS toString
+];
+foreach ($tests as $t) {
+    $parsed = parseTimestamp($t);
+    echo "Input: [$t] → Parsed: [$parsed]\n";
+}
