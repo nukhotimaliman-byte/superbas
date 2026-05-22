@@ -143,6 +143,13 @@ case 'list':
         $noRekClean = $rek ? preg_replace('/[^0-9]/', '', $rek['no_rek'] ?? '') : '';
         $digitCount = strlen($noRekClean);
 
+        // Override: if admin set status manually, use it
+        if (!empty($emp['status']) && in_array($emp['status'], ['done','abnormal','kosong'])) {
+            $rekStatus = $emp['status'];
+        } else {
+            $emp['rek_status'] = $rekStatus;
+        }
+
         $emp['rek_status'] = $rekStatus;
         $emp['rek_tanggal'] = $rek['timestamp_gas'] ?? $rek['created_at'] ?? null;
         $emp['no_rek'] = $noRekClean;
@@ -156,7 +163,11 @@ case 'list':
         $emp['pergantian_count'] = $pergCount;
 
         // Filter by rek_status
-        if ($rekFilter !== '' && $rekStatus !== $rekFilter) continue;
+        if ($rekFilter === 'bermasalah') {
+            if ($rekStatus !== 'abnormal' && $rekStatus !== 'kosong') continue;
+        } else if ($rekFilter !== '' && $rekStatus !== $rekFilter) {
+            continue;
+        }
 
         $result[] = $emp;
     }

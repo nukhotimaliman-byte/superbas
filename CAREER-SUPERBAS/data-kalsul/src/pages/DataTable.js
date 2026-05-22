@@ -55,6 +55,7 @@ export function renderDataTable() {
           <option value="done">DONE</option>
           <option value="kosong">KOSONG</option>
           <option value="abnormal">ABNORMAL</option>
+          <option value="bermasalah">BERMASALAH (Abnormal + Kosong)</option>
         </select>
       </div>
       <div class="filter-group">
@@ -359,17 +360,34 @@ async function loadEmployees() {
         } catch (err) { alert('Gagal hapus: ' + err.message); }
       });
     });
+    // Status manual override
+    tbody.querySelectorAll('.status-select').forEach(sel => {
+      sel.addEventListener('click', (e) => e.stopPropagation());
+      sel.addEventListener('change', async (e) => {
+        e.stopPropagation();
+        const empId = sel.dataset.empId;
+        const newStatus = sel.value;
+        sel.className = `status-select status-${newStatus}`;
+        try {
+          await api.updateEmployee(empId, { status: newStatus });
+        } catch (err) { alert('Gagal update status: ' + err.message); }
+      });
+    });
   } catch (err) {
     tbody.innerHTML = `<tr><td colspan="13" style="text-align:center;color:var(--danger);padding:20px">Error: ${err.message}</td></tr>`;
   }
 }
 
 function renderEmployeeRow(emp, no) {
-  const rekStatusBadge = {
-    done: '<span class="badge badge-done">DONE</span>',
-    abnormal: '<span class="badge badge-abnormal">ABNORMAL</span>',
-    kosong: '<span class="badge badge-kosong">KOSONG</span>',
-  }[emp.rek_status] || '<span class="badge badge-kosong">KOSONG</span>';
+  const statusClass = { done: 'badge-done', abnormal: 'badge-abnormal', kosong: 'badge-kosong' }[emp.rek_status] || 'badge-kosong';
+  const statusLabel = (emp.rek_status || 'kosong').toUpperCase();
+  const isManual = emp.status && ['done','abnormal','kosong'].includes(emp.status);
+  const manualTag = isManual ? ' <span style="font-size:9px;opacity:.5">(M)</span>' : '';
+  const rekStatusHtml = `<select class="status-select status-${emp.rek_status || 'kosong'}" data-emp-id="${emp.id}" data-current="${emp.rek_status || 'kosong'}">
+    <option value="done"${emp.rek_status === 'done' ? ' selected' : ''}>DONE</option>
+    <option value="abnormal"${emp.rek_status === 'abnormal' ? ' selected' : ''}>ABNORMAL</option>
+    <option value="kosong"${emp.rek_status === 'kosong' || !emp.rek_status ? ' selected' : ''}>KOSONG</option>
+  </select>`;
 
   const noRekClass = emp.has_pergantian ? 'cell-highlight' : '';
   const expandBtn = `<button class="btn-expand" data-ops-id="${esc(emp.ops_id)}" title="Lihat detail">&#9660;</button>`;
@@ -395,7 +413,7 @@ function renderEmployeeRow(emp, no) {
       <td style="font-weight:500;color:var(--t1)">${esc(emp.nama)}</td>
       <td>${stationHtml}</td>
       <td style="text-align:center;font-weight:700">${emp.hk || 0}</td>
-      <td>${rekStatusBadge}</td>
+      <td>${rekStatusHtml}</td>
       <td style="font-size:12px">${tgl}</td>
       <td class="${noRekClass}">
         <span class="norek-cell">${esc(emp.no_rek) || '-'} ${digitBadge}</span>
