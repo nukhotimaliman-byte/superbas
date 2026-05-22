@@ -169,22 +169,28 @@ function renderPreview(data) {
   const stats = document.getElementById('preview-stats');
   if (!section || !tbody) return;
 
+  const multiShiftCount = data.employees.filter(e => e.multiShift).length;
   stats.innerHTML = `
     <span class="stat-badge">${data.uniqueEmployees} karyawan</span>
     <span class="stat-badge">${data.stations.length} station</span>
+    ${multiShiftCount > 0 ? `<span class="stat-badge" style="background:rgba(251,191,36,.15);color:#fcd34d">${multiShiftCount} double shift</span>` : ''}
   `;
 
   const rows = data.employees.slice(0, 100);
-  tbody.innerHTML = rows.map(emp => `
-    <tr>
+  tbody.innerHTML = rows.map(emp => {
+    const shiftBadge = emp.multiShift
+      ? `<span class="badge badge-abnormal" title="${emp.multiShiftDays} hari double shift" style="font-size:9px;margin-left:4px">2x SHIFT</span>`
+      : '';
+    return `
+    <tr${emp.multiShift ? ' style="background:rgba(251,191,36,.05)"' : ''}>
       <td>${emp.no}</td>
       <td><span class="badge badge-primary">${esc(emp.ops_id)}</span></td>
       <td style="font-weight:500">${esc(emp.nama)}</td>
       <td>${esc(emp.station)}</td>
-      <td style="text-align:center;font-weight:700">${emp.hk}</td>
+      <td style="text-align:center;font-weight:700">${emp.hk}${shiftBadge}</td>
       <td><span class="badge badge-accent">${esc(emp.status)}</span></td>
-    </tr>
-  `).join('');
+    </tr>`;
+  }).join('');
 
   if (data.uniqueEmployees > 100) {
     tbody.innerHTML += `<tr><td colspan="6" style="text-align:center;color:var(--text-tertiary);padding:16px">...dan ${data.uniqueEmployees - 100} karyawan lainnya</td></tr>`;

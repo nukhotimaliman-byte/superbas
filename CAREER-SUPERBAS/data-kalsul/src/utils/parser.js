@@ -33,6 +33,11 @@ const COLUMN_MAP = {
     'status', 'tipe', 'type', 'jenis',
     'entity', 'vendor',
   ],
+  time_in: [
+    'time_in_actual', 'time in actual', 'time_in', 'time in',
+    'check in', 'check_in', 'checkin', 'jam masuk', 'clock in',
+    'waktu masuk', 'in time', 'start time',
+  ],
 };
 
 /**
@@ -81,7 +86,8 @@ export function parseFile(file) {
           return;
         }
 
-        // Group by OPS ID → calculate HK
+        // Group by OPS ID → calculate HK with shift detection (6h gap)
+        const GAP_HOURS = 6;
         const grouped = {};
         for (const row of allRows) {
           // Filter: ONLY "Vendor - BAS" (exclude Synthesa, PSD, SOC, etc.)
@@ -98,22 +104,33 @@ export function parseFile(file) {
               nama: row.nama,
               station: row.station || '',
               status: cleanStatus(row.status),
-              dates: new Set(),
+              shifts: [],       // array of timestamps for shift detection
+              multiShift: false, // flag: has >1 shift on same day
             };
           }
-          if (row.date) grouped[key].dates.add(row.date);
+          // Store date+time for shift detection
+          if (row.date) {
+            const ts = row.time_in ? `${row.date} ${row.time_in}` : row.date;
+            grouped[key].shifts.push(ts);
+          }
           if (row.nama.length > grouped[key].nama.length) grouped[key].nama = row.nama;
           if (row.station && !grouped[key].station) grouped[key].station = row.station;
         }
 
-        const employees = Object.values(grouped).map((g, idx) => ({
-          no: idx + 1,
-          ops_id: g.ops_id,
-          nama: g.nama,
-          station: g.station,
-          hk: g.dates.size,
-          status: g.status,
-        }));
+        const employees = Object.values(grouped).map((g, idx) => {
+          // Calculate HK with shift detection
+          const hkResult = countShifts(g.shifts, GAP_HOURS);
+          return {
+            no: idx + 1,
+            ops_id: g.ops_id,
+            nama: g.nama,
+            station: g.station,
+            hk: hkResult.total,
+            multiShift: hkResult.multiShiftDays > 0,
+            multiShiftDays: hkResult.multiShiftDays,
+            status: g.status,
+          };
+        });
 
         employees.sort((a, b) => a.nama.localeCompare(b.nama));
         employees.forEach((e, i) => e.no = i + 1);
@@ -205,7 +222,7 @@ function extractRow(row, header, mapping) {
   if (!nama && !opsId) return null;
   if (!nama) nama = '-';
 
-  return { ops_id: opsId, nama, station, date, status };
+  return { ops_id: opsId, nama, station, date, status, time_in: getVal('time_in') };
 }
 
 /**
@@ -248,4 +265,55 @@ function cleanStatus(status) {
   let s = String(status).trim();
   s = s.replace(/^daily\s*worker\s*/i, '').trim();
   return s || 'Vendor - BAS';
+}
+
+/**
+ * Count shifts with gap detection.
+ * Groups timestamps by date. For each date, if multiple entries have
+ * time_in >gapHours apart, each is counted as a separate shift (HK).
+ * @param {string[]} timestamps - array of "YYYY-MM-DD" or "YYYY-MM-DD HH:MM:SS"
+ * @param {number} gapHours - minimum hours between entries to count as separate shift
+ * @returns {{ total: number, multiShiftDays: number }}
+ */
+function countShifts(timestamps, gapHours) {
+  if (!timestamps.length) return { total: 0, multiShiftDays: 0 };
+
+  // Group by date
+  const byDate = {};
+  for (const ts of timestamps) {
+    const dateStr = ts.substring(0, 10); // YYYY-MM-DD
+    if (!byDate[dateStr]) byDate[dateStr] = [];
+    byDate[dateStr].push(ts);
+  }
+
+  let total = 0;
+  let multiShiftDays = 0;
+
+  for (const [dateStr, entries] of Object.entries(byDate)) {
+    if (entries.length <= 1) {
+      total += 1; // single entry = 1 HK
+      continue;
+    }
+
+    // Parse times and sort
+    const times = entries.map(ts => {
+      const timePart = ts.length > 10 ? ts.substring(11) : '00:00:00';
+      const [h, m] = timePart.split(':').map(Number);
+      return (h || 0) * 60 + (m || 0); // minutes since midnight
+    }).sort((a, b) => a - b);
+
+    // Count shifts: new shift if gap > gapHours
+    let shifts = 1;
+    for (let i = 1; i < times.length; i++) {
+      const gapMin = times[i] - times[i - 1];
+      if (gapMin >= gapHours * 60) {
+        shifts++;
+      }
+    }
+
+    total += shifts;
+    if (shifts > 1) multiShiftDays++;
+  }
+
+  return { total, multiShiftDays };
 }
