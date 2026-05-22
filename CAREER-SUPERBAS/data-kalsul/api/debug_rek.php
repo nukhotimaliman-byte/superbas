@@ -7,12 +7,15 @@ $pdo = new PDO('mysql:host=46.250.232.197;dbname=super-bas.com;charset=utf8mb4',
     PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
 ]);
 
-$ops = $_GET['ops'] ?? '1851978';
-$stmt = $pdo->prepare("SELECT id, ops_id, timestamp_gas, source, no_rek, atas_nama FROM kalsul_rekening WHERE ops_id LIKE :ops ORDER BY id DESC LIMIT 10");
-$stmt->execute([':ops' => "%$ops%"]);
+// Show latest 15 records with raw timestamp
+$stmt = $pdo->query("SELECT id, ops_id, timestamp_gas, source, no_rek, atas_nama, created_at FROM kalsul_rekening ORDER BY id DESC LIMIT 15");
 $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
-echo "Results for ops_id containing '$ops':\n\n";
+echo "=== RAW kalsul_rekening (latest 15) ===\n\n";
 foreach ($rows as $r) {
-    echo "id={$r['id']} | ops_id={$r['ops_id']} | timestamp_gas={$r['timestamp_gas']} | source={$r['source']} | norek={$r['no_rek']} | nama={$r['atas_nama']}\n";
+    echo "id={$r['id']} | ops={$r['ops_id']} | timestamp_gas=[{$r['timestamp_gas']}] | created=[{$r['created_at']}] | source={$r['source']}\n";
 }
-if (empty($rows)) echo "No results found.\n";
+
+// Also check column type
+echo "\n=== COLUMN INFO ===\n";
+$cols = $pdo->query("SHOW COLUMNS FROM kalsul_rekening LIKE 'timestamp_gas'")->fetch(PDO::FETCH_ASSOC);
+echo "timestamp_gas type: {$cols['Type']}\n";
