@@ -162,11 +162,10 @@ function parseOpsIds(text) {
   const blocks = text.split(/(?=FORMAT\s+GAJI)|(?:\n\s*\n)/i);
 
   for (const block of blocks) {
-    // Extract OPS ID
+    // Extract OPS ID from "OPS: 1234567" pattern
     const opsMatch = block.match(/ops\s*:?\s*:?\s*(\d{5,8})/i);
     if (opsMatch) {
       const id = opsMatch[1];
-      // Extract NAMA
       const namaMatch = block.match(/NAMA\s*:\s*(.+)/i);
       const nama = namaMatch ? namaMatch[1].trim() : '';
       if (!results.has(id)) {
@@ -175,20 +174,55 @@ function parseOpsIds(text) {
     }
   }
 
-  // Also try Ops-prefixed standalone: Ops1234567
-  const opsPrefixRegex = /\bops(\d{5,8})\b/gi;
-  let m;
-  while ((m = opsPrefixRegex.exec(text)) !== null) {
-    if (!results.has(m[1])) {
-      results.set(m[1], { id: m[1], nama: '' });
+  // Line-by-line: handle "NAMA  OPS_ID" or "Ops1234567  NAMA" per line
+  const lines = text.split(/\n/);
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+
+    // Pattern 1: "Ops1234567" anywhere in line — extract name from remaining text
+    const opsPrefix = trimmed.match(/\bops(\d{5,8})\b/i);
+    if (opsPrefix) {
+      const id = opsPrefix[1];
+      if (!results.has(id)) {
+        // Remove the OPS ID part and use the rest as name
+        const remaining = trimmed.replace(/\bops\d{5,8}\b/i, '').replace(/[,\-–|:;]/g, ' ').trim();
+        const nama = remaining.replace(/\s+/g, ' ').trim();
+        results.set(id, { id, nama });
+      }
+      continue;
+    }
+
+    // Pattern 2: "NAMA  1234567" (name followed by 6-8 digit number at end)
+    const nameFirst = trimmed.match(/^(.+?)\s+(\d{6,8})\s*$/);
+    if (nameFirst) {
+      const nama = nameFirst[1].replace(/[,\-–|:;]/g, ' ').trim();
+      const id = nameFirst[2];
+      // Skip if "nama" looks like a phone number (10+ digits) or norek
+      if (nama && !/^\d+$/.test(nama) && !results.has(id)) {
+        results.set(id, { id, nama });
+      }
+      continue;
+    }
+
+    // Pattern 3: "1234567  NAMA" (number followed by name)
+    const numFirst = trimmed.match(/^(\d{6,8})\s+(.+)$/);
+    if (numFirst) {
+      const id = numFirst[1];
+      const nama = numFirst[2].replace(/[,\-–|:;]/g, ' ').trim();
+      if (nama && !/^\d+$/.test(nama) && !results.has(id)) {
+        results.set(id, { id, nama });
+      }
+      continue;
     }
   }
 
-  // Fallback: simple list of numbers (no WhatsApp context)
+  // Fallback: simple list of numbers (no names, no WhatsApp context)
   if (results.size === 0) {
     const hasContext = /nama|norek|bank|atas.nama|lokasi|periode/i.test(text);
     if (!hasContext) {
       const standaloneRegex = /\b(\d{6,8})\b/g;
+      let m;
       while ((m = standaloneRegex.exec(text)) !== null) {
         if (!results.has(m[1])) {
           results.set(m[1], { id: m[1], nama: '' });
