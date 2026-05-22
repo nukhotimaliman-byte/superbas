@@ -144,8 +144,15 @@ async function handleFile(file) {
   try {
     parsedData = await parseFile(file);
 
+    // Build column mapping info
+    const mapInfo = parsedData.columnMapping ? Object.entries(parsedData.columnMapping)
+      .filter(([k,v]) => v !== undefined)
+      .map(([k]) => k.toUpperCase().replace('_',' '))
+      .join(', ') : '';
+
     showStatus(
-      `File berhasil diproses! Format: <strong>${parsedData.format.toUpperCase()}</strong> ` +
+      `Format terdeteksi: <strong>${parsedData.format}</strong> ` +
+      `| Kolom: ${mapInfo} ` +
       `| ${parsedData.totalRows} baris — <strong>${parsedData.uniqueEmployees} karyawan</strong> unik`,
       'success'
     );
