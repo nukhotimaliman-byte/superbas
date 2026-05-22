@@ -40,8 +40,17 @@ try {
         $datasetId = (int)$db->lastInsertId();
     }
 
-    // Insert employees
-    $insertStmt = $db->prepare("INSERT INTO kalsul_employees (dataset_id, ops_id, nama, station, hk, status) VALUES (:did, :oid, :nama, :st, :hk, :status)");
+    // Upsert employees (update if ops_id already exists)
+    $insertStmt = $db->prepare("
+        INSERT INTO kalsul_employees (dataset_id, ops_id, nama, station, hk, status) 
+        VALUES (:did, :oid, :nama, :st, :hk, :status)
+        ON DUPLICATE KEY UPDATE 
+            dataset_id = VALUES(dataset_id),
+            nama = VALUES(nama),
+            station = VALUES(station),
+            hk = VALUES(hk),
+            status = VALUES(status)
+    ");
 
     $imported = 0;
     $skipped = 0;
