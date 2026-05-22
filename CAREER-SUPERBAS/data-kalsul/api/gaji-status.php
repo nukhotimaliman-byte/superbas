@@ -26,19 +26,40 @@ $action = $_GET['action'] ?? '';
 $method = $_SERVER['REQUEST_METHOD'];
 
 // Helper: parse any timestamp format to MySQL datetime
+// GAS sends mm/dd/yyyy (US format), NOT dd/mm/yyyy
 function parseTimestamp($val) {
     if (empty($val)) return date('Y-m-d H:i:s');
-    // Already MySQL format?
+    $val = trim($val);
+    // Already MySQL format (2026-05-20 ...)
     if (preg_match('/^\d{4}-\d{2}-\d{2}/', $val)) return substr($val, 0, 19);
-    // dd/MM/yyyy HH:mm:ss
-    if (preg_match('#^(\d{1,2})/(\d{1,2})/(\d{4})\s+(\d{1,2}):(\d{2}):(\d{2})#', $val, $m)) {
-        return sprintf('%04d-%02d-%02d %02d:%02d:%02d', $m[3], $m[2], $m[1], $m[4], $m[5], $m[6]);
+    
+    // Slash format: could be mm/dd/yyyy or dd/mm/yyyy
+    if (preg_match('#^(\d{1,2})/(\d{1,2})/(\d{4})(?:\s+(\d{1,2}):(\d{2}):(\d{2}))?#', $val, $m)) {
+        $a = (int)$m[1]; // first number
+        $b = (int)$m[2]; // second number
+        $year = (int)$m[3];
+        $h = (int)($m[4] ?? 0);
+        $min = (int)($m[5] ?? 0);
+        $sec = (int)($m[6] ?? 0);
+        
+        // Auto-detect: GAS uses mm/dd/yyyy (US format)
+        // If first > 12, it must be day (dd/mm/yyyy) 
+        // If second > 12, it must be day (mm/dd/yyyy) — this is GAS format
+        // If both <= 12, assume mm/dd/yyyy (GAS default)
+        if ($a > 12) {
+            // dd/mm/yyyy
+            $month = $b;
+            $day = $a;
+        } else {
+            // mm/dd/yyyy (GAS default)
+            $month = $a;
+            $day = $b;
+        }
+        
+        return sprintf('%04d-%02d-%02d %02d:%02d:%02d', $year, $month, $day, $h, $min, $sec);
     }
-    // dd/MM/yyyy
-    if (preg_match('#^(\d{1,2})/(\d{1,2})/(\d{4})#', $val, $m)) {
-        return sprintf('%04d-%02d-%02d 00:00:00', $m[3], $m[2], $m[1]);
-    }
-    // Try PHP strtotime
+    
+    // Try PHP strtotime (handles most English formats)
     $ts = strtotime($val);
     if ($ts !== false) return date('Y-m-d H:i:s', $ts);
     return date('Y-m-d H:i:s');
